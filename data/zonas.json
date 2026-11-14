@@ -1,0 +1,66 @@
+[
+ {
+  "id": "monteria",
+  "nombre": "Valle del Sinú (Montería, Córdoba)",
+  "lat": 8.75,
+  "lon": -75.88,
+  "suelo": "arcilloso",
+  "riego": true
+ },
+ {
+  "id": "valledupar",
+  "nombre": "Valledupar (Cesar)",
+  "lat": 10.47,
+  "lon": -73.25,
+  "suelo": "franco",
+  "riego": true
+ },
+ {
+  "id": "zona_bananera",
+  "nombre": "Zona Bananera (Magdalena)",
+  "lat": 10.77,
+  "lon": -74.15,
+  "suelo": "franco",
+  "riego": true
+ },
+ {
+  "id": "san_jacinto",
+  "nombre": "Montes de María (San Jacinto, Bolívar)",
+  "lat": 9.83,
+  "lon": -75.12,
+  "suelo": "franco",
+  "riego": false
+ },
+ {
+  "id": "repelon",
+  "nombre": "Repelón (Atlántico)",
+  "lat": 10.49,
+  "lon": -75.12,
+  "suelo": "arcilloso",
+  "riego": true
+ },
+ {
+  "id": "mompox",
+  "nombre": "Depresión Momposina (Bolívar)",
+  "lat": 9.24,
+  "lon": -74.43,
+  "suelo": "arcilloso",
+  "riego": false
+ },
+ {
+  "id": "sincelejo",
+  "nombre": "Sincelejo (Sucre)",
+  "lat": 9.3,
+  "lon": -75.4,
+  "suelo": "franco",
+  "riego": false
+ },
+ {
+  "id": "riohacha",
+  "nombre": "Riohacha (La Guajira)",
+  "lat": 11.54,
+  "lon": -72.91,
+  "suelo": "arenoso",
+  "riego": false
+ }
+]

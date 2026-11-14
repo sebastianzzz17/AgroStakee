@@ -1,0 +1,46 @@
+[
+ {
+  "id": "acido",
+  "nombre": "Suelo ácido",
+  "ph": 4.9,
+  "n": "bajo",
+  "p": "bajo",
+  "k": "medio",
+  "humedad_pct": 22,
+  "temp_suelo_c": 29,
+  "salinidad": "normal"
+ },
+ {
+  "id": "n_bajo",
+  "nombre": "Nitrógeno bajo",
+  "ph": 6.0,
+  "n": "bajo",
+  "p": "medio",
+  "k": "bajo",
+  "humedad_pct": 24,
+  "temp_suelo_c": 29,
+  "salinidad": "normal"
+ },
+ {
+  "id": "salino",
+  "nombre": "Suelo salino",
+  "ph": 7.8,
+  "n": "medio",
+  "p": "medio",
+  "k": "alto",
+  "humedad_pct": 20,
+  "temp_suelo_c": 31,
+  "salinidad": "alta"
+ },
+ {
+  "id": "sano",
+  "nombre": "Suelo sano",
+  "ph": 6.5,
+  "n": "alto",
+  "p": "alto",
+  "k": "medio",
+  "humedad_pct": 28,
+  "temp_suelo_c": 28,
+  "salinidad": "normal"
+ }
+]
