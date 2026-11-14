@@ -13,7 +13,7 @@ import json, os
 from collections import defaultdict
 from datetime import date
 import requests
-from services.motor import et0, MC
+from services.motor import et0, MC, UMBRAL_CALOR, UMBRAL_FRIO
 
 URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
 VARS = ("T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR", "GWETROOT")
@@ -62,9 +62,12 @@ def calcular(p, lat, ini, fin):
         por_mes[d["m"]].append(d); anios_mes[d["m"]].add(d["a"])
         lluvia_anio[d["a"]] += d["pr"]; temp_anio[d["a"]].append(d["t"])
     med = lambda xs: sum(xs) / len(xs)
-    ll, tm, tx, tn, ev = [], [], [], [], []
+    ll, tm, tx, tn, ev, dl, dc, df = [], [], [], [], [], [], [], []
     for m in range(1, 13):
         ds, ya = por_mes[m], max(1, len(anios_mes[m]))
+        dl.append(round(sum(1 for d in ds if d["pr"] >= 1) / ya))            # días con lluvia (>= 1 mm)
+        dc.append(round(sum(1 for d in ds if d["tx"] > UMBRAL_CALOR) / ya, 1))  # días de calor
+        df.append(round(sum(1 for d in ds if d["tn"] < UMBRAL_FRIO) / ya, 1))   # días fríos
         ll.append(round(sum(d["pr"] for d in ds) / ya))
         tm.append(round(med([d["t"] for d in ds]), 1)); tx.append(round(med([d["tx"] for d in ds]), 1)); tn.append(round(med([d["tn"] for d in ds]), 1))
         ev.append(round(sum(et0(d["t"], d["tx"], d["tn"], lat, m) for d in ds) / ya))
@@ -88,7 +91,7 @@ def calcular(p, lat, ini, fin):
     tend_ll = _pendiente(anios, totales) * (na - 1) / media_ll * 100 if na > 2 else 0
     tend_t = _pendiente(anios, [med(temp_anio[a]) for a in anios]) * (na - 1) if na > 2 else 0
     gw = [d["gw"] for d in dias if _ok(d["gw"])]
-    return {"lluvia_mensual_mm": ll, "temp_mensual": tm, "tmax_mensual": tx, "tmin_mensual": tn, "evap_mensual_mm": ev,
+    return {"lluvia_mensual_mm": ll, "dias_lluvia_mensual": dl, "dias_calor_mensual": dc, "dias_frio_mensual": df, "temp_mensual": tm, "tmax_mensual": tx, "tmin_mensual": tn, "evap_mensual_mm": ev,
             "temp_media": round(med([d["t"] for d in dias]), 1), "tmax_media": round(med([d["tx"] for d in dias]), 1),
             "tmin_media": round(med([d["tn"] for d in dias]), 1), "tmin_absoluta": round(min(d["tn"] for d in dias), 1),
             "dias_estres_termico": round(sum(1 for d in dias if d["tx"] > 35) / na),

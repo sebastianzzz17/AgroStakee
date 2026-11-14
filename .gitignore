@@ -1,0 +1,5 @@
+rotacion.db
+.secret_key
+__pycache__/
+cache/
+firmware/estaca_esp32s3/secretos.h

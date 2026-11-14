@@ -1,2 +1,4 @@
 flask
 requests
+# Opcional, solo para Google Earth Engine (pendiente y NDVI de Landsat):
+# earthengine-api
