@@ -476,7 +476,7 @@ dialog::backdrop{background:#000a}
 .chip-datos.activo{color:var(--txt)}
 .chip-datos.activo::after{content:"";width:8px;height:8px;border-radius:50%;background:#30d158;animation:latido 1.2s ease-in-out infinite}
 @keyframes latido{50%{opacity:.25;transform:scale(.7)}}
-#sin-red{position:fixed;left:50%;top:max(10px,env(safe-area-inset-top));transform:translateX(-50%);z-index:60;max-width:min(560px,92vw);
+#sin-red,#servidor{position:fixed;left:50%;top:max(10px,env(safe-area-inset-top));transform:translateX(-50%);z-index:60;max-width:min(560px,92vw);
   padding:9px 16px;border-radius:14px;background:#3a2a00;color:#ffd60a;font-size:14px;box-shadow:0 6px 24px #0006;text-align:center}
 .compara p{margin:0;line-height:1.45}
 .nota-imp{margin-top:8px !important;color:var(--txt2)}
@@ -584,6 +584,7 @@ html,body{max-width:100%;overflow-x:clip}
 <div id="tour" hidden><div class="foco"></div><div class="globo" role="dialog" aria-live="polite"></div></div>
 <div id="aviso" hidden role="status"></div>
 <div id="sin-red" hidden role="status"></div>
+<div id="servidor" hidden role="status"></div>
 
 <script src="/static/vendor/leaflet/leaflet.js"></script>
 <script>
@@ -658,6 +659,14 @@ function marcarSinRed(t){
   b.innerHTML = `📴 ${L("Sin señal: estás viendo los últimos datos guardados","No signal: you are seeing the last saved data")}${t ? ` (${haceCuanto(new Date(t).toISOString())})` : ""}.`;
   b.hidden = false;
 }
+/* El servidor tarda (en Render gratis se duerme a los 15 min y tarda cerca de un minuto en despertar) o respondió con error */
+function avisoServidor(modo){
+  const b = $("#servidor"); if (!b) return;
+  if (!modo || S.sinRed) { b.hidden = true; return; }
+  b.innerHTML = modo === "lento" ? `⏳ ${L("Cargando tus datos… si el servidor estaba dormido, puede tardar hasta un minuto.","Loading your data… if the server was asleep, it can take up to a minute.")}`
+                                 : `🔄 ${L("El servidor no respondió; reintentando solo…","The server did not respond; retrying automatically…")}`;
+  b.hidden = false;
+}
 function marcarConRed(){ if (!S.sinRed) return; S.sinRed = false; $("#sin-red").hidden = true; }
 addEventListener("offline", () => marcarSinRed(Math.max(0, ...Object.values(cacheLeer()).map(x => x.t)) || null));
 addEventListener("online", () => { marcarConRed(); if (S.pantalla === "app") { actualizar(true); cargarEstadoDatos(); guardarPerfil(); } });
@@ -670,8 +679,8 @@ async function api(u, op = {}){
     if (c) { marcarSinRed(c.t); return c.j; }
     const e = new Error(L("Sin conexión","No connection")); e.sinRed = true; marcarSinRed(); throw e;
   }
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) { const e = new Error(j.error || r.statusText); e.estado = r.status; throw e; }
+  const j = (r.headers.get("content-type") || "").includes("json") ? await r.json().catch(() => null) : null;
+  if (!r.ok || !j) { const e = new Error((j && j.error) || r.statusText || L("Respuesta inesperada del servidor","Unexpected server response")); e.estado = r.ok ? 502 : r.status; throw e; }
   if (clave) cacheGuardar(clave, j);
   marcarConRed();
   return j;
@@ -679,15 +688,23 @@ async function api(u, op = {}){
 /* ---------- Estado de la descarga automática de datos de la NASA ---------- */
 async function cargarEstadoDatos(){
   clearTimeout(cargarEstadoDatos.t);
-  let e; try { const r = await fetch("/api/estado_datos"); e = await r.json(); } catch (err) { return; }
+  let e; try { const r = await fetch("/api/estado_datos"); e = await r.json(); if (!e || typeof e !== "object") throw 0; }
+  catch (err) { cargarEstadoDatos.t = setTimeout(cargarEstadoDatos, 10000); return; }
   const antes = S.estadoDatos; S.estadoDatos = e;
-  if (antes && antes.activo && !e.activo && e.zonas_reales) { avisar(L("Listo: ya tienes los datos reales de la NASA.","Done: real NASA data is ready.")); if (S.pantalla === "app") actualizar(true); }
+  const pz = S.zona?.punto && S.puntoEstado === "descargando" && Object.entries(e.puntos || {}).find(([k]) => mismoPunto(k, S.zona.id))?.[1];
+  if (pz) terminarPunto(S.zona, pz === "listo");                   // terminó la descarga del punto libre en el servidor
+  const mia = S.zona && (e.listas || []).includes(S.zona.id), miaAntes = S.zona && (antes?.listas || []).includes(S.zona.id);
+  if (antes && mia && !miaAntes) {                                 // llegaron los datos de la zona que estás mirando: se muestran ya
+    avisar(L("Listo: ya llegaron los datos reales de la NASA de tu zona.","Done: real NASA data for your area has arrived.")); if (S.pantalla === "app") actualizar(true);
+  } else if (antes && antes.activo && !e.activo && e.zonas_reales && !miaAntes) { avisar(L("Listo: ya tienes los datos reales de la NASA.","Done: real NASA data is ready.")); if (S.pantalla === "app") actualizar(true); }
   $$(".chip-datos").forEach(c => c.outerHTML = chipDatos());
-  cargarEstadoDatos.t = setTimeout(cargarEstadoDatos, e.activo ? 4000 : 60000);
+  // seguido mientras descarga o mientras la primera descarga no ha empezado; luego, cada minuto
+  cargarEstadoDatos.t = setTimeout(cargarEstadoDatos, e.activo || S.puntoEstado === "descargando" || (!e.ultima && !e.sin_internet && !e.apagado) ? 3000 : 60000);
 }
 function chipDatos(){
   const e = S.estadoDatos;
   if (!e || e.apagado) return `<span class="chip-datos" hidden></span>`;
+  if (e.activo && S.zona && (e.listas || []).includes(S.zona.id)) return `<span class="chip-datos" hidden></span>`;   // tu zona ya está lista
   if (e.activo) return `<span class="chip-datos activo">🛰️ ${L(`Descargando datos reales de la NASA (${e.hechas} de ${e.total} zonas)…`, `Downloading real NASA data (${e.hechas} of ${e.total} areas)…`)}</span>`;
   if (e.sin_internet && !e.zonas_reales) return `<span class="chip-datos">📴 ${L("Sin internet: usando datos guardados de ejemplo","No internet: using saved sample data")}</span>`;
   return `<span class="chip-datos" hidden></span>`;
@@ -922,7 +939,7 @@ async function arrancar(){
     const [z, c, e] = await Promise.all([api("/api/zonas").then(x => (prog(55), x)), api("/api/cultivos").then(x => (prog(80), x)), api("/api/estado")]);
     [S.zonas, S.cultivos, S.estado] = [z, c, e]; prog(100);
   } catch (err) { $("#carga-txt").textContent = L("No se pudo conectar con el servidor. Revisa que la app esté corriendo.", "Could not reach the server. Check that the app is running."); return; }
-  await new Promise(r => setTimeout(r, Math.max(650, 1500 - (Date.now() - t0))));   // la barra alcanza a llenarse (transición de 0,5 s)
+  await new Promise(r => setTimeout(r, Math.max(600, 900 - (Date.now() - t0))));   // la barra alcanza a llenarse (transición de 0,5 s), sin hacer esperar de más
   try { const r = await api("/api/yo"); await entrar(r.usuario); }
   catch (e) { mostrar("acceso"); renderAcceso(); }
 }
@@ -1222,6 +1239,9 @@ function armarMapa(){
 }
 /* Un punto libre del mapa es una "zona" propia: el servidor descarga el clima de la NASA para ESA latitud y longitud.
    Mientras llega (o si no hay internet), usa el clima y los estudios de suelo de la zona guardada más cercana. */
+/* El servidor escribe los puntos a su manera ("p:9.62,-75.1", "p:11.0,-72.9"); se comparan por número */
+const coordsPunto = id => { const m = /^p:(-?[\d.]+),(-?[\d.]+)$/.exec(id || ""); return m ? [+m[1], +m[2]] : null; };
+const mismoPunto = (a, b) => { const x = coordsPunto(a), y = coordsPunto(b); return !!(x && y && Math.abs(x[0] - y[0]) < 5e-4 && Math.abs(x[1] - y[1]) < 5e-4); };
 function zonaDePunto(lat, lon){
   let b = null, d = 1e9; S.zonas.forEach(z => { const k = hav(lat, lon, z.lat, z.lon); if (k < d) { d = k; b = z; } });
   return {id:`p:${(+lat).toFixed(3)},${(+lon).toFixed(3)}`, nombre:`${L("Mi punto","My point")} (${N(+lat, 3)}, ${N(+lon, 3)})`, lat:+(+lat).toFixed(3), lon:+(+lon).toFixed(3),
@@ -1232,9 +1252,14 @@ async function descargarPunto(z){
   let r = null;
   try { r = await post("/api/punto", {lat:z.lat, lon:z.lon}); } catch (e) {}
   if (S.zona?.id !== z.id) return;
-  S.puntoEstado = r && r.clima_real ? "listo" : "prestado";
-  avisar(r && r.clima_real ? L("Listo: ya tenemos el clima de la NASA para tu punto.","Done: we now have NASA weather for your point.")
-                           : (r?.aviso || L(`Sin conexión: mientras tanto usamos el clima de ${z.cercanaNombre} (a ${z.km} km).`, `Offline: meanwhile we use the weather from ${z.cercanaNombre} (${z.km} km away).`)));
+  if (r && r.pendiente) { cargarEstadoDatos(); return; }            // sigue en el servidor: cargarEstadoDatos avisa al terminar
+  terminarPunto(z, r && r.clima_real, r?.aviso);
+}
+function terminarPunto(z, real, aviso){
+  if (S.puntoEstado !== "descargando") return;
+  S.puntoEstado = real ? "listo" : "prestado";
+  avisar(real ? L("Listo: ya tenemos el clima de la NASA para tu punto.","Done: we now have NASA weather for your point.")
+              : (aviso || L(`No se pudo descargar el clima de la NASA para este punto; mientras tanto usamos el de ${z.cercanaNombre} (a ${z.km} km).`, `NASA weather for this point could not be downloaded; meanwhile we use the data from ${z.cercanaNombre} (${z.km} km away).`)));
   S.refClave = null; actualizar(true); cargarReferencia();
 }
 function avisar(t, ico = "🛰️"){
@@ -1334,12 +1359,23 @@ function actualizar(rapido){
   espera = setTimeout(() => { S.pendiente = (async () => {
     if (!S.zona) return;
     const mi = ++ticket, base = {zona_id:S.zona.id, suelo:S.suelo, textura:S.textura, riego:S.riego};
+    clearTimeout(actualizar.r); clearTimeout(actualizar.l);
+    actualizar.l = setTimeout(() => { if (mi === ticket) avisoServidor("lento"); }, 7000);
     try {
       const [pan, res] = await Promise.all([post("/api/panel", base), post("/api/recomendar", {...base, prioridades:S.prios, ultimos:S.ultimos})]);
+      if (!pan?.clima || !res?.planes) throw Object.assign(new Error("respuesta incompleta"), {estado:502});
+      clearTimeout(actualizar.l);
       if (mi !== ticket) return;
       var primera = !S.panel;
       S.panel = pan; S.res = res; S.sim = null; S.planSim = Math.min(S.planSim, Math.max(0, res.planes.length - 1));
-    } catch (e) { return; }
+      S.reintentos = 0; avisoServidor(false);
+    } catch (e) {
+      clearTimeout(actualizar.l);
+      if (mi !== ticket || (e.estado >= 400 && e.estado < 500)) { if (mi === ticket) avisoServidor(false); return; }   // 4xx: dato no válido, no insistir
+      S.reintentos = (S.reintentos || 0) + 1; avisoServidor("reintento");
+      actualizar.r = setTimeout(() => actualizar(true), Math.min(15000, 1000 * 2 ** Math.min(S.reintentos, 4)));
+      return;
+    }
     if (S.pantalla !== "app") return;
     actualizarNotifs();
     S.animar = primera;
@@ -1423,7 +1459,7 @@ function renderClima(){
   const el = $("#v1"), p = S.panel; guardarMapa();
   S.mesSel = null; S.recSel = null;
   if (!p) { el.innerHTML = cabecera(L("Clima","Weather")) + esqueleto([380, "c4"], [170], [170], [170], [170]); return; }
-  const C = p.clima, M = C.mes, mes = M.nombre_largo, cl = S.zona.clima, t = C.tendencia, ce = cl.campos_ejemplo || [];
+  const C = p.clima, M = C.mes, mes = M.nombre_largo, t = C.tendencia, ce = p.campos_ejemplo || [];
   const dias = d => `${d === 1 ? L(" día"," day") : L(" días"," days")}`;
   const tile = (ico, tt, v, u, sub, nv) => `<div class="card tile"><span class="ico">${ico}</span><h2>${tt}</h2><span class="mid n" style="margin:4px 0">${v}<small>${u}</small></span><span class="sub">${sub}</span>${nv ? `<div style="margin-top:8px">${pill(NIVC[nv], NIVT(nv))}</div>` : ""}</div>`;
   const dl = C.serie.reduce((a, x) => a + x.dias_lluvia, 0);
@@ -2135,7 +2171,7 @@ async function responder(q){
     const e = S.ref?.ideam?.estaciones?.[0], r = S.ref?.suelo;
     return {t:(e ? L(`La estación del IDEAM más cercana es ${cap(e.nombre.toLowerCase())}, a ${N(e.distancia_km, 1)} kilómetros (${e.categoria.toLowerCase()}). `, `The nearest IDEAM station is ${cap(e.nombre.toLowerCase())}, ${N(e.distancia_km, 1)} kilometers away (${catIdeam(e.categoria).toLowerCase()}). `) : "") +
       (S.fuente ? L("El suelo viene de tu estaca.","Soil data comes from your stake.") : L("Con la estaca no conectada, los datos del suelo se llenan con el historial de tu zona.","With the stake not connected, soil data is filled with your area's history.")) +
-      (S.zona.clima_verificado ? L(" El clima viene de NASA POWER.", " Weather comes from NASA POWER.") : L(" El clima todavía es de ejemplo; con internet se carga de NASA POWER.", " Weather is still sample data; with internet it loads from NASA POWER."))};
+      (S.panel && S.panel.ejemplo === false ? L(" El clima viene de NASA POWER.", " Weather comes from NASA POWER.") : L(" El clima todavía es de ejemplo; con internet se carga de NASA POWER.", " Weather is still sample data; with internet it loads from NASA POWER."))};
   }
   if (has(" estaca", " sensor", " stake")) { const e = S.estacas.find(z => z.ultima); return {t:e ? L(`Tu estaca ${e.nombre} envió su última lectura ${haceCuanto(e.ultima.fecha)}: pH ${N(e.ultima.ph ?? 0, 1)} y humedad ${N(e.ultima.humedad_pct ?? 0, 1)}%.`, `Your stake ${e.nombre} sent its last reading ${haceCuanto(e.ultima.fecha)}: pH ${N(e.ultima.ph ?? 0, 1)} and moisture ${N(e.ultima.humedad_pct ?? 0, 1)}%.`) : L("Todavía no hay lecturas de tu estaca. Puedes agregarla en Configuración.","There are no stake readings yet. You can add it in Settings.")}; }
   if (has(" suelo", " tierra", " soil")) return {t:L(`La salud de tu suelo está en ${S.panel.salud.valor}%. ${S.panel.salud.texto}`, `Your soil health is ${S.panel.salud.valor}%. ${S.panel.salud.texto}`)};

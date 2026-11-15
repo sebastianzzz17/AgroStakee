@@ -19,6 +19,19 @@ meses. Mientras descarga, la app muestra el avance; si no hay internet, sigue co
 - Sin señal: la app guarda las últimas respuestas y las muestra con un aviso. El modo sin señal completo
   (la app abre aunque no haya conexión) necesita https o localhost, que es una regla de los navegadores.
 
+## Publicarla en Render
+
+- **Comando de inicio** (Settings → Start Command): `gunicorn -c gunicorn.conf.py app:app`
+  (un proceso con 8 hilos: una consulta lenta ya no frena a las demás). Con `render.yaml` se configura solo.
+- **Plan gratis** (según la documentación de Render): 0,1 de CPU y 512 MB; el servicio se duerme tras 15 minutos
+  sin visitas y tarda cerca de un minuto en despertar; y **cada vez que se duerme, reinicia o se vuelve a
+  desplegar, se borra el disco**: las cuentas creadas, las lecturas de estacas y los datos descargados.
+  La app vuelve a descargar los datos de la NASA sola, pero las cuentas no vuelven.
+- **Para que arranque con datos reales:** corre la app una vez en tu computador con internet; al terminar la
+  descarga se crea `data/clima_real.json`. Súbelo al repositorio junto con el código y Render arrancará ya con
+  los datos de la NASA de las 8 zonas (y solo bajará lo de los últimos meses).
+- `GET /salud` responde `ok`: sirve como chequeo de Render y para un "ping" que lo mantenga despierto.
+
 ## Fuentes de datos
 
 | Dato | Fuente | ¿Pide cuenta? |

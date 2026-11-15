@@ -34,7 +34,7 @@ def _leer(ruta):
 
 def _escribir(ruta, datos):
     tmp = ruta + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f: json.dump(datos, f, ensure_ascii=False)
+    with open(tmp, "w", encoding="utf-8") as f: f.write(json.dumps(datos, ensure_ascii=False))   # codificador en C (menos CPU)
     os.replace(tmp, ruta)
 
 def hay_internet():

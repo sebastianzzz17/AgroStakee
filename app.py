@@ -10,7 +10,7 @@ Variables de entorno (todas opcionales):
   EARTHDATA_USER/PASS, GEE_PROJECT, SOCRATA_DATASET, SOCRATA_COL_CIUDAD, SOCRATA_TOKEN: ver services/orquestador.py
   AGROSTAKE_SIN_DESCARGA=1  apaga la descarga automática de datos de la NASA (services/sincronizar.py)
 """
-import hashlib, json, os, re, secrets, time
+import gzip, hashlib, json, os, re, secrets, time
 from datetime import date, datetime, timedelta, timezone
 from functools import wraps
 from flask import Flask, Response, g, jsonify, request, send_from_directory, session
@@ -222,9 +222,26 @@ def datos_lote():
     return jsonify(dict(res, cache=False, **orquestador.completar(res, idioma)))
 
 # ------------------------------------------------------------------ Catálogo y motor
+_PAGINA = {}
 @app.route("/")
 def index():
-    return send_from_directory("templates", "index.html")
+    """La página (unos 220 KB) va comprimida si el navegador lo acepta: carga mucho más rápido con señal débil."""
+    ruta = os.path.join(app.root_path, "templates", "index.html")
+    m = os.path.getmtime(ruta)
+    if _PAGINA.get("m") != m:
+        crudo = open(ruta, "rb").read()
+        _PAGINA.update(m=m, crudo=crudo, gz=gzip.compress(crudo, 6), etag=hashlib.md5(crudo).hexdigest())
+    gz = "gzip" in request.headers.get("Accept-Encoding", "")
+    r = app.response_class(_PAGINA["gz"] if gz else _PAGINA["crudo"], mimetype="text/html")
+    r.headers.update({"X-App": "AgroStake", "Cache-Control": "no-cache", "Vary": "Accept-Encoding"})
+    if gz: r.headers["Content-Encoding"] = "gzip"
+    r.set_etag(_PAGINA["etag"] + ("-gz" if gz else ""))
+    return r.make_conditional(request)
+
+@app.get("/salud")
+def salud():
+    """Para revisar que el servidor está vivo (Render la usa como chequeo y sirve para mantenerlo despierto)."""
+    return "ok", 200, {"Content-Type": "text/plain", "Cache-Control": "no-store"}
 
 @app.get("/sw.js")
 def service_worker():
@@ -286,13 +303,12 @@ def punto():
         return _error("Coordenadas no válidas.", "Invalid coordinates.")
     zid = motor.id_punto(lat, lon)
     z = dict(motor.zona(zid)); z["riego"] = bool(z["riego"])
-    try:
-        info = sincronizar.actualizar(zid, *motor.punto_coords(zid), anios=10)
-        ok, err = True, None
-    except Exception as e:
-        info, ok, err = None, False, str(e)[:200]
+    # La descarga va en un hilo aparte: si tarda más de unos segundos, la app sigue con el clima de la zona más
+    # cercana y avisa cuando llegue (antes esta petición podía tardar minutos y frenar todo el servidor).
+    listo = sincronizar.descargar_punto(zid, *motor.punto_coords(zid), espera=3)
     cl, real = motor.clima_de(zid)
-    return jsonify(zona=z, clima_real=real, descarga=info, ok=ok, error=err,
+    if not listo: return jsonify(zona=z, clima_real=False, pendiente=True, aviso=None)
+    return jsonify(zona=z, clima_real=real, pendiente=False,
                    aviso=None if real else _t(f"No se pudo descargar el clima de la NASA para este punto; mientras tanto se usa el de {z['cercana_nombre']} (a {z['km_cercana']} km).",
                                               f"NASA weather for this point could not be downloaded; meanwhile the data from {z['cercana_nombre']} ({z['km_cercana']} km away) is used."))
 
@@ -327,6 +343,7 @@ def clima_diario():
 def panel():
     d = request.get_json(force=True)
     if not _zona_valida(d.get("zona_id", "")): return _error("Zona no válida.", "Invalid area.")
+    sincronizar.priorizar(d["zona_id"])              # si se están descargando los datos de la NASA, esta zona va primero
     return jsonify(motor.panel(d["zona_id"], _suelo(d["suelo"]), d.get("textura"), d.get("riego")))
 
 @app.post("/api/recomendar")
@@ -345,4 +362,6 @@ def simular():
 if __name__ == "__main__":
     sincronizar.iniciar()
     print("AgroStake: abre http://127.0.0.1:%s  (los datos de la NASA se descargan solos en segundo plano)" % os.environ.get("PORT", 5000))
-    app.run(debug=os.environ.get("FLASK_DEBUG") == "1", host=os.environ.get("HOST", "127.0.0.1"), port=int(os.environ.get("PORT", 5000)))
+    # En un servidor (Render pone PORT) escucha en todas las interfaces; en tu computador, solo en el tuyo.
+    host = os.environ.get("HOST") or ("0.0.0.0" if os.environ.get("PORT") else "127.0.0.1")
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1", host=host, port=int(os.environ.get("PORT", 5000)), threaded=True)

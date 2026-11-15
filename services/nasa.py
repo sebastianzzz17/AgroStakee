@@ -38,7 +38,7 @@ def construir(lat, lon, anios=20, hoy=None):
         p = json.load(open(ruta, encoding="utf-8"))
     else:
         p = _fetch(lat, lon, ini, fin)
-        json.dump(p, open(ruta, "w", encoding="utf-8"))
+        with open(ruta, "w", encoding="utf-8") as f: f.write(json.dumps(p))   # dumps usa el codificador en C: mucha menos CPU
     return calcular(p, lat, ini, fin)
 
 def _ok(v): return v is not None and v > FALTA

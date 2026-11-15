@@ -1,5 +1,32 @@
 # Cambios
 
+## Versión 11 (Render: lentitud y Clima en blanco)
+
+- **Clima en blanco (corregido):** al escoger un punto libre del mapa, la pestaña Clima fallaba
+  (`Cannot read properties of undefined (reading 'campos_ejemplo')`) porque un punto no trae el clima dentro de la
+  zona. Ahora esos datos salen de la respuesta del panel. Pasaba en cualquier servidor, no solo en Render.
+- **El servidor ya no se bloquea con un punto libre:** `/api/punto` descargaba 10 años de NASA y el verdor MODIS
+  mientras el agricultor esperaba. Con el gunicorn que trae Render por defecto (1 hilo, 30 s) eso frenaba todas las
+  demás peticiones y gunicorn reiniciaba el proceso (`WORKER TIMEOUT`), llevándose la descarga de fondo.
+  Ahora la descarga del punto va en un hilo aparte; la app muestra el clima de la zona más cercana y avisa cuando
+  llega el del punto.
+- **Ya no se queda en blanco si el servidor falla o tarda:**
+  - Si el panel o las recomendaciones fallan (un 502, el servidor despertando), la app reintenta sola y lo dice
+    ("El servidor no respondió; reintentando solo…"). Antes se quedaba con los esqueletos para siempre.
+  - Si tardan más de 7 s, avisa que el servidor puede estar despertando (hasta un minuto en Render gratis).
+  - Una respuesta que no es JSON (una página de error o de espera) cuenta como error y nunca se guarda como dato.
+  - El estado de la descarga se sigue consultando aunque una consulta falle.
+- **Render:** `gunicorn.conf.py` (1 proceso, 8 hilos), `render.yaml`, `gunicorn` en requirements, ruta `/salud`, y
+  `python app.py` escucha en `0.0.0.0` cuando hay `PORT`.
+- **Menos CPU:** los archivos grandes se escriben con el codificador JSON en C, 2 zonas a la vez en vez de 3 y el
+  catálogo del IDEAM se lee una vez y queda en memoria. En la réplica de Render (0,1 de CPU) la peor demora del
+  panel durante la descarga bajó de 3,6 s a 0,5 s.
+- **Página comprimida:** 228 KB → 72 KB con gzip, y el navegador revalida sin volver a bajarla.
+- **Copia de datos reales:** al terminar la descarga se guarda `data/clima_real.json`; si se sube con el código,
+  un servidor con el disco vacío (Render) arranca ya con datos reales.
+- **Al abrir la app, tu zona primero:** la zona que estás mirando se descarga de primera y la pantalla se
+  actualiza sola apenas llegan sus datos reales.
+
 ## Versión 10 (barras de carga)
 
 - Una sola barra de progreso para todas las cargas: pantalla de inicio, "Consultar mi punto", "Cargando recomendaciones", "Guardando información" y "Realizando proyección".

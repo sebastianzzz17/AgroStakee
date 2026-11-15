@@ -64,22 +64,30 @@ def descargar(timeout=60):
     est = _normalizar(r.json())
     if not est: raise RuntimeError("el catálogo llegó vacío o con columnas distintas a las esperadas")
     os.makedirs(os.path.dirname(CACHE), exist_ok=True)
-    json.dump({"fuente": f"Catálogo Nacional de Estaciones del IDEAM ({URL})", "fecha_copia": time.strftime("%Y-%m-%d"),
-               "estaciones": est}, open(CACHE, "w", encoding="utf-8"), ensure_ascii=False)
+    with open(CACHE, "w", encoding="utf-8") as f:
+        f.write(json.dumps({"fuente": f"Catálogo Nacional de Estaciones del IDEAM ({URL})", "fecha_copia": time.strftime("%Y-%m-%d"),
+                            "estaciones": est}, ensure_ascii=False))
     return len(est)
+
+_MEM = {}
+def _leer(ruta):
+    """El catálogo completo pesa varios cientos de KB: se lee una vez y se guarda en memoria hasta que cambie el archivo."""
+    m = os.path.getmtime(ruta)
+    if _MEM.get(ruta, (None,))[0] != m: _MEM[ruta] = (m, json.load(open(ruta, encoding="utf-8")))
+    return _MEM[ruta][1]
 
 def catalogo(red=False):
     if os.path.exists(CACHE) and time.time() - os.path.getmtime(CACHE) < DIAS_CACHE * 86400:
-        return json.load(open(CACHE, encoding="utf-8")) | {"origen": "copia descargada"}
+        return _leer(CACHE) | {"origen": "copia descargada"}
     if red:
         try:
             descargar()
-            return json.load(open(CACHE, encoding="utf-8")) | {"origen": "catálogo oficial"}
+            return _leer(CACHE) | {"origen": "catálogo oficial"}
         except Exception:
             pass
     if os.path.exists(CACHE):   # vieja, pero mejor que nada
-        return json.load(open(CACHE, encoding="utf-8")) | {"origen": "copia descargada (más de 30 días)"}
-    return json.load(open(COPIA, encoding="utf-8")) | {"origen": "copia incluida en la app"}
+        return _leer(CACHE) | {"origen": "copia descargada (más de 30 días)"}
+    return _leer(COPIA) | {"origen": "copia incluida en la app"}
 
 def cercanas(lat, lon, n=3, tipo="lluvia", km_max=80, red=False):
     """Estaciones activas del IDEAM más cercanas. tipo: 'clima' (miden temperatura y lluvia) o 'lluvia'."""

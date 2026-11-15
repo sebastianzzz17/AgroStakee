@@ -95,5 +95,13 @@ def init(forzar=False):
         for r in _leer("cultivos.json"): guardar("cultivos", r, 0, EJEMPLO)
         for z in _leer("zonas.json"): guardar("zonas", dict(z, riego=int(z["riego"])), 0, EJEMPLO)
         for k, d in _leer("clima_ejemplo.json").items(): guardar("clima", dict(zona_id=k, datos=json.dumps(d)), 0, EJEMPLO)
+        # Copia de datos reales de la NASA hecha por la propia app (services/sincronizar.py). Si viene con el código,
+        # un servidor que arranca con el disco vacío (Render) empieza ya con datos reales.
+        if os.path.exists(os.path.join(BASE, "data", "clima_real.json")):
+            try:
+                for k, d in _leer("clima_real.json").get("zonas", {}).items():
+                    guardar("clima", dict(zona_id=k, datos=json.dumps(d)), 1, d.get("fuente") or "NASA POWER")
+            except (ValueError, AttributeError, OSError):
+                pass
         for p in _leer("perfiles_suelo.json"):
             guardar("perfiles", dict(id=p["id"], nombre=p["nombre"], datos=json.dumps(p)), 0, EJEMPLO)

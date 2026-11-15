@@ -1,5 +1,6 @@
 flask
 requests
+# Servidor para producción (Render): gunicorn -c gunicorn.conf.py app:app
 gunicorn
 # Opcional, solo para Google Earth Engine (pendiente y NDVI de Landsat):
 # earthengine-api

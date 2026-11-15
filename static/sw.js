@@ -3,7 +3,7 @@
    - Las teselas del mapa que ya viste se guardan (como máximo 500) para verlas sin conexión.
    - Las respuestas de la API las guarda la propia página (localStorage) y las muestra con un aviso.
    Solo funciona en https o en localhost (regla de los navegadores para los service workers). */
-const APP = "agrostake-app-v7", MAPA = "agrostake-mapa-v1";
+const APP = "agrostake-app-v8", MAPA = "agrostake-mapa-v1";
 const ARCHIVOS = ["/", "/manifest.webmanifest", "/static/icono-192.png", "/static/icono-512.png",
   "/static/vendor/leaflet/leaflet.js", "/static/vendor/leaflet/leaflet.css",
   "/static/vendor/leaflet/images/marker-icon.png", "/static/vendor/leaflet/images/marker-icon-2x.png",
@@ -24,7 +24,9 @@ self.addEventListener("fetch", e => {
   if (u.origin === location.origin) {
     if (u.pathname.startsWith("/api/") || u.pathname === "/sw.js") return;
     if (r.mode === "navigate" || u.pathname === "/") {         // la página: primero la red (versión nueva), si no, la guardada
-      e.respondWith(fetch(r).then(res => { const copia = res.clone(); caches.open(APP).then(c => c.put("/", copia)); return res; })
+      e.respondWith(fetch(r).then(res => {                  // solo se guarda la página de AgroStake (no una de error o de espera)
+          if (res.ok && res.headers.get("X-App") === "AgroStake") { const copia = res.clone(); caches.open(APP).then(c => c.put("/", copia)); }
+          return res; })
         .catch(() => caches.match("/")));
       return;
     }

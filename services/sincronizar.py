@@ -11,19 +11,24 @@ Luego, si hace falta: catálogo de estaciones del IDEAM (cada 30 días), USDA PL
 Si no hay internet, la app sigue con los datos guardados (o los de ejemplo) y vuelve a intentar cada 30 minutos.
 Para apagar la descarga automática: variable de entorno AGROSTAKE_SIN_DESCARGA=1."""
 import json, os, threading, time
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 import db
 from services import descargas
 
 DIAS_CLIMA = 30
+HILOS = int(os.environ.get("AGROSTAKE_HILOS", "2"))   # zonas que se descargan a la vez (Render gratis: 0,1 de CPU)
+_cola, _prioridad = deque(), set()
 CADA_HORAS = 6
 REINTENTO_MIN = 30
 POR_DEFECTO = {"ndvi_mensual": [.55] * 12, "pendiente_pct": 3, "humedad_suelo_pct": 30}   # último recurso, típico de tierras bajas
 
 ESTADO = {"activo": False, "fase": "esperando", "hechas": 0, "total": 0, "errores": [], "sin_internet": None,
-          "ultima": None, "apagado": False}
+          "ultima": None, "apagado": False, "listas": [], "en_curso": [], "puntos": {}}
 _lock = threading.Lock()
 _hilo = None
+_hilos_punto = {}
 
 def _desactivado(): return os.environ.get("AGROSTAKE_SIN_DESCARGA") == "1"
 
@@ -54,7 +59,7 @@ def clima_completo(lat, lon, anios=20, respaldo=None):
     except Exception as e:
         faltan.append("ndvi_mensual"); _error("NDVI MODIS", e)
     try:
-        p = descargas.pendiente(lat, lon)
+        p = descargas.pendiente(lat, lon, timeout=12)      # Open-Elevation a veces se cuelga: no esperarla 40 s
         d["pendiente_pct"], d["elevacion_m"] = p["pendiente_pct"], p["elevacion_m"]; fuentes.append(f"pendiente: {p['fuente']}")
     except Exception as e:
         faltan.append("pendiente_pct"); _error("Elevación", e)
@@ -89,6 +94,19 @@ def actualizar(zid, lat, lon, anios=20, forzar=False):
         hecho["recientes"] = "error"; _error(f"recientes {zid}", e)
     return hecho
 
+COPIA_REAL = os.path.join(db.BASE, "data", "clima_real.json")
+def _copia_real():
+    """Guarda en data/clima_real.json los datos reales ya descargados de las zonas. Si ese archivo se sube junto con
+    el código (por ejemplo a Render, que borra el disco cada vez que el servicio se duerme o reinicia), la app arranca
+    con datos reales desde el primer segundo y solo baja lo reciente."""
+    filas = db.consultar("SELECT zona_id, datos FROM clima WHERE verificado=1 AND zona_id NOT LIKE 'p:%'")
+    if not filas: return
+    datos = {"nota": "Copia automática de los datos reales de la NASA (la crea services/sincronizar.py).",
+             "fecha": date.today().isoformat(), "zonas": {f["zona_id"]: json.loads(f["datos"]) for f in filas}}
+    tmp = COPIA_REAL + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f: f.write(json.dumps(datos, ensure_ascii=False))
+    os.replace(tmp, COPIA_REAL)
+
 def _extras():
     from services import ideam, usda, copernicus
     if not os.path.exists(ideam.CACHE) or time.time() - os.path.getmtime(ideam.CACHE) > DIAS_CLIMA * 86400:
@@ -108,18 +126,74 @@ def _extras():
         except Exception as e:
             _error("Copernicus", e)
 
+def priorizar(zid):
+    """La zona que el agricultor está mirando (llamado desde /api/panel): si la descarga está en curso y esa zona
+    todavía no empieza, arranca YA en su propio hilo; si la descarga no ha empezado, irá de primera."""
+    z = None
+    with _lock:
+        _prioridad.add(zid)
+        for i, x in enumerate(_cola):
+            if x["id"] == zid: z = x; del _cola[i]; break
+    if z: threading.Thread(target=_procesar, args=(z,), name=f"agrostake-{zid}", daemon=True).start()
+
+def descargar_punto(zid, lat, lon, espera=6):
+    """Punto libre del mapa: descarga su clima (10 años) en un hilo aparte. Espera como mucho `espera` segundos
+    para no frenar al servidor; si no alcanza, sigue sola y al terminar queda en ESTADO["puntos"] ("listo" o "error"),
+    que la app consulta en /api/estado_datos. Devuelve True si ya terminó."""
+    with _lock:
+        h = _hilos_punto.get(zid)
+        if not (h and h.is_alive()):
+            ESTADO["puntos"].pop(zid, None)
+            ESTADO["en_curso"] = sorted(set(ESTADO.get("en_curso", [])) | {zid})
+            h = threading.Thread(target=_punto, args=(zid, lat, lon), name=f"agrostake-{zid}", daemon=True)
+            _hilos_punto[zid] = h; h.start()
+    h.join(espera)
+    return not h.is_alive()
+
+def _punto(zid, lat, lon):
+    try: actualizar(zid, lat, lon, anios=10); res = "listo"
+    except Exception as e: _error(zid, e); res = "error"
+    with _lock:
+        ESTADO["en_curso"] = [x for x in ESTADO.get("en_curso", []) if x != zid]
+        ESTADO["puntos"][zid] = res
+        if len(ESTADO["puntos"]) > 50: ESTADO["puntos"].pop(next(iter(ESTADO["puntos"])))
+
+def _siguiente():
+    with _lock:
+        return _cola.popleft() if _cola else None
+
+def _procesar(z):
+    with _lock: ESTADO["en_curso"] = sorted(set(ESTADO.get("en_curso", [])) | {z["id"]})
+    try: actualizar(z["id"], float(z["lat"]), float(z["lon"]))
+    except Exception as e: _error(z["id"], e)
+    with _lock:
+        ESTADO["hechas"] += 1; ESTADO["en_curso"] = [x for x in ESTADO.get("en_curso", []) if x != z["id"]]
+        ESTADO["listas"] = sorted(set(ESTADO.get("listas", [])) | {z["id"]})
+        ESTADO["fase"] = f"Datos de la NASA: {ESTADO['hechas']} de {ESTADO['total']} zonas"
+
+def _trabajador():
+    while True:
+        z = _siguiente()
+        if not z: return
+        _procesar(z)
+
 def ciclo_una_vez():
     if not descargas.hay_internet():
         _fase("Sin internet: se usan los datos guardados", sin_internet=True, activo=False)
         return False
     zonas = db.consultar("SELECT id, lat, lon FROM zonas")
     puntos = [r["zona_id"] for r in db.consultar("SELECT zona_id FROM clima WHERE zona_id LIKE 'p:%' LIMIT 20")]
-    with _lock: ESTADO.update(activo=True, sin_internet=False, hechas=0, total=len(zonas), errores=[])
-    for z in zonas:
-        _fase(f"Datos de la NASA: {z['id']}")
-        try: actualizar(z["id"], float(z["lat"]), float(z["lon"]))
-        except Exception as e: _error(z["id"], e)
-        with _lock: ESTADO["hechas"] += 1
+    with _lock:
+        primero = [z for z in zonas if z["id"] in _prioridad]          # las que alguien está mirando van primero
+        _cola.clear(); _cola.extend(primero + [z for z in zonas if z["id"] not in _prioridad])
+        ESTADO.update(activo=True, sin_internet=False, hechas=0, total=len(zonas), errores=[], en_curso=[], listas=[],
+                      fase=f"Datos de la NASA: 0 de {len(zonas)} zonas")
+    with ThreadPoolExecutor(max_workers=HILOS) as ex:                  # varias zonas a la vez
+        for _ in range(HILOS): ex.submit(_trabajador)
+    while True:                                                         # espera a las zonas que arrancaron aparte (prioridad)
+        with _lock:
+            if ESTADO["hechas"] >= ESTADO["total"] or not ESTADO.get("en_curso"): break
+        time.sleep(.5)
     from services import motor
     for pid in puntos:
         try:
@@ -127,6 +201,8 @@ def ciclo_una_vez():
             actualizar(pid, lat, lon, anios=10)
         except Exception as e:
             _error(pid, e)
+    try: _copia_real()
+    except Exception as e: _error("copia de datos reales", e)
     _extras()
     with _lock: ESTADO.update(activo=False, fase="Datos al día", ultima=datetime.now().isoformat(timespec="minutes"))
     return True
