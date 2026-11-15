@@ -331,6 +331,7 @@ details ol,details ul{color:var(--txt3);font-size:16px;padding-left:20px;margin:
 .acceso .tog{display:grid;grid-template-columns:1fr 1fr;width:100%}
 .acceso .tog button{text-align:center}
 .acceso .card{margin-top:6px}
+.acceso .btn[type=submit]{justify-content:center;text-align:center}
 .marcar{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--txt3);margin:4px 2px 12px;cursor:pointer}
 .marcar input{width:22px;height:22px;flex:none;margin-top:1px;accent-color:var(--verde)}
 .idioma-top{display:flex;justify-content:flex-end;margin-bottom:6px}
@@ -357,29 +358,79 @@ details ol,details ul{color:var(--txt3);font-size:16px;padding-left:20px;margin:
 .av-pausa svg{width:14px;height:14px;fill:#fff}
 .av-escena{position:relative;height:196px;margin:2px -20px 0}
 .av-escena svg{position:absolute;inset:0;width:100%;height:100%;display:block}
-.av-escena .av-haz{opacity:0;transition:opacity .8s}
-.av-escena[data-s="3"] .av-haz{opacity:.22}
-.av-escena .av-sat{transition:transform .8s}
-.av-escena .av-ondas path{opacity:.35}
-.av-escena[data-s="1"] .av-ondas path{animation:av-onda 1.6s ease-in-out infinite}
-.av-escena[data-s="1"] .av-ondas path:nth-child(2){animation-delay:.2s}.av-escena[data-s="1"] .av-ondas path:nth-child(3){animation-delay:.4s}
-.av-escena .av-planta{transform-box:fill-box;transform-origin:50% 100%;animation:av-mece 4s ease-in-out infinite}
-.av-escena[data-s="2"] .av-planta,.av-escena[data-s="5"] .av-planta{fill:#b8f56a}
-.av-escena .av-brillo{transform-box:fill-box;transform-origin:center;animation:av-sol 6s ease-in-out infinite}
+.av-haz{opacity:0;transition:opacity .8s}
+[data-s="3"] .av-haz{opacity:.22}
+.av-ondas path{opacity:.45}
+[data-s="1"] .av-ondas path{animation:av-onda 1.6s ease-in-out infinite}
+[data-s="1"] .av-ondas path:nth-child(2){animation-delay:.2s}[data-s="1"] .av-ondas path:nth-child(3){animation-delay:.4s}
+.av-planta{transform-box:fill-box;transform-origin:50% 100%;animation:av-mece 4s ease-in-out infinite}
+[data-s="2"] .av-planta,[data-s="5"] .av-planta{fill:#b8f56a}
+.av-brillo{transform-box:fill-box;transform-origin:center;animation:av-sol 6s ease-in-out infinite}
 @keyframes av-onda{0%,100%{opacity:.25}50%{opacity:1}}
 @keyframes av-mece{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
 @keyframes av-sol{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.08);opacity:.7}}
-@media (prefers-reduced-motion:reduce){.av-slide,.av-slide.on{transition:none}.av-escena *{animation:none!important}}
-@media (max-width:899px){.acceso .logo,.acceso h1,.acceso .tag{display:none}.acceso .idioma-top{margin-bottom:12px}}
+@media (prefers-reduced-motion:reduce){.av-slide,.av-slide.on{transition:none}.av-escena *,.av-fondo *,.acc-cabeza *{animation:none!important}}
+.av-fondo,.av-c,.av-m,.av-top-der,.av-botones,.acc-cabeza,.acc-hola,.acc-cambio{display:none}
+.av-top{display:flex;align-items:center;justify-content:space-between}
+.idi-mini{display:inline-flex;background:#00000059;border-radius:999px;padding:3px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.idi-mini button{color:#fff;font-size:13px;font-weight:800;padding:6px 11px;border-radius:999px;opacity:.8}
+.idi-mini button[aria-pressed=true]{background:#fff;color:#0b1f14;opacity:1}
+@media (max-width:899px){
+  /* Bienvenida a pantalla completa */
+  .acc-grid{display:block;padding:0;max-width:none}
+  #acceso:not([data-paso=form]) .acc-lado{display:none}
+  #acceso[data-paso=form] .acc-vision{display:none}
+  .acc-vision{border-radius:0;min-height:100vh;min-height:100dvh;justify-content:flex-end;padding:calc(env(safe-area-inset-top) + 80px) 22px calc(env(safe-area-inset-bottom) + 22px);
+    background:linear-gradient(180deg,#0b2a1c 0%,#123d27 45%,#174d30 100%)}
+  .acc-vision::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:linear-gradient(180deg,rgba(5,20,12,.3) 0%,rgba(5,20,12,0) 20%,rgba(5,20,12,.25) 44%,rgba(4,15,9,.86) 66%,rgba(3,12,7,.97) 100%)}
+  .acc-vision > *{position:relative;z-index:2}
+  .acc-vision > .av-fondo{display:block;position:absolute;inset:0;z-index:0}
+  .av-fondo svg{width:100%;height:100%;display:block}
+  .acc-vision > .av-top{position:absolute;top:calc(env(safe-area-inset-top) + 14px);left:18px;right:16px;z-index:3}
+  .av-top-der{display:flex;align-items:center;gap:8px}
+  .av-saltar{color:#fff;font-weight:700;font-size:16px;padding:8px 6px}
+  .av-escena{display:none}
+  .av-slides{text-align:center;margin-top:0}
+  .av-t,.av-p{display:none}
+  .av-k{display:inline-block;font-size:11.5px;letter-spacing:.1em;padding:7px 13px;border-radius:999px;background:#ffffff1f;border:1px solid #ffffff2e;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);margin-bottom:14px;color:#e9ffb0}
+  .av-slide .av-c{display:block;margin:0 auto;font-size:clamp(36px,11.2vw,48px);line-height:.98;font-weight:900;text-transform:uppercase;letter-spacing:-.015em;color:#fff;max-width:11ch}
+  .av-slide .av-m{display:block;margin:14px auto 0;font-size:16px;line-height:1.45;color:#ffffffd6;max-width:32ch}
+  .av-ctl{justify-content:center;margin-top:22px}
+  .av-dots{flex:none;justify-content:center}
+  .av-pausa{width:30px;height:30px}
+  .av-botones{display:grid;gap:10px;margin-top:22px}
+  .av-botones button{height:54px;border-radius:999px;font-size:17px;font-weight:700;text-align:center}
+  .av-b1{background:#fff;color:#0b1f14}
+  .av-b2{background:#ffffff1a;border:1.5px solid #ffffff59;color:#fff}
+  /* Formulario: dibujo arriba y hoja redondeada encima */
+  .acc-lado{display:block}
+  .acceso{max-width:none}
+  .acc-cabeza{display:block;position:relative;height:max(210px,30vh);overflow:hidden;background:linear-gradient(165deg,#0a241b 0%,#0f3a29 50%,#185c39 100%)}
+  .acc-cabeza > svg{position:absolute;inset:0;width:100%;height:100%}
+  .acc-atras{position:absolute;z-index:2;top:calc(env(safe-area-inset-top) + 12px);left:14px;width:42px;height:42px;border-radius:50%;background:#00000059;color:#fff;display:grid;place-items:center;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  .acc-cabeza .idi-mini{position:absolute;z-index:2;top:calc(env(safe-area-inset-top) + 16px);right:14px}
+  .acc-hoja{position:relative;margin-top:-30px;background:var(--card);border-radius:30px 30px 0 0;padding:24px 20px calc(env(safe-area-inset-bottom) + 30px);min-height:calc(100dvh - max(210px,30vh) + 30px)}
+  .acc-hoja .idioma-top,.acceso .logo,.acceso h1,.acceso .tag,.acceso .tog.modo-acc{display:none}
+  .acc-hola{display:block;text-align:center;margin-bottom:18px}
+  .acc-logo{display:flex;align-items:center;justify-content:center;gap:10px;font-size:27px;font-weight:900;letter-spacing:-.02em}
+  .acc-logo .rings{width:44px;height:44px}
+  .acc-hola h2{margin:14px 0 4px;font-size:24px;letter-spacing:-.01em}
+  .acc-hola p{margin:0 auto;color:var(--sec);font-size:15.5px;max-width:30ch}
+  .acceso .card{background:transparent;padding:0;margin:0;box-shadow:none;border:0}
+  .acc-cambio{display:block;text-align:center;margin:20px 0 0;font-size:15.5px;color:var(--sec)}
+  .acc-cambio button{color:var(--verde);font-weight:700}
+}
 @media (min-width:900px){
   .acc-grid{grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);max-width:none;min-height:100vh;min-height:100dvh;padding:16px;gap:0}
-  .acc-lado{place-items:center;padding:24px}
+  .acc-lado{place-items:center;padding:8px 28px}
+  .acceso .logo .rings{width:88px;height:88px}.acceso .logo{margin-bottom:2px}
   .acc-vision{min-height:calc(100vh - 32px);min-height:calc(100dvh - 32px);padding:38px 44px 0;border-radius:32px}
   .av-marca{font-size:20px}.av-marca .rings{width:36px;height:36px}
   .av-slides{margin-top:auto;padding-top:32px}
   .av-slide h2{font-size:clamp(30px,3vw,44px)}
   .av-slide p{font-size:18px;max-width:540px}
-  .av-escena{height:min(42vh,340px);margin:28px -44px 0}
+  .av-escena{height:min(36vh,300px);margin:22px -44px 0}
 }
 .idioma-top .tog{width:auto;display:inline-flex}
 
@@ -584,7 +635,7 @@ html,body{max-width:100%;overflow-x:clip}
 .pa3-etapas{display:flex;flex-wrap:wrap;gap:6px}
 .pa3-etapa{display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:700;padding:3px 10px;border-radius:999px;background:color-mix(in srgb,var(--c) 26%,transparent);color:var(--txt)}
 .pa3-tarea{display:flex;gap:10px;align-items:flex-start;margin-top:10px}
-.pa3-tarea .ic{font-size:22px;line-height:1.2;flex:none}
+.pa3-tarea .pto{flex:none;width:9px;height:9px;border-radius:50%;background:var(--c);margin-top:10px;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 25%,transparent)}
 .pa3-tarea p{margin:0;font-size:18px;line-height:1.38}
 .pa3-nada{margin:6px 0 0;font-size:16px;color:var(--txt2)}
 .capa-ley{margin:8px 2px 4px;padding:12px 14px;border-radius:16px;background:var(--card)}
@@ -999,53 +1050,83 @@ async function arrancar(){
 /* ===== Pantalla de entrada: la visión de AgroStake en frases que rotan solas ===== */
 const VISION = () => [
   {k:L("Hecho para el campo del Caribe","Made for Caribbean farms"), t:L("Tú conoces tu tierra. Nosotros te ayudamos a leerla.","You know your land. We help you read it."),
-   p:L("Datos de la NASA y de tu estaca, explicados con palabras sencillas para decidir qué sembrar.","NASA data and your stake's readings, explained in plain words to decide what to plant.")},
+   p:L("Datos de la NASA y de tu estaca, explicados con palabras sencillas para decidir qué sembrar.","NASA data and your stake's readings, explained in plain words to decide what to plant."),
+   c:L("Tú conoces tu tierra","You know your land"), m:L("Nosotros te ayudamos a leerla con datos de la NASA y de tu estaca, en palabras sencillas.","We help you read it with NASA data and your stake, in plain words.")},
   {k:L("Tu estaca, tu ahorro","Your stake, your savings"), t:L("Con tu estaca sabes cuánta agua te ahorras en tu propio lote.","With your stake you know how much water you save on your own plot."),
-   p:L("Mide la humedad, la temperatura, el pH, las sales y los nutrientes, y la proyección te dice cuántos metros cúbicos de riego ahorras con la rotación.","It measures moisture, temperature, pH, salts and nutrients, and the outlook tells you how many cubic meters of irrigation you save by rotating.")},
+   p:L("Mide la humedad, la temperatura, el pH, las sales y los nutrientes, y la proyección te dice cuántos metros cúbicos de riego ahorras con la rotación.","It measures moisture, temperature, pH, salts and nutrients, and the outlook tells you how many cubic meters of irrigation you save by rotating."),
+   c:L("Cada gota cuenta","Every drop counts"), m:L("Con tu estaca sabes cuánta agua te ahorras en tu propio lote, en metros cúbicos de riego.","With your stake you know how much water you save on your own plot, in cubic meters of irrigation.")},
   {k:L("Rotar es cuidar","Rotating is caring"), t:L("Siembra hoy pensando en la cosecha de mañana.","Plant today with tomorrow's harvest in mind."),
-   p:L("Las leguminosas le devuelven nitrógeno al suelo y la cobertura lo protege del sol y de la erosión.","Legumes give nitrogen back to the soil, and ground cover protects it from sun and erosion.")},
+   p:L("Las leguminosas le devuelven nitrógeno al suelo y la cobertura lo protege del sol y de la erosión.","Legumes give nitrogen back to the soil, and ground cover protects it from sun and erosion."),
+   c:L("Siembra. Cuida. Cosecha.","Plant. Care. Harvest."), m:L("Rotar es cuidar: las leguminosas devuelven nitrógeno y la cobertura protege tu suelo.","Rotating is caring: legumes give nitrogen back and cover protects your soil.")},
   {k:L("Del satélite a tu lote","From satellite to your plot"), t:L("Los satélites de la NASA miran tu zona para que tú mires tu cosecha.","NASA satellites watch your area so you can watch your harvest."),
-   p:L("Veinte años de clima, el verdor de las plantas y la lluvia de tu zona, sin pagar nada.","Twenty years of weather, plant greenness and rain for your area, at no cost.")},
+   p:L("Veinte años de clima, el verdor de las plantas y la lluvia de tu zona, sin pagar nada.","Twenty years of weather, plant greenness and rain for your area, at no cost."),
+   c:L("La NASA mira tu zona","NASA watches your area"), m:L("Veinte años de clima, verdor y lluvia de tu zona, para que tú mires tu cosecha. Sin pagar nada.","Twenty years of weather, greenness and rain for your area, so you can watch your harvest. Free.")},
   {k:L("Contigo en el lote","With you in the field"), t:L("Aunque no haya señal, AgroStake te acompaña.","Even without signal, AgroStake is with you."),
-   p:L("Guarda lo último que viste y te lee todo en voz alta con solo tocar el altavoz.","It keeps what you last saw and reads everything aloud with a tap on the speaker.")},
+   p:L("Guarda lo último que viste y te lee todo en voz alta con solo tocar el altavoz.","It keeps what you last saw and reads everything aloud with a tap on the speaker."),
+   c:L("Con o sin señal","Signal or not"), m:L("AgroStake guarda lo último que viste y te lo lee en voz alta.","AgroStake keeps what you last saw and reads it aloud.")},
   {k:L("También para el ganadero","For cattle farmers too"), t:L("¿Tienes ganado? También pensamos en tu potrero.","Got cattle? We think about your pasture too."),
-   p:L("Si eliges forraje, AgroStake te dice si un año de pasto le conviene a tu lote y cuándo pastorear.","If you choose forage, AgroStake tells you whether a year of pasture suits your plot and when to graze.")}];
+   p:L("Si eliges forraje, AgroStake te dice si un año de pasto le conviene a tu lote y cuándo pastorear.","If you choose forage, AgroStake tells you whether a year of pasture suits your plot and when to graze."),
+   c:L("Tu potrero también cuenta","Your pasture counts too"), m:L("Si eliges forraje, te decimos si un año de pasto le conviene a tu lote y cuándo pastorear.","If you choose forage, we tell you whether a year of pasture suits your plot and when to graze.")}];
 const DUR_FRASE = 5500;
 const carrusel = {i:0, t:0, encima:false, pausa:false, idioma:null, reloj:null};
-function escenaVision(){
+function escenaVision(id = "p"){
   // la posición va en el grupo y la animación en el dibujo (una animación CSS reemplaza el transform del mismo elemento)
   const planta = (x, y, e) => `<g transform="translate(${x} ${y}) scale(${e})"><path class="av-planta" fill="#8ee05a" style="animation-delay:-${((x * 7) % 40) / 10}s" d="M0 0C-2-8-9-11-13-10C-11-4-5-1 0 0ZM0 0C2-9 9-12 14-11C12-5 5-1 0 0ZM-1 0H1V6H-1Z"/></g>`;
   const filas = [[250, 246, .75], [350, 246, .75], [205, 258, .95], [395, 258, .95], [150, 272, 1.15], [450, 272, 1.15], [90, 288, 1.35], [510, 288, 1.35], [300, 262, .9]];
   return `<svg viewBox="0 0 600 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-    <defs><radialGradient id="avSol"><stop offset="0" stop-color="#fff6b0"/><stop offset=".55" stop-color="#ffd84d"/><stop offset="1" stop-color="#ffd84d" stop-opacity="0"/></radialGradient>
-      <linearGradient id="avCampo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f8f3a"/><stop offset="1" stop-color="#1c5229"/></linearGradient></defs>
-    <circle class="av-brillo" cx="470" cy="78" r="72" fill="url(#avSol)"/><circle cx="470" cy="78" r="28" fill="#ffd84d"/>
+    <defs><radialGradient id="avSol${id}"><stop offset="0" stop-color="#fff6b0"/><stop offset=".55" stop-color="#ffd84d"/><stop offset="1" stop-color="#ffd84d" stop-opacity="0"/></radialGradient>
+      <linearGradient id="avCampo${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f8f3a"/><stop offset="1" stop-color="#1c5229"/></linearGradient></defs>
+    <circle class="av-brillo" cx="470" cy="78" r="72" fill="url(#avSol${id})"/><circle cx="470" cy="78" r="28" fill="#ffd84d"/>
     <path class="av-haz" d="M118 70L250 236H330Z" fill="#c6f432"/>
     <g class="av-sat" transform="translate(118 58) rotate(-18)"><rect x="-9" y="-7" width="18" height="14" rx="3" fill="#e8f5e9"/>
       <rect x="-34" y="-5" width="22" height="10" rx="2" fill="#7fd3ff"/><rect x="12" y="-5" width="22" height="10" rx="2" fill="#7fd3ff"/><path d="M0 7V13" stroke="#e8f5e9" stroke-width="2"/></g>
     <path d="M0 196C120 158 220 176 320 166S520 136 600 156V300H0Z" fill="#1d5a36"/>
     <path d="M0 220C140 196 260 210 380 202S540 186 600 196V300H0Z" fill="#26703f"/>
-    <path d="M0 238C160 226 440 226 600 236V300H0Z" fill="url(#avCampo)"/>
+    <path d="M0 238C160 226 440 226 600 236V300H0Z" fill="url(#avCampo${id})"/>
     <g stroke="#173f22" stroke-width="3" opacity=".5" fill="none"><path d="M300 236L30 300"/><path d="M300 236L165 300"/><path d="M300 236V300"/><path d="M300 236L435 300"/><path d="M300 236L570 300"/></g>
     ${filas.map(f => planta(...f)).join("")}
     <g transform="translate(398 216)"><rect x="-4" y="0" width="8" height="60" rx="2" fill="#d9c7a3"/><rect x="-12" y="-15" width="24" height="17" rx="4" fill="#f5f5f5"/><circle cx="0" cy="-6.5" r="3.2" fill="#3cc6a8"/>
       <g class="av-ondas" fill="none" stroke="#c6f432" stroke-width="2.6" stroke-linecap="round"><path d="M-12-24A17 17 0 0 1 12-24"/><path d="M-20-31A28 28 0 0 1 20-31"/><path d="M-28-38A39 39 0 0 1 28-38"/></g></g>
   </svg>`;
 }
+/* Fondo vertical de la bienvenida en el celular: el mismo campo, a pantalla completa */
+function escenaVertical(){
+  const vp = [200, 362], fin = [-160, 30, 200, 370, 560], hoja = "M0 0C-2-8-9-11-13-10C-11-4-5-1 0 0ZM0 0C2-9 9-12 14-11C12-5 5-1 0 0ZM-1 0H1V6H-1Z";
+  const plantas = [-160, 30, 370, 560].flatMap(x => [.12, .26, .44, .66, .92].map(t => [vp[0] + (x - vp[0]) * t + (x < 200 ? 14 : -14) * t, vp[1] + 458 * t, .5 + 2.1 * t]));
+  return `<svg viewBox="0 0 400 820" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs><radialGradient id="avSolv"><stop offset="0" stop-color="#fff6b0"/><stop offset=".55" stop-color="#ffd84d"/><stop offset="1" stop-color="#ffd84d" stop-opacity="0"/></radialGradient>
+      <linearGradient id="avCampov" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f8f3a"/><stop offset="1" stop-color="#1c5229"/></linearGradient></defs>
+    <circle class="av-brillo" cx="296" cy="168" r="58" fill="url(#avSolv)"/><circle cx="296" cy="168" r="24" fill="#ffd84d"/>
+    <path class="av-haz" d="M96 140L150 362H236Z" fill="#c6f432"/>
+    <g class="av-sat" transform="translate(96 128) rotate(-18)"><rect x="-9" y="-7" width="18" height="14" rx="3" fill="#e8f5e9"/>
+      <rect x="-34" y="-5" width="22" height="10" rx="2" fill="#7fd3ff"/><rect x="12" y="-5" width="22" height="10" rx="2" fill="#7fd3ff"/><path d="M0 7V13" stroke="#e8f5e9" stroke-width="2"/></g>
+    <path d="M0 302C100 268 200 286 280 278S380 262 400 268V820H0Z" fill="#1d5a36"/>
+    <path d="M0 334C120 316 260 326 400 318V820H0Z" fill="#26703f"/>
+    <path d="M0 362C140 352 260 352 400 360V820H0Z" fill="url(#avCampov)"/>
+    <g stroke="#173f22" stroke-width="3" opacity=".5" fill="none">${fin.map(x => `<path d="M200 362L${x} 820"/>`).join("")}</g>
+    ${plantas.map(([x, y, e]) => `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${e.toFixed(2)})"><path class="av-planta" fill="#8ee05a" style="animation-delay:-${((x * 7) % 40 / 10).toFixed(1)}s" d="${hoja}"/></g>`).join("")}
+    <g transform="translate(312 316)"><rect x="-4" y="0" width="8" height="60" rx="2" fill="#d9c7a3"/><rect x="-12" y="-15" width="24" height="17" rx="4" fill="#f5f5f5"/><circle cx="0" cy="-6.5" r="3.2" fill="#3cc6a8"/>
+      <g class="av-ondas" fill="none" stroke="#c6f432" stroke-width="2.6" stroke-linecap="round"><path d="M-12-24A17 17 0 0 1 12-24"/><path d="M-20-31A28 28 0 0 1 20-31"/><path d="M-28-38A39 39 0 0 1 28-38"/></g></g>
+  </svg>`;
+}
+const idiomaMini = () => `<div class="idi-mini" role="group" aria-label="Idioma / Language"><button type="button" data-idi="es" aria-pressed="${S.idioma === "es"}">ES</button><button type="button" data-idi="en" aria-pressed="${S.idioma === "en"}">EN</button></div>`;
 function renderVision(){
   const el = $("#acc-vision"); if (!el) return;
   const V = VISION(); carrusel.i %= V.length;
   if (carrusel.idioma === S.idioma && el.childElementCount) { marcarFrase(); return; }
   carrusel.idioma = S.idioma;
   el.setAttribute("aria-label", L("Qué es AgroStake","What AgroStake is"));
-  el.innerHTML = `<div class="av-marca">${anillos([{v:80, c:COL.suelo}, {v:60, c:COL.agua}, {v:90, c:COL.clima}], 40, 5, 1.5)}<span>AgroStake</span></div>
-    <div class="av-slides">${V.map((v, i) => `<article class="av-slide" data-frase="${i}"><span class="av-k">${v.k}</span><h2>${v.t}</h2><p>${v.p}</p></article>`).join("")}</div>
+  el.innerHTML = `<div class="av-fondo">${escenaVertical()}</div>
+    <div class="av-top"><div class="av-marca">${anillos([{v:80, c:COL.suelo}, {v:60, c:COL.agua}, {v:90, c:COL.clima}], 40, 5, 1.5)}<span>AgroStake</span></div>
+      <div class="av-top-der">${idiomaMini()}<button type="button" class="av-saltar" data-modo-acc="entrar">${L("Saltar","Skip")}</button></div></div>
+    <div class="av-slides">${V.map((v, i) => `<article class="av-slide" data-frase="${i}"><span class="av-k">${v.k}</span><h2 class="av-t">${v.t}</h2><p class="av-p">${v.p}</p><h2 class="av-c">${v.c}</h2><p class="av-m">${v.m}</p></article>`).join("")}</div>
     <div class="av-ctl"><div class="av-dots">${V.map((_, i) => `<button type="button" class="av-dot" data-ir-frase="${i}" aria-label="${L(`Frase ${i + 1} de ${V.length}`, `Message ${i + 1} of ${V.length}`)}"><i></i></button>`).join("")}</div>
       <button type="button" class="av-pausa" data-pausa-frases></button></div>
-    <div class="av-escena">${escenaVision()}</div>`;
+    <div class="av-botones"><button type="button" class="av-b1" data-modo-acc="registro">${L("Crear cuenta","Create account")}</button><button type="button" class="av-b2" data-modo-acc="entrar">${L("Iniciar sesión","Sign in")}</button></div>
+    <div class="av-escena">${escenaVision("p")}</div>`;
   marcarFrase();
   if (!carrusel.reloj) carrusel.reloj = setInterval(() => {      // avanza solo mientras se ve la pantalla de entrada
-    if ($("#acceso").hidden || document.hidden || carrusel.encima || carrusel.pausa || sinMov()) return;
+    if ($("#acceso").hidden || !$("#acc-vision").getClientRects().length || document.hidden || carrusel.encima || carrusel.pausa || sinMov()) return;
     carrusel.t += 100;
     const b = $("#acc-vision .av-dot.on i"); if (b) b.style.width = Math.min(100, carrusel.t / DUR_FRASE * 100) + "%";
     if (carrusel.t >= DUR_FRASE) irFrase(carrusel.i + 1);
@@ -1055,7 +1136,7 @@ function marcarFrase(){
   const el = $("#acc-vision"); if (!el) return;
   el.querySelectorAll(".av-slide").forEach((a, i) => { a.classList.toggle("on", i === carrusel.i); a.setAttribute("aria-hidden", i !== carrusel.i); });
   el.querySelectorAll(".av-dot").forEach((d, i) => { d.classList.toggle("on", i === carrusel.i); d.setAttribute("aria-current", i === carrusel.i); d.querySelector("i").style.width = i === carrusel.i ? Math.min(100, carrusel.t / DUR_FRASE * 100) + "%" : "0"; });
-  el.querySelector(".av-escena").dataset.s = carrusel.i;
+  el.querySelectorAll(".av-escena,.av-fondo").forEach(x => x.dataset.s = carrusel.i);
   const pz = el.querySelector("[data-pausa-frases]");
   pz.innerHTML = carrusel.pausa ? `<svg viewBox="0 0 14 14"><path d="M3 1.5v11l9-5.5z"/></svg>` : `<svg viewBox="0 0 14 14"><rect x="2" y="1.5" width="3.6" height="11" rx="1"/><rect x="8.4" y="1.5" width="3.6" height="11" rx="1"/></svg>`;
   pz.setAttribute("aria-label", carrusel.pausa ? L("Seguir pasando las frases","Resume messages") : L("Pausar las frases","Pause messages"));
@@ -1079,10 +1160,15 @@ function irFrase(i){ const n = VISION().length; carrusel.i = (i + n) % n; carrus
 function renderAcceso(err = ""){
   renderVision();
   const reg = S.modoAcceso === "registro";
-  $("#acceso-in").innerHTML = `<div class="idioma-top"><div class="tog" role="group" aria-label="Idioma / Language"><button type="button" data-idi="es" aria-pressed="${S.idioma === "es"}">Español</button><button type="button" data-idi="en" aria-pressed="${S.idioma === "en"}">English</button></div></div>
+  $("#acceso").dataset.paso = S.accPaso || "bienvenida";      // celular: bienvenida a pantalla completa y luego el formulario
+  $("#acceso-in").innerHTML = `<div class="acc-cabeza"><button type="button" class="acc-atras" data-acc-paso="bienvenida" aria-label="${L("Volver","Back")}"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>${idiomaMini()}${escenaVision("c")}</div>
+   <div class="acc-hoja"><div class="idioma-top"><div class="tog" role="group" aria-label="Idioma / Language"><button type="button" data-idi="es" aria-pressed="${S.idioma === "es"}">Español</button><button type="button" data-idi="en" aria-pressed="${S.idioma === "en"}">English</button></div></div>
    <div class="logo dibuja">${anillos([{v:80, c:COL.suelo}, {v:60, c:COL.agua}, {v:90, c:COL.clima}], 110, 11, 2)}</div>
    <h1>AgroStake</h1><p class="tag">${L("Datos de la NASA y de tu estaca para decidir qué sembrar", "NASA and stake data to decide what to plant")}</p>
-   <div class="tog" role="group"><button type="button" data-modo-acc="entrar" aria-pressed="${!reg}">${L("Iniciar sesión","Sign in")}</button><button type="button" data-modo-acc="registro" aria-pressed="${reg}">${L("Crear cuenta","Create account")}</button></div>
+   <div class="acc-hola"><div class="acc-logo">${anillos([{v:80, c:COL.suelo}, {v:60, c:COL.agua}, {v:90, c:COL.clima}], 48, 6, 2)}<span>AgroStake</span></div>
+     <h2>${reg ? L("Crea tu cuenta","Create your account") : L("¡Hola de nuevo!","Welcome back!")}</h2>
+     <p>${reg ? L("Es gratis. Guarda tu lote y conecta tu estaca cuando la tengas.","It's free. Save your plot and connect your stake when you have one.") : L("Entra para ver tu lote, tus rotaciones y el clima de la NASA de tu zona.","Sign in to see your plot, your rotations and NASA weather for your area.")}</p></div>
+   <div class="tog modo-acc" role="group"><button type="button" data-modo-acc="entrar" aria-pressed="${!reg}">${L("Iniciar sesión","Sign in")}</button><button type="button" data-modo-acc="registro" aria-pressed="${reg}">${L("Crear cuenta","Create account")}</button></div>
    <form class="card" id="f-acceso" novalidate>
      ${reg ? `<label class="campo"><span>${L("Nombre","First name")}</span><input name="nombre" autocomplete="given-name" required maxlength="60"></label>
               <label class="campo"><span>${L("Apellido","Last name")}</span><input name="apellido" autocomplete="family-name" required maxlength="60"></label>` : ""}
@@ -1091,11 +1177,14 @@ function renderAcceso(err = ""){
      ${reg ? `<label class="marcar"><input type="checkbox" name="acepta_datos"><span>${L("Autorizo el tratamiento de mis datos personales (nombre, correo y datos de mis lotes y estacas) para usar la app, según la Ley 1581 de 2012.", "I authorize the processing of my personal data (name, email and data from my plots and stakes) to use the app, under Colombian Law 1581 of 2012.")}</span></label>` : ""}
      ${err ? `<p class="error" role="alert">${esc(err)}</p>` : ""}
      <button class="btn" type="submit" style="width:100%">${reg ? L("Crear cuenta","Create account") : L("Entrar","Sign in")}</button>
-   </form>`;
+   </form>
+   <p class="acc-cambio">${reg ? `${L("¿Ya tienes cuenta?","Already have an account?")} <button type="button" data-modo-acc="entrar">${L("Inicia sesión","Sign in")}</button>`
+                               : `${L("¿No tienes cuenta?","No account yet?")} <button type="button" data-modo-acc="registro">${L("Regístrate aquí","Sign up here")}</button>`}</p></div>`;
 }
 $("#acceso").addEventListener("click", e => {
   const i = e.target.closest("[data-idi]"); if (i) { aplicarIdioma(i.dataset.idi); return; }
-  const m = e.target.closest("[data-modo-acc]"); if (m) { S.modoAcceso = m.dataset.modoAcc; renderAcceso(); }
+  const m = e.target.closest("[data-modo-acc]"); if (m) { S.modoAcceso = m.dataset.modoAcc; S.accPaso = "form"; renderAcceso(); scrollTo(0, 0); return; }
+  const pa = e.target.closest("[data-acc-paso]"); if (pa) { S.accPaso = pa.dataset.accPaso; renderAcceso(); scrollTo(0, 0); }
 });
 $("#acceso").addEventListener("submit", async e => {
   e.preventDefault();
@@ -1955,7 +2044,7 @@ function renderRot(){
   if (!r) { el.innerHTML = cabecera(L("Rotación","Rotation")) + `<div class="grid">${prios}</div><div style="height:12px"></div>` + esqueleto([420, "c4"], [420, "c4"]); ponerAltavoces(el); return; }
   let h = r.notas.map(n => `<div class="card c4 nota-box">${n}</div>`).join("") + r.planes.map((p, i) => tarjetaPlan(p, i, r)).join("");
   if (r.descartados.length) h += `<section class="card c4"><h2>${L("Cultivos que quedaron por fuera","Crops left out")}</h2><div>${r.descartados.map(d => `<div class="alerta"><span style="font-size:24px">${d.icono}</span><div><b>${d.cultivo}</b><p>${cap(d.razon)}.</p></div></div>`).join("")}</div></section>`;
-  el.innerHTML = cabecera(L("Rotación","Rotation")) + `<div class="${clsGrid()}">${prios}${h}</div><p class="pie">${L("Es una guía basada en reglas escritas, no un pronóstico. No reemplaza un análisis de laboratorio ni a un agrónomo.","It is a rule-based guide, not a forecast. It does not replace a lab test or an agronomist.")}</p>${pieFuentes()}`;
+  el.innerHTML = cabecera(L("Rotación","Rotation")) + `<div class="${clsGrid()}">${prios}${h}</div>${pieFuentes()}`;
   ponerAltavoces(el);
 }
 function tarjetaPlan(p, i, r){
@@ -2021,7 +2110,7 @@ function planAccion(c){
       ${hoja(f)}<div class="pa3-cuerpo">
         <p class="pa3-titulo">${titulo(f)}${f.ini === 0 ? `<span class="tag">${L("Este mes","This month")}</span>` : ""}</p>
         ${f.et.length ? `<div class="pa3-etapas">${f.et.map(e => `<span class="pa3-etapa" style="--c:${color(e)}">${e.icono} ${esc(e.nombre)}</span>`).join("")}</div>` : ""}
-        ${f.tareas.length ? f.tareas.map(x => `<div class="pa3-tarea"><span class="ic">${EVI(x.tipo)}</span><p>${esc(x.texto)}</p></div>`).join("")
+        ${f.tareas.length ? f.tareas.map(x => `<div class="pa3-tarea"><span class="pto"></span><p>${esc(x.texto)}</p></div>`).join("")
                           : `<p class="pa3-nada">${quieto(f)}</p>`}
       </div></li>`).join("")}</ol>`;
 }

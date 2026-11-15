@@ -1,5 +1,19 @@
 # Cambios
 
+## Versión 14 (entrada en el celular, plan sin emojis)
+
+- **Entrada en el celular**, con el modelo que mandó el equipo:
+  1. Bienvenida a pantalla completa: el dibujo del campo de fondo, oscurecido abajo; una etiqueta pequeña; un título
+     corto y grande en mayúsculas que rota solo ("Tú conoces tu tierra", "Cada gota cuenta", "Siembra. Cuida.
+     Cosecha.", "La NASA mira tu zona", "Con o sin señal", "Tu potrero también cuenta"); los puntos; y abajo los
+     botones "Crear cuenta" e "Iniciar sesión". Arriba van la marca, ES/EN y "Saltar".
+  2. Formulario: el dibujo arriba con botón para volver y una hoja redondeada encima con el logo, "¡Hola de nuevo!"
+     o "Crea tu cuenta", los campos y abajo "¿No tienes cuenta? Regístrate aquí".
+  - El dibujo resalta lo que dice cada frase: la señal de la estaca en la del ahorro, el rayo del satélite en la de
+    la NASA. El computador sigue con la pantalla partida de la versión 13 (un poco más baja, para que no sobre altura).
+- **Plan de acción:** sin emojis al lado de cada tarea; ahora lleva un puntico del color de la etapa.
+- **Rotación:** sin la frase "Es una guía basada en reglas escritas…".
+
 ## Versión 13 (pasto y nueva pantalla de entrada)
 
 - **Pasto:** nuevo cultivo, con la braquiaria (*Urochloa decumbens*) como referencia. Ocupa un año entero, como la
