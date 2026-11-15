@@ -503,12 +503,20 @@ def zonas():
         out.append(z)
     return jsonify(out)
 
+_MUN = {}
 @app.get("/api/municipios")
 def lista_municipios():
-    """Los 194 municipios del Caribe para el mapa y el buscador (cambia solo cuando se actualiza el archivo)."""
-    r = jsonify(municipios=municipios.lista(), fuente=municipios.fuente())
-    r.headers["Cache-Control"] = "public, max-age=86400"
-    return r
+    """Los municipios de Colombia para el mapa y el buscador (unos 70 KB; comprimidos, unos 20 KB). Cambia solo
+    cuando se actualiza el archivo."""
+    if not _MUN:
+        crudo = json.dumps({"municipios": municipios.lista(), "fuente": municipios.fuente()}, ensure_ascii=False, separators=(",", ":")).encode()
+        _MUN.update(crudo=crudo, gz=gzip.compress(crudo, 6), etag=hashlib.md5(crudo).hexdigest())
+    gz = "gzip" in request.headers.get("Accept-Encoding", "")
+    r = app.response_class(_MUN["gz"] if gz else _MUN["crudo"], mimetype="application/json")
+    r.headers.update({"Cache-Control": "public, max-age=86400", "Vary": "Accept-Encoding"})
+    if gz: r.headers["Content-Encoding"] = "gzip"
+    r.set_etag(_MUN["etag"] + ("-gz" if gz else ""))
+    return r.make_conditional(request)
 
 @app.get("/api/perfiles")
 def perfiles():

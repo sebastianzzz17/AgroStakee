@@ -164,6 +164,10 @@ button{cursor:pointer;background:none;border:0;padding:0;text-align:inherit}
 .pin{width:22px;height:22px;border-radius:50%;background:var(--acento);border:4px solid var(--bg);box-shadow:0 0 0 2px var(--lima)}
 .pin.on{background:var(--txt);box-shadow:0 0 0 3px var(--lima),0 0 18px var(--lima)}
 .buscar-lugar{position:relative;margin:0 0 12px;z-index:700}
+.buscar-fila{display:flex;gap:8px;align-items:stretch}.buscar-fila .buscar{flex:1;min-width:0;margin:0}
+.mi-ubic{display:inline-flex;align-items:center;gap:6px;flex:none;padding:0 14px;border-radius:12px;font-size:16px}
+.mi-ubic:disabled{opacity:.7}
+@media (max-width:520px){.buscar-fila{flex-wrap:wrap}.mi-ubic{width:100%;justify-content:center;padding:12px}}
 .mun-lista{display:grid;gap:9px}
 .mun-fila{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;gap:10px;align-items:center;font-size:16px}
 .mun-nom{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -173,6 +177,7 @@ button{cursor:pointer;background:none;border:0;padding:0;text-align:inherit}
 .chips-rend{display:flex;flex-wrap:wrap;gap:8px}.chip-rend{background:var(--campo);border-radius:999px;padding:8px 12px;font-size:15px}.chip-rend b{margin-left:4px}
 .cosecha{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
 .cosecha > div{display:flex;flex-direction:column;gap:2px}.cosecha .e{font-size:26px}
+@media (max-width:899px){.mun-card .mun-pie{display:none}}
 .sug-lugar{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border-radius:14px;box-shadow:0 10px 30px #0006;padding:6px;max-height:min(60vh,380px);overflow:auto}
 .sug-lugar button{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left;padding:11px 12px;border-radius:10px}
 .sug-lugar button b{font-size:17px}.sug-lugar button small{color:var(--sec);font-size:14.5px}
@@ -271,8 +276,8 @@ details ol,details ul{color:var(--txt3);font-size:16px;padding-left:20px;margin:
 .evaluar b{display:block;font-size:22px;margin:8px 0 2px;line-height:1.2;overflow-wrap:anywhere}
 .evaluar small{font-size:15px;color:var(--sec)}
 @media(max-width:520px){.evaluar .e{font-size:38px}.evaluar b{font-size:18px}}
-.inds{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
-@media(max-width:620px){.inds{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:10px}}
+.inds{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;text-align:center}   /* 7 u 8 anillos en una fila */
+@media(max-width:620px){.inds{grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-flow:row;row-gap:10px}}
 .ind{display:block;width:100%;border-radius:12px;padding:4px 0}
 .ind svg{width:100%;max-width:56px;display:block;margin:0 auto 2px}
 .ind span{font-size:13.5px;color:var(--sec);display:block;line-height:1.2}
@@ -774,7 +779,7 @@ const PRI = () => [["agua","💧",L("Ahorrar agua","Save water"),L("Cultivos que
              ["mercado","🛒",L("Vender bien","Sell well"),L("Cultivos con salida en la zona","Crops with local demand")]];
 const IND = k => ({agua:["💧",L("Agua","Water"),L("Uso del agua","Water use")], nitrogeno:["🌱",L("Nitrógeno","Nitrogen"),L("Nitrógeno","Nitrogen")],
              erosion:["⛰️",L("Erosión","Erosion"),L("Frena la erosión","Erosion control")], materia_organica:["🍂",L("Materia org.","Org. matter"),L("Materia orgánica","Organic matter")],
-             forraje:["🐄",L("Forraje","Forage"),L("Forraje","Forage")], mercado:["🛒",L("Mercado","Market"),L("Mercado","Market")],
+             forraje:["🐄",L("Forraje","Forage"),L("Forraje","Forage")], mercado:["🛒",L("Mercado","Market"),L("Mercado","Market")], zona:["📍",L("En tu zona","Local"),L("Se siembra en tu zona","Grown in your area")],
              resiliencia:["🛡️",L("Años secos","Dry years"),L("Aguante en años secos","Dry-year resilience")]})[k];
 const RANGO = i => [L("La más recomendada","Most recommended"), L("Recomendación 2","Recommendation 2"), L("Recomendación 3","Recommendation 3")][i];
 let mapa, capaAct = null, capaObj = null, punto = null;
@@ -895,7 +900,8 @@ function pintarFijos(){
   $("#fecha-mapa").textContent = fecha();
   $("#mapa-titulo").textContent = L("¿Dónde está tu lote?", "Where is your plot?");
   $("#mapa-sub").textContent = L("Escribe tu municipio o toca en el mapa dónde queda tu lote. Antes de seguir, te preguntamos si es ahí.", "Type your town or tap on the map where your plot is. Before moving on, we ask you to confirm it.");
-  $("#buscar-lugar").innerHTML = `<div class="buscar">${ICO.lupa}<input type="search" id="in-lugar" placeholder="${L("Escribe tu municipio. Ej: Sahagún","Type your town. E.g. Sahagún")}" aria-label="${L("Buscar municipio","Search town")}" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="sug-lugar" enterkeyhint="search"></div>
+  $("#buscar-lugar").innerHTML = `<div class="buscar-fila"><div class="buscar">${ICO.lupa}<input type="search" id="in-lugar" placeholder="${L("Escribe tu municipio","Type your town")}" aria-label="${L("Buscar municipio","Search town")}" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="sug-lugar" enterkeyhint="search"></div>
+    <button type="button" class="btn2 mi-ubic" data-mi-ubic><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span>${L("Usar mi ubicación","Use my location")}</span></button></div>
     <div class="sug-lugar" id="sug-lugar" role="listbox" hidden></div>`;
   if (S.preZona) pintarConfirmar();
   const nom = [["Resumen","Summary"],["Clima","Weather"],["Mi lote","My plot"],["Rotación","Rotation"],["Proyección","Outlook"]];
@@ -1661,7 +1667,7 @@ function armarMapa(){
   $("#zonas").onclick = e => { const b = e.target.closest("button"); if (b) preElegir(S.zonas.find(z => z.id === b.dataset.z)); };
   armarListaZonas(); ponerMunicipios();
 }
-/* Los 194 municipios del Caribe (EVA): puntos pequeños en el mapa y la lista del buscador. Las 8 zonas piloto
+/* Los municipios de Colombia (EVA): puntos pequeños en el mapa y la lista del buscador. Las 8 zonas piloto
    conservan su pin grande y sus propios datos. */
 let capaMun = null;
 function ponerMunicipios(){
@@ -1691,7 +1697,8 @@ function preElegir(z, pt, volar = true){
 function pintarConfirmar(){
   const el = $("#confirmar-mapa"), p = S.preZona; if (!p) { el.hidden = true; return; }
   const z = p.z, nom = z.punto ? z.nombre : z.nombre;
-  el.innerHTML = `<div class="cm-info"><b>📍 ${esc(nom)}</b><small>${z.punto ? L("¿Tu lote queda aquí? Si no, toca otro sitio del mapa.","Is your plot here? If not, tap another place on the map.") : L("Zona piloto con estudios de suelo. ¿Tu lote queda aquí?","Pilot area with soil studies. Is your plot here?")}</small></div>
+  el.innerHTML = `<div class="cm-info"><b>📍 ${esc(nom)}</b><small>${p.pt?.gps ? L(`Según la ubicación de tu equipo${p.pt.precision ? ` (más o menos ${N(p.pt.precision)} m)` : ""}. ¿Tu lote queda aquí?`, `From your device's location${p.pt.precision ? ` (about ${N(p.pt.precision)} m)` : ""}. Is your plot here?`)
+      : z.punto ? L("¿Tu lote queda aquí? Si no, toca otro sitio del mapa.","Is your plot here? If not, tap another place on the map.") : L("Zona piloto con estudios de suelo. ¿Tu lote queda aquí?","Pilot area with soil studies. Is your plot here?")}</small></div>
     <div class="cm-btns"><button type="button" class="btn" data-confirmar-ubic>${L("Confirmar mi ubicación","Confirm my location")}</button><button type="button" class="btn2" data-otra-ubic>${L("Elegir otro","Choose another")}</button></div>`;
   el.hidden = false;
 }
@@ -1719,7 +1726,7 @@ function pintarSugerencias(){
   S.sugLugar = r; S.sugSel = r.length ? 0 : -1;
   if (!i.value.trim()) { box.hidden = true; i.setAttribute("aria-expanded", "false"); return; }
   box.innerHTML = r.length ? r.map((m, k) => `<button type="button" role="option" id="sug-${k}" data-sug="${k}" aria-selected="${k === 0}"><b>${esc(m.n)}</b><small>${esc(m.d)}${m.zona ? " · " + L("zona piloto","pilot area") : ""}</small></button>`).join("")
-    : `<p class="sub">${L("No encontramos ese municipio en el Caribe. Toca en el mapa dónde queda tu lote.","We could not find that town in the Caribbean region. Tap on the map where your plot is.")}</p>`;
+    : `<p class="sub">${L("No encontramos ese municipio. Toca en el mapa dónde queda tu lote o usa tu ubicación.","We could not find that town. Tap on the map where your plot is or use your location.")}</p>`;
   box.hidden = false; i.setAttribute("aria-expanded", "true");
 }
 function usarSugerencia(k){
@@ -1736,7 +1743,28 @@ $("#buscar-lugar").addEventListener("keydown", e => {
   else if (e.key === "Enter") { e.preventDefault(); usarSugerencia(Math.max(0, S.sugSel)); }
   else if (e.key === "Escape") { $("#sug-lugar").hidden = true; }
 });
-$("#buscar-lugar").addEventListener("click", e => { const b = e.target.closest("[data-sug]"); if (b) usarSugerencia(+b.dataset.sug); });
+$("#buscar-lugar").addEventListener("click", e => {
+  const b = e.target.closest("[data-sug]"); if (b) { usarSugerencia(+b.dataset.sug); return; }
+  const u = e.target.closest("[data-mi-ubic]"); if (u) usarMiUbicacion(u);
+});
+/* Ubicación del celular o del computador (GPS): el navegador pide permiso. Solo funciona con https (Render) o en el
+   mismo computador (localhost). */
+function usarMiUbicacion(b){
+  const msj = t => { const box = $("#sug-lugar"); box.innerHTML = `<p class="sub">${t}</p>`; box.hidden = false; };
+  if (!navigator.geolocation || !window.isSecureContext) { msj(L("Este navegador no deja saber la ubicación aquí. Escribe tu municipio o toca el mapa.","This browser cannot share your location here. Type your town or tap the map.")); return; }
+  const txt = b.querySelector("span"), antes = txt.textContent; b.disabled = true; txt.textContent = L("Buscando…","Locating…");
+  $("#sug-lugar").hidden = true;
+  navigator.geolocation.getCurrentPosition(p => {
+    b.disabled = false; txt.textContent = antes;
+    const {latitude:la, longitude:lo, accuracy:pr} = p.coords;
+    preElegir(zonaDePunto(la, lo), {lat:la, lon:lo, libre:true, precision:Math.round(pr || 0), gps:true});
+  }, err => {
+    b.disabled = false; txt.textContent = antes;
+    msj(err.code === 1 ? L("No diste permiso para usar tu ubicación. Puedes darlo en los ajustes del navegador, escribir tu municipio o tocar el mapa.","You did not allow location access. You can allow it in the browser settings, type your town or tap the map.")
+      : err.code === 3 ? L("Se demoró mucho en encontrar tu ubicación. Intenta otra vez, mejor al aire libre.","Finding your location took too long. Try again, ideally outdoors.")
+      : L("No pudimos saber dónde estás. Revisa que la ubicación (GPS) del celular esté prendida.","We could not find your location. Check that location (GPS) is turned on."));
+  }, {enableHighAccuracy:true, timeout:20000, maximumAge:60000});
+}
 /* Un punto libre del mapa es una "zona" propia: el servidor descarga el clima de la NASA para ESA latitud y longitud.
    Mientras llega (o si no hay internet), usa el clima y los estudios de suelo de la zona guardada más cercana. */
 /* El servidor escribe los puntos a su manera ("p:9.62,-75.1", "p:11.0,-72.9"); se comparan por número */
@@ -1948,7 +1976,7 @@ function renderResumen(){
        return `<div>${anillo(r[k].valor, SEMC[NIVC[nv]], "", 76, 8, e)}<b>${t}</b><span class="${NIVC[nv]}">${NIVT(nv)}</span></div>`; }).join("")}</div></section>
    ${extra === 2 ? luna + sol : ""}
   </div>
-  ${S.zona?.punto ? `<p class="pie">${L(`Tu lote está a ${S.zona.km} km de la zona de ${S.zona.cercanaNombre}: el suelo de referencia es el de esa zona. ${S.puntoEstado === "listo" ? "El clima es el de la NASA para tu punto." : "Mientras llega el clima de la NASA para tu punto, usamos el de esa zona."}`,
+  ${S.zona?.punto ? `<p class="pie">${L(`Tu lote está a ${S.zona.km} km de la zona de ${S.zona.cercanaNombre}: el suelo de referencia es el de esa zona${S.zona.km > 100 ? ", que queda lejos; revisa los datos de tu suelo en Mi lote" : ""}. ${S.puntoEstado === "listo" ? "El clima es el de la NASA para tu punto." : "Mientras llega el clima de la NASA para tu punto, usamos el de esa zona."}`,
       `Your plot is ${S.zona.km} km from the ${S.zona.cercanaNombre} area: the reference soil is that area's. ${S.puntoEstado === "listo" ? "The weather is NASA's for your point." : "Until NASA weather for your point arrives, we use that area's."}`)}</p>` : ""}${pieFuentes()}`;
   ponerAltavoces(el);
 }
@@ -2341,7 +2369,7 @@ function tarjetaMunicipio(m){
       `Hectares planted in an average year (${a[0]}-${a[1]}), from the town's official reports. In green, crops AgroStake can recommend.`)}${m.km ? L(` Tu lote está a ${N(m.km, 1)} km de la cabecera.`, ` Your plot is ${N(m.km, 1)} km from the town center.`) : ""}</p>
     <div class="mun-lista">${filas}</div>
     ${rend ? `<h3 class="mun-sub">${L("Cosecha promedio por hectárea en cada siembra","Average harvest per hectare per planting")}</h3><div class="chips-rend">${rend}</div>` : ""}
-    <p class="pie" style="margin-top:12px">${L("Lo que más se siembra suele tener compradores cerca; por eso lo usamos para calcular el mercado de cada rotación. Fuente: ","What is planted most usually has buyers nearby, so we use it to score each rotation's market. Source: ")}${esc(m.fuente || "EVA")}. ${L("Los dos últimos años pueden cambiar. «Frijol» junta todas las clases de fríjol.","The last two years may change. “Beans” groups all bean types.")}</p></section>`;
+    <p class="pie mun-pie" style="margin-top:12px">${L("Lo que más se siembra suele tener compradores cerca; por eso lo usamos para calcular el mercado de cada rotación. Fuente: ","What is planted most usually has buyers nearby, so we use it to score each rotation's market. Source: ")}${esc(m.fuente || "EVA")}. ${L("Los dos últimos años pueden cambiar. «Frijol» junta todas las clases de fríjol.","The last two years may change. “Beans” groups all bean types.")}</p></section>`;
 }
 function tarjetaCosecha(s){
   const c = s.cosecha; if (!c || !c.cultivos.length) return "";
@@ -2619,7 +2647,7 @@ $("#tour").addEventListener("click", e => {
   if (!b) return;
   const P = PASOS_TOUR(), a = b.dataset.tour;
   if (a === "sig" && S.tourPaso === P.length - 1) { iniciarGuia(); return; }
-  if (a === "saltar") { cerrarTour(); return; }
+  if (a === "saltar") { $("#tour").hidden = true; iniciarGuia(); return; }   // saltar el recorrido no salta la guía
   pasoTour(S.tourPaso + (a === "sig" ? 1 : -1));
 });
 addEventListener("resize", () => { if (!$("#tour").hidden && S.guia == null) { const st = PASOS_TOUR()[S.tourPaso], sel = typeof st.sel === "function" ? st.sel() : st.sel; ubicarTour($(sel)); } });

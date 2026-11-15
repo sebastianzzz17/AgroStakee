@@ -69,15 +69,26 @@ Render gratis **bloquea el correo por SMTP** (puertos 25, 465 y 587), por eso el
   misma IP). En Render la IP del visitante se toma de `CF-Connecting-IP`, que pone Cloudflare. "¿Olvidaste tu contraseña?" responde igual exista o no la cuenta.
 - Para probar sin enviar nada: `AGROSTAKE_MENSAJES_CONSOLA=1` escribe los mensajes en la consola del servidor.
 
-### Municipios del Caribe (versión 16)
+### Municipios de Colombia y la EVA (versiones 16 y 17)
 
-El mapa muestra los 194 municipios de Atlántico, Bolívar, Cesar, Córdoba, La Guajira, Magdalena y Sucre, con un
-buscador. Para cada uno, la app sabe qué se siembra y cuánto se cosecha por hectárea (Evaluaciones Agropecuarias
-Municipales, EVA 2019-2024). El archivo `data/municipios_caribe.json` (78 KB) lo arma
-`herramientas/preparar_municipios.py` en tu computador (necesita `pandas` y `openpyxl`; el servidor no los usa):
+El mapa muestra los 1.101 municipios de Colombia que tienen datos en la EVA, con un buscador y el botón "Usar mi
+ubicación". Para cada uno, la app sabe qué se siembra, en qué semestre y cuánto se cosecha por hectárea
+(Evaluaciones Agropecuarias Municipales, EVA 2019-2024). El archivo `data/municipios.json` pesa 434 KB (85 KB
+comprimido) y se carga una vez. Lo arma `herramientas/preparar_municipios.py` en tu computador (necesita `pandas`
+y `openpyxl`; el servidor no los usa):
 
     python herramientas/preparar_municipios.py --eva 20250617_BaseAgricola20192024.xlsx --divipola DIVIPOLA.csv --sivel datos-geo-col.sql
 
+- **En las rotaciones** la EVA hace tres cosas:
+  1. Un cultivo que no se siembra en el municipio (ni, en el Caribe, a menos de 100 km) no se recomienda: es señal
+     de que el clima o el suelo no le sirven. Por eso la app no recomienda ñame ni arroz en Tunja.
+  2. Nuevo indicador "Se siembra en tu zona" (pesa el doble que los demás): compara cada siembra con lo que se
+     siembra en el municipio en ese mismo semestre. Primeras lluvias ≈ semestre A; segundas lluvias ≈ semestre B.
+  3. La mitad del puntaje de mercado sale de cuánto se siembra cada cultivo en el municipio.
+- **Fuera del Caribe** la app avisa que es una guía en prueba: se armó para la tierra caliente del Caribe.
+  El caupí solo se recomienda donde hay fríjol registrado en el Caribe a menos de 100 km (en el resto del país, el
+  "Frijol" de la EVA puede ser fríjol común). La braquiaria no se recomienda con menos de 19 °C de temperatura
+  media (Tropical Forages: crece mejor por encima de 19 °C).
 - **Coordenadas:** las de esta versión son las de SIVeL (dominio público, armadas con DIVIPOLA 2013, Divipolador
   y OpenStreetMap). Tienen errores: la de Mompox queda a 16,9 km. Las 8 zonas piloto conservan las suyas.
   Cuando tengas el CSV oficial del DANE "DIVIPOLA - Códigos municipios" (datos.gov.co), pásalo con `--divipola`:
@@ -102,6 +113,7 @@ Municipales, EVA 2019-2024). El archivo `data/municipios_caribe.json` (78 KB) lo
 | Pasto (braquiaria) | Tropical Forages y ficha de semilla (ver `docs/PILOTO.md`) | No |
 | Qué se siembra y cuánto se cosecha en cada municipio | Evaluaciones Agropecuarias Municipales (EVA) 2019-2024, UPRA y MinAgricultura | No (archivo incluido) |
 | Ubicación de las cabeceras municipales | SIVeL (provisional); DIVIPOLA del DANE cuando se agregue | No |
+| Ubicación del lote con el GPS del equipo | El navegador (pide permiso; solo con https o en tu computador) | No |
 
 Las que piden cuenta se activan solas si están las variables de entorno (ver `app.py` y `services/orquestador.py`).
 Las credenciales nunca van en el código.

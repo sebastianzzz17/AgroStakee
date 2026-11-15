@@ -1,14 +1,15 @@
-"""Municipios del Caribe: dónde quedan y qué se siembra en cada uno (data/municipios_caribe.json, que arma
-herramientas/preparar_municipios.py con la EVA 2019-2024 de la UPRA y las coordenadas de las cabeceras).
+"""Municipios de Colombia: dónde quedan, qué se siembra en cada uno y en qué semestre (data/municipios.json, que
+arma herramientas/preparar_municipios.py con la EVA 2019-2024 de la UPRA y las coordenadas de las cabeceras).
 
-Se carga una sola vez (unos 80 KB en disco, menos de 1 MB en memoria) y todas las búsquedas son en memoria."""
+Se carga una sola vez (unos 430 KB en disco y pocos MB en memoria) y todas las búsquedas son en memoria."""
 import json, math
 from pathlib import Path
 
-RUTA = Path(__file__).resolve().parent.parent / "data" / "municipios_caribe.json"
+RUTA = Path(__file__).resolve().parent.parent / "data" / "municipios.json"
+VECINOS_KM = 100          # un cultivo "se siembra cerca" si aparece en algún municipio a menos de esto
 EXACTO_KM = 1.5           # a menos de esto, el punto es el municipio (se toca su marcador o su cabecera)
 CERCA_KM = 40             # hasta aquí se nombra "Cerca de ..."
-DATOS_KM = 30             # hasta aquí se usan los datos de siembra de ese municipio
+DATOS_KM = 40             # hasta aquí se usan los datos de siembra de ese municipio (los rurales son grandes)
 _D = None
 
 def _datos():
@@ -17,6 +18,11 @@ def _datos():
         try: _D = json.loads(RUTA.read_text(encoding="utf-8"))
         except FileNotFoundError: _D = {"municipios": [], "departamentos": {}, "eva": {}, "fuente": {}, "anios": []}
         _D["por_zona"] = {m["zona"]: m for m in _D["municipios"] if m.get("zona")}
+        _D["caribe_set"] = set(_D.get("caribe") or [])
+        _D["con"] = {}            # cultivo -> municipios donde se siembra (para buscar vecinos)
+        for m in _D["municipios"]:
+            for k, v in m.get("nuestros", {}).items():
+                if v.get("ha", 0) > 0: _D["con"].setdefault(k, []).append(m)
         _D["por_cod"] = {m["cod"]: m for m in _D["municipios"]}
     return _D
 
@@ -86,6 +92,25 @@ INGLES = {"Aguacate": "Avocado", "Ahuyama": "Squash", "Ajonjolí": "Sesame", "Aj
 def nombre(eva_nombre, ingles=False):
     if eva_nombre.startswith("Malanga"): return "Taro" if ingles else "Malanga"
     return INGLES.get(eva_nombre, eva_nombre) if ingles else eva_nombre
+
+def es_caribe(m): return bool(m) and m["d"] in _datos()["caribe_set"]
+
+def cerca(m, cultivo, solo_caribe=False):
+    """(municipio vecino más cercano donde se siembra el cultivo, km) dentro de VECINOS_KM, o (None, None)."""
+    mejor, dm = None, None
+    for x in _datos()["con"].get(cultivo, []):
+        if solo_caribe and x["d"] not in _datos()["caribe_set"]: continue
+        d = km(m["lat"], m["lon"], x["lat"], x["lon"])
+        if d <= VECINOS_KM and (dm is None or d < dm): mejor, dm = x, d
+    return mejor, (round(dm) if dm is not None else None)
+
+def semestre(m, cultivo, sem):
+    """0 a 1: qué tanto se siembra el cultivo en ese semestre ("a" o "b") en el municipio, frente al más sembrado de
+    los nuestros en ese mismo semestre. None si el municipio no tiene datos por semestre."""
+    nu = (m or {}).get("nuestros", {})
+    mx = max((v.get(sem, 0) for v in nu.values()), default=0)
+    if not mx: return None
+    return math.sqrt(nu.get(cultivo, {}).get(sem, 0) / mx)
 
 def resumen(m, d_km=None):
     """Bloque «Qué se siembra en tu municipio» para la app."""

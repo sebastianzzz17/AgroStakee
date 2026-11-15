@@ -15,6 +15,11 @@ from services import municipios
 IDIOMA = contextvars.ContextVar("idioma", default="es")
 def _en(): return IDIOMA.get() == "en"
 def tr(es, en): return en if _en() else es
+def _mil(x):
+    """Número entero con separador de miles: 1.649 (español) o 1,649 (inglés)."""
+    t = f"{round(x):,}"
+    return t if _en() else t.replace(",", ".")
+
 def _num(x, d=1):
     s = f"{round(x, d):g}" if d else str(round(x))
     return s if _en() else s.replace(".", ",")
@@ -27,8 +32,9 @@ TEMPORADAS = [("Primeras lluvias", "First rains", 0), ("Segundas lluvias", "Seco
 PRIORIDADES = ("agua", "forraje", "nitrogeno", "erosion", "materia_organica", "mercado")
 ALIAS = {"suelo": "nitrogeno", "ingreso": "mercado"}
 IND_KEYS = ("agua", "nitrogeno", "erosion", "materia_organica", "forraje", "mercado", "resiliencia")
+TEMP_PASTO = 19     # Tropical Forages: Urochloa decumbens "grows best in temperatures above 19 ºC"
 NOM_IND = {"agua": ("Uso del agua", "Water use"), "nitrogeno": ("Nitrógeno", "Nitrogen"), "erosion": ("Frena la erosión", "Erosion control"),
-           "materia_organica": ("Materia orgánica", "Organic matter"), "forraje": ("Forraje", "Forage"), "mercado": ("Mercado", "Market"),
+           "materia_organica": ("Materia orgánica", "Organic matter"), "forraje": ("Forraje", "Forage"), "mercado": ("Mercado", "Market"), "zona": ("Se siembra en tu zona", "Grown in your area"),
            "resiliencia": ("Aguante en años secos", "Dry-year resilience")}
 NIVEL = {"bajo": .2, "medio": .5, "alto": .8}
 RETENCION = {"arenoso": .85, "franco": 1.0, "arcilloso": 1.1}
@@ -188,8 +194,33 @@ def _ratio(c, lluvia, ctx, piso=.85):
     r = min(1.0, lluvia * RETENCION[ctx["textura"]] / _dem(c, ctx))
     return max(r, piso) if ctx["riego"] else r
 
+def _fuera_de_zona(c, ctx):
+    """Lo que de verdad se siembra cerca (EVA) como prueba de que un cultivo sirve en ese clima: si un cultivo no
+    aparece en el municipio ni a menos de 100 km, no se recomienda. Así la app sirve en toda Colombia sin recomendar
+    ñame en tierra fría. El pasto (braquiaria) no está en la EVA: se mira la temperatura media."""
+    t, m, k = ctx.get("temp"), ctx.get("mun"), c["cultivo"]
+    if c["tipo"] == "pasto" and t is not None and t < TEMP_PASTO:
+        return tr(f"la braquiaria crece mejor con más de {TEMP_PASTO} °C de promedio y aquí el promedio es de {_num(t)} °C",
+                  f"brachiaria grows best above {TEMP_PASTO} °C on average and the average here is {_num(t)} °C")
+    if not m or k not in municipios.eva(): return None
+    if k == "frijol" and not municipios.es_caribe(m):     # el caupí es de tierra caliente; fuera del Caribe la EVA no lo separa del fríjol común
+        v, d = municipios.cerca(m, k, solo_caribe=True)
+        if v: return None
+        return tr("no hay siembras de fríjol registradas en el Caribe a menos de 100 km; el fríjol que la EVA registra en tu región puede ser fríjol común, no caupí",
+                  "no bean plantings are recorded in the Caribbean within 100 km; the beans the EVA records in your region may be common beans, not cowpea")
+    if m.get("nuestros", {}).get(k, {}).get("ha", 0) > 0: return None
+    a = municipios.fuente_anios()
+    if not municipios.es_caribe(m):       # en las montañas, 100 km abarcan tierra fría y caliente: solo vale el municipio
+        return tr(f"no se siembra en {m['n']} (EVA {a}): es señal de que el clima o el suelo de la zona no le sirven",
+                  f"it is not planted in {m['n']} (EVA {a}): a sign that the local climate or soil does not suit it")
+    if municipios.cerca(m, k)[0]: return None
+    return tr(f"no se siembra en {m['n']} ni en ningún municipio a menos de 100 km (EVA {a}): es señal de que el clima o el suelo de la zona no le sirven",
+              f"it is not planted in {m['n']} or any town within 100 km (EVA {a}): a sign that the local climate or soil does not suit it")
+
 def _evaluar(c, lluvia, ctx):
     if c["tipo"] == "cobertura": return True, "", 1.0
+    fz = _fuera_de_zona(c, ctx)
+    if fz: return False, fz, 0
     s = ctx["suelo"]
     if not c["ph_min"] <= s["ph"] <= c["ph_max"]:
         return False, tr(f"el pH {_num(s['ph'])} queda fuera de su rango ({_num(c['ph_min'])} a {_num(c['ph_max'])})",
@@ -209,9 +240,11 @@ def _prios(prios):
         if p in PRIORIDADES and p not in out: out.append(p)
     return out[:3] or ["nitrogeno", "agua"]
 
-def _pesos(prios):
-    """Cada indicador pesa 1; cada prioridad elegida suma 3. Se normaliza a 1."""
+def _pesos(prios, con_zona=False):
+    """Cada indicador pesa 1; cada prioridad elegida suma 3. Se normaliza a 1. "zona" (lo que se siembra en el
+    municipio en cada semestre, EVA) pesa 2 y solo cuenta donde hay datos."""
     w = {k: 1.0 for k in IND_KEYS}
+    if con_zona: w["zona"] = 2.0            # lo que de verdad se siembra en la zona pesa el doble (pedido del equipo)
     for p in prios: w[p] += 3
     t = sum(w.values())
     return {k: v / t for k, v in w.items()}
@@ -410,11 +443,12 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
     z = zona(zona_id)
     cl, cl_ok = clima_de(zona_id)
     prios = _prios(prioridades)
-    w = _pesos(prios)
+    mun, mun_km = municipios.de_zona(z)
+    w = _pesos(prios, bool(mun))
     ctx = _ctx(z, cl, suelo, textura, riego)
+    ctx["mun"], ctx["temp"] = mun, cl.get("temp_media")
     s = ctx["suelo"]
     cult = {c["cultivo"]: c for c in db.consultar("SELECT * FROM cultivos")}
-    mun, mun_km = municipios.de_zona(z)
     cult = _mercado_local(cult, mun)
     ults = [cult[u] for u in _lista_ultimos(ultimos) if u in cult]
     nbajo, ladera = s["n"] == "bajo", cl["pendiente_pct"] > 15
@@ -499,6 +533,9 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
                "forraje": 100 * avg(lambda c: c["forraje"]),
                "mercado": 100 * avg(lambda c: .5 * c["mercado"] + .5 * c["ingreso_rel"]),
                "resiliencia": 100 * sum(b["seco"] for b in bloques) / k}
+        if mun:
+            zs = [v for v in (_zona_bloque(b["c"], i, largo, mun) for i, b in enumerate(bloques)) if v is not None]
+            ind["zona"] = 100 * (sum(zs) / len(zs) if zs else .5)
         res.append((sum(w[x] * ind[x] for x in ind), seq, ind, largo, bloques, n, cob))
     res.sort(key=lambda r: -r[0])
 
@@ -520,8 +557,9 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
             items.append({"temporada": tr("Todo el año", "All year") if largo else _temp(i), "cultivo": c["cultivo"], "nombre": _nom(c),
                           "icono": c["icono"], "tipo": c["tipo"], "ocupa": 3 if largo else 1, "siembra": _mes(m0 + off),
                           "cosecha": _mes(m0 + off + dur) if c["ciclo_dias"] else None, "off": off, "dur": dur,
-                          "por_que": _porque(c, bloques[i - 1]["c"] if i else (ults[0] if ults else None), i, nbajo, ladera, largo, prios)})
+                          "por_que": _porque(c, bloques[i - 1]["c"] if i else (ults[0] if ults else None), i, nbajo, ladera, largo, prios) + _dato_local(c, i, largo, mun)})
         expl = _explicaciones(bloques, ind, n_fin, cob, eros, s, cl, ctx, fs, calor, largo)
+        if mun: expl["zona"] = _expl_zona(bloques, largo, mun)
         if mun: expl["mercado"].insert(1, tr(f"La mitad de ese valor sale de cuánto se siembra cada cultivo en {mun['n']} según la EVA {municipios.fuente_anios()}: lo que más se siembra suele tener compradores cerca.",
                                              f"Half of that value comes from how much of each crop is planted in {mun['n']} according to the EVA {municipios.fuente_anios()}: what is planted most usually has buyers nearby."))
         crono = _cronograma(items, m0)
@@ -535,9 +573,64 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
                                    "nitrogeno": [s["n"]] + [_nivel(b["n1"]) for b in bloques], "cronograma": crono}})
 
     fuera = [{"cultivo": _nom(cult[k]), "icono": cult[k]["icono"], "razon": d["razones"][0]} for k, d in desc.items() if not d["ok"] and d["razones"]]
+    if mun and not municipios.es_caribe(mun):
+        notas.insert(0, tr(f"Tu lote está fuera del Caribe. AgroStake se armó para la tierra caliente del Caribe; aquí solo te recomendamos cultivos que sí se siembran en {mun['n']}, según la EVA. Tómalo como una guía en prueba.",
+                           f"Your plot is outside the Caribbean region. AgroStake was built for the Caribbean lowlands; here we only recommend crops that are planted in {mun['n']}, according to the EVA. Treat it as a guide in testing."))
     ejemplo = (not cl_ok) or not all(c["verificado"] for c in db.consultar("SELECT verificado FROM cultivos"))
     return {"zona": z["nombre"], "prioridades": prios, "pesos": w, "riego": ctx["riego"], "textura": ctx["textura"], "planes": planes,
             "descartados": fuera, "notas": notas, "datos_de_ejemplo": ejemplo, "municipio": _municipio_app(mun, mun_km, cult)}
+
+SEM = lambda t, largo: "a" if largo or t == 0 else "b" if t == 1 else None   # primeras lluvias ≈ semestre A; segundas ≈ B
+
+def _zona_bloque(c, t, largo, mun):
+    """0 a 1: qué tanto se siembra ese cultivo en el municipio en esa época (EVA por semestre). Verano: la mitad,
+    porque en la EVA no hay un semestre que corresponda a sembrar en seco. Lo que no está en la EVA: el pasto cuenta
+    0,5 (la ganadería es grande en la región, pero la EVA agrícola no la mide) y el abono verde 0,25 (casi no se usa)."""
+    if c["tipo"] == "cobertura": return None
+    k = c["cultivo"]
+    if k not in municipios.eva(): return .5 if c["tipo"] == "pasto" else .25
+    sem = SEM(t, largo)
+    v = municipios.semestre(mun, k, sem) if sem else None
+    if sem is None:
+        va, vb = municipios.semestre(mun, k, "a"), municipios.semestre(mun, k, "b")
+        v = .5 * max(va or 0, vb or 0) if (va is not None or vb is not None) else None
+    if v is None: v = municipios.presencia(mun, k) or 0
+    return v
+
+def _sem_txt(sem): return tr("el primer semestre (siembras de enero a junio)", "the first half of the year (January to June plantings)") if sem == "a" \
+    else tr("el segundo semestre (siembras de julio a diciembre)", "the second half of the year (July to December plantings)")
+
+def _expl_zona(bl, largo, mun):
+    a, out = municipios.fuente_anios(), []
+    out.append(tr(f"Compara cada siembra con lo que se siembra en {mun['n']} en esa misma época del año, según la EVA {a}. Lo que la gente ya siembra ahí, en esa época, tiene más probabilidad de darse.",
+                  f"Compares each planting with what is planted in {mun['n']} at the same time of year, according to the EVA {a}. What people already plant there, at that time, is more likely to work."))
+    for i, b in enumerate(bl):
+        c = b["c"]; k = c["cultivo"]
+        if c["tipo"] == "cobertura": continue
+        if k not in municipios.eva():
+            out.append(tr(f"{_nom(c)}: no aparece en la EVA de cultivos, así que cuenta como término medio." if c["tipo"] == "pasto" else
+                          f"{_nom(c)}: no aparece en la EVA y casi no se usa en las fincas, así que cuenta poco.",
+                          f"{_nom(c)}: not in the EVA crop survey, so it counts as average." if c["tipo"] == "pasto" else
+                          f"{_nom(c)}: not in the EVA and rarely used on farms, so it counts little.")); continue
+        v = mun.get("nuestros", {}).get(k, {}); sem = SEM(i, largo)
+        if sem:
+            ha, cu = v.get(sem, 0), (_temp(i).lower() if not largo else tr("todo el año", "all year"))
+            out.append(tr(f"{_nom(c)} ({cu}): unas {_mil(ha)} ha al año en {_sem_txt(sem)}.", f"{_nom(c)} ({cu}): about {_mil(ha)} ha a year in {_sem_txt(sem)}.") if ha >= 1 else
+                       tr(f"{_nom(c)} ({cu}): casi no se siembra en {_sem_txt(sem)}.", f"{_nom(c)} ({cu}): hardly planted in {_sem_txt(sem)}."))
+        else: out.append(tr(f"{_nom(c)} (verano): en la EVA no hay un semestre de siembra en seco; cuenta la mitad de lo que se siembra en el año ({_mil(v.get('ha', 0))} ha).",
+                            f"{_nom(c)} (dry season): the EVA has no dry-season planting period; it counts half of what is planted in the year ({_mil(v.get('ha', 0))} ha)."))
+    if any(b["c"]["cultivo"] == "frijol" for b in bl):
+        out.append(tr("«Frijol» en la EVA junta todas las clases de fríjol, no solo el caupí.", "“Beans” in the EVA groups all bean types, not only cowpea."))
+    return out
+
+def _dato_local(c, i, largo, mun):
+    """Una frase con lo que se siembra de verdad en el municipio en esa época, si es un dato fuerte."""
+    k = c["cultivo"]
+    if not mun or k not in municipios.eva(): return ""
+    sem = SEM(i, largo); ha = mun.get("nuestros", {}).get(k, {}).get(sem, 0) if sem else 0
+    if ha < 20: return ""
+    cuando = tr("el primer semestre", "the first half of the year") if sem == "a" else tr("el segundo semestre", "the second half of the year")
+    return " " + tr(f"En {mun['n']} se siembran unas {_mil(ha)} ha al año en {cuando}.", f"In {mun['n']} about {_mil(ha)} ha are planted a year in {cuando}.")
 
 def _mercado_local(cult, mun):
     """Mercado = mitad catálogo y mitad presencia del cultivo en el municipio (EVA). Pasto, abono verde y rastrojo no

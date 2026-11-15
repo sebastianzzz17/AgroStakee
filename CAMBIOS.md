@@ -1,5 +1,28 @@
 # Cambios
 
+## Versión 17 (toda Colombia, la EVA en las rotaciones, ubicación del equipo)
+
+- **Recorrido y guía independientes:** "Saltar" en el recorrido ya no salta la guía: la abre. Terminar el recorrido
+  ("Empezar") también la abre. "Salir de la guía" cierra solo la guía.
+- **Toda Colombia:** el mapa y el buscador tienen los 1.101 municipios con datos en la EVA (434 KB; 85 KB
+  comprimido). La lista para el mapa viaja comprimida (unos 20 KB).
+- **La EVA en las rotaciones:**
+  - un cultivo que no se siembra en el municipio (ni, en el Caribe, a menos de 100 km) queda por fuera, con la
+    razón;
+  - nuevo indicador **"Se siembra en tu zona"** (anillo 📍, pesa el doble): compara cada siembra con lo que se
+    siembra en el municipio en ese mismo semestre (la EVA separa el semestre A, de enero a junio, y el B, de julio a
+    diciembre). Ejemplo: en Sahagún el ñame y la yuca se siembran en el primer semestre y el fríjol y el ajonjolí en
+    el segundo;
+  - el "por qué" de cada siembra dice cuántas hectáreas se siembran en el municipio en esa época.
+  - Fuera del Caribe sale un aviso de que es una guía en prueba. El caupí y la braquiaria tienen reglas propias
+    (ver README).
+- **Usar mi ubicación:** botón junto al buscador que usa el GPS del celular o del computador (el navegador pide
+  permiso). Luego sale la misma tarjeta de "Confirmar mi ubicación", con la precisión en metros.
+- **Celular:** en "Qué se siembra" se quitó el párrafo de la fuente para que no se vea cargado (la EVA sigue en el
+  pie de "Fuentes de datos"). El botón de ubicación va en su propia fila.
+- **Computador:** los 8 anillos caben en una fila.
+- `data/municipios_caribe.json` pasó a ser `data/municipios.json`.
+
 ## Versión 16 (municipios, códigos de verificación y guía paso a paso)
 
 - **Municipios del Caribe:** el mapa ahora tiene los 194 municipios de los 7 departamentos del Caribe (puntos

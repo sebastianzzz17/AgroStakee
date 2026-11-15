@@ -1,4 +1,4 @@
-"""Prepara data/municipios_caribe.json: qué se siembra en cada municipio del Caribe colombiano y dónde queda.
+"""Prepara data/municipios.json: qué se siembra en cada municipio de Colombia, en qué semestre y dónde queda.
 
 Fuentes:
   - Evaluaciones Agropecuarias Municipales (EVA), base agrícola 2019-2024 (UPRA / MinAgricultura), archivo
@@ -13,6 +13,10 @@ Fuentes:
 
 Uso (necesita pandas y openpyxl, solo en tu computador; el servidor no los usa):
   python herramientas/preparar_municipios.py --eva 20250617_BaseAgricola20192024.xlsx --sivel datos-geo-col.sql [--divipola DIVIPOLA.csv]
+  Con --region caribe sale solo el Caribe (como en la versión 16).
+
+Semestres: la EVA reporta los cultivos transitorios por semestre (A: siembras de enero a junio; B: de julio a
+diciembre). La app los compara con sus temporadas: primeras lluvias ≈ semestre A, segundas lluvias ≈ semestre B.
 """
 import argparse, csv, json, math, re, sys, unicodedata
 from pathlib import Path
@@ -68,12 +72,14 @@ def leer_divipola(ruta):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--eva", required=True); ap.add_argument("--sivel"); ap.add_argument("--divipola")
-    ap.add_argument("--salida", default=str(RAIZ / "data" / "municipios_caribe.json"))
+    ap.add_argument("--salida", default=str(RAIZ / "data" / "municipios.json"))
+    ap.add_argument("--region", choices=["colombia", "caribe"], default="colombia")
     a = ap.parse_args()
     if not (a.sivel or a.divipola): sys.exit("Falta --divipola o --sivel (coordenadas).")
     import pandas as pd
     df = pd.read_pickle(a.eva) if a.eva.endswith(".pkl") else pd.read_excel(a.eva, header=7)
-    df = df[df["Departamento"].isin(CARIBE)].copy()
+    if a.region == "caribe": df = df[df["Departamento"].isin(CARIBE)]
+    df = df.copy()
     df["Municipio"] = df["Municipio"].astype(str).str.replace("*", "", regex=False).str.strip()
     anios = sorted(int(x) for x in df["Año"].dropna().unique())
 
@@ -84,14 +90,17 @@ def main():
     zona_de = {cod: zid for zid, cod in PILOTO.items()}
 
     if dane and sivel:
-        dif = sorted(((km(*dane[c], *sivel[c]), c) for c in dane if c in sivel and c // 1000 in {8, 13, 20, 23, 44, 47, 70}), reverse=True)
-        print(f"DANE frente a SIVeL ({len(dif)} municipios del Caribe): más de 5 km en {sum(d > 5 for d, _ in dif)}")
+        dif = sorted(((km(*dane[c], *sivel[c]), c) for c in dane if c in sivel), reverse=True)
+        print(f"DANE frente a SIVeL ({len(dif)} municipios): más de 5 km en {sum(d > 5 for d, _ in dif)}")
         for d, c in dif[:10]: print(f"   {c}: {d:.1f} km")
 
     # Área sembrada al año (suma de los semestres A y B) y rendimiento por cosecha (producción / área cosechada).
     anual = df.groupby(["Código Dane municipio", "Cultivo", "Año"], as_index=False).agg(
         area=("Área sembrada (ha)", "sum"), cos=("Área cosechada (ha)", "sum"), prod=("Producción (t)", "sum"))
     por = anual.groupby(["Código Dane municipio", "Cultivo"]).agg(area=("area", "mean"), cos=("cos", "sum"), prod=("prod", "sum"), anios=("Año", "nunique")).reset_index()
+    per = df["Periodo"].astype(str)
+    df["sem"] = per.str[-1].where(per.str[-1].isin(["A", "B"]), "")
+    sem = df[df["sem"] != ""].groupby(["Código Dane municipio", "Cultivo", "sem"])["Área sembrada (ha)"].sum()
     dep_rend = {}
     for (dep, cul), g in df.groupby(["Departamento", "Cultivo"]):
         cos, prod = g["Área cosechada (ha)"].sum(), g["Producción (t)"].sum()
@@ -114,17 +123,22 @@ def main():
             ref = dep_rend.get((fila["Departamento"], nom))
             if rend and ref and not (ref / 3 <= rend <= ref * 3):      # muy lejos de lo del departamento: se usa el del departamento
                 raros.append(f"{fila['Municipio']} {nom}: {rend:.1f} t/ha (dpto {ref:.1f})"); rend = None
-            nuestros[cid] = {"ha": round(float(r["area"]), 1), "rend": round(float(rend), 2) if rend else None, "anios": int(r["anios"])}
+            n_ = int(r["anios"])
+            sa, sb = (float(sem.get((cod, nom, x), 0)) / n_ for x in "AB")
+            nuestros[cid] = {"ha": round(float(r["area"]), 1), "a": round(sa, 1), "b": round(sb, 1),
+                             "rend": round(float(rend), 2) if rend else None, "anios": n_}
         top = p.sort_values("area", ascending=False).head(6)
         municipios.append({"cod": cod, "n": fila["Municipio"], "d": fila["Departamento"], "lat": round(lat, 5), "lon": round(lon, 5),
                            "zona": zid, "geo": fuente_geo, "nuestros": nuestros,
                            "top": [[c, round(float(x))] for c, x in zip(top["Cultivo"], top["area"]) if x >= 1]})
-    deps = {d: {cid: round(dep_rend[(d, nom)], 2) for cid, nom in EVA.items() if (d, nom) in dep_rend} for d in CARIBE}
+    deps = {d: {cid: round(dep_rend[(d, nom)], 2) for cid, nom in EVA.items() if (d, nom) in dep_rend} for d in sorted(df["Departamento"].unique())}
     out = {"fuente": {"cultivos": f"Evaluaciones Agropecuarias Municipales (EVA) {anios[0]}-{anios[-1]}, UPRA y Ministerio de Agricultura",
                       "coordenadas": geo, "nota": "Los dos últimos años de la EVA pueden cambiar y la forma de medir los cultivos transitorios cambió desde 2022. "
                       "«Frijol» en la EVA junta todas las clases de fríjol."},
-           "anios": [anios[0], anios[-1]], "eva": EVA, "departamentos": deps, "municipios": municipios}
+           "anios": [anios[0], anios[-1]], "eva": EVA, "caribe": CARIBE, "departamentos": deps, "municipios": municipios}
     Path(a.salida).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    vieja = RAIZ / "data" / "municipios_caribe.json"
+    if a.salida.endswith("municipios.json") and vieja.exists(): vieja.unlink()          # la versión 16 usaba ese nombre
     print(f"{len(municipios)} municipios → {a.salida} ({Path(a.salida).stat().st_size / 1024:.0f} KB) · coordenadas: {geo}")
     if sin_coord: print("Sin coordenadas (quedan por fuera):", ", ".join(sin_coord))
     if raros: print(f"Rendimientos muy lejos del departamento (se usa el del departamento): {len(raros)}"); [print("  ", x) for x in raros[:12]]
