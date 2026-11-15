@@ -289,7 +289,7 @@ def referencia():
 @app.get("/api/estado_datos")
 def estado_datos():
     """Avance de la descarga automática y cuántas zonas ya tienen datos reales de la NASA."""
-    return jsonify(sincronizar.estado())
+    return jsonify(sincronizar.estado() | {"cuentas": db.modo_cuentas()})   # "postgres": las cuentas no se pierden
 
 @app.post("/api/punto")
 def punto():

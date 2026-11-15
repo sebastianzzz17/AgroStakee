@@ -3,8 +3,12 @@
 Dos grupos de tablas:
 - Catálogo (cultivos, zonas, clima, perfiles): se vuelve a sembrar con datos DE EJEMPLO cuando cambia VERSION.
   Para cargar datos reales: python importar.py <cultivos|zonas|clima|perfiles|nasa> archivo
-- Usuarios (usuarios, estacas, lecturas, externos): NUNCA se borran al actualizar la app."""
-import json, os, sqlite3
+- Usuarios (usuarios, estacas, lecturas, externos): NUNCA se borran al actualizar la app.
+
+Cuentas que no se pierden: si existe la variable de entorno DATABASE_URL (una base Postgres, por ejemplo de Neon o
+de Render), las tablas usuarios, estacas y lecturas viven allá. Así sobreviven a los reinicios de un servidor que borra
+su disco (Render gratis). El catálogo, el clima y las cachés siguen en SQLite: se vuelven a crear o descargar solos."""
+import json, os, re, sqlite3, threading
 from contextlib import closing
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -50,6 +54,62 @@ CREATE TABLE IF NOT EXISTS externos(
   clave TEXT PRIMARY KEY, datos TEXT NOT NULL, creado_en TEXT NOT NULL DEFAULT (datetime('now')));
 """
 
+PG_URL = os.environ.get("DATABASE_URL", "").strip()
+_EN_PG = re.compile(r"\b(?:usuarios|estacas|lecturas)\b")
+_INSERTA_PG = re.compile(r"\s*INSERT\s+INTO\s+(?:usuarios|estacas|lecturas)\b", re.I)
+_AHORA_PG = "to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')"   # mismo formato que datetime('now') de SQLite
+SCHEMA_PG = [f"""CREATE TABLE IF NOT EXISTS usuarios(
+  id BIGSERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL, apellido TEXT NOT NULL, correo TEXT NOT NULL UNIQUE,   -- la app guarda el correo en minúsculas
+  clave_hash TEXT NOT NULL, acepta_datos_en TEXT NOT NULL, compartir_datos INTEGER NOT NULL DEFAULT 0,
+  perfil TEXT, creado_en TEXT NOT NULL DEFAULT ({_AHORA_PG}))""",
+ f"""CREATE TABLE IF NOT EXISTS estacas(
+  id BIGSERIAL PRIMARY KEY, usuario_id BIGINT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  nombre TEXT NOT NULL, lote INTEGER NOT NULL DEFAULT 1, lat DOUBLE PRECISION, lon DOUBLE PRECISION,
+  token_hash TEXT NOT NULL UNIQUE, creada_en TEXT NOT NULL DEFAULT ({_AHORA_PG}), ultima_vez TEXT)""",
+ """CREATE TABLE IF NOT EXISTS lecturas(
+  id BIGSERIAL PRIMARY KEY, estaca_id BIGINT NOT NULL REFERENCES estacas(id) ON DELETE CASCADE,
+  fecha TEXT NOT NULL,
+  ph DOUBLE PRECISION, humedad_pct DOUBLE PRECISION, temp_suelo_c DOUBLE PRECISION, ce_us_cm DOUBLE PRECISION,
+  n_mg_kg DOUBLE PRECISION, p_mg_kg DOUBLE PRECISION, k_mg_kg DOUBLE PRECISION,
+  temp_aire_c DOUBLE PRECISION, humedad_aire_pct DOUBLE PRECISION, bateria_v DOUBLE PRECISION, rssi_dbm DOUBLE PRECISION)""",
+ "CREATE INDEX IF NOT EXISTS ix_lecturas_estaca_fecha ON lecturas(estaca_id, fecha)"]
+_pg_local = threading.local()
+
+def modo_cuentas():
+    return "postgres" if PG_URL else "sqlite"
+
+def _usa_pg(sql):
+    return bool(PG_URL) and bool(_EN_PG.search(sql))
+
+def _pg_nueva():
+    import psycopg
+    from psycopg.rows import dict_row
+    return psycopg.connect(PG_URL, autocommit=True, row_factory=dict_row, connect_timeout=15)
+
+def _pg_conn():
+    """Una conexión por hilo y por proceso (gunicorn --preload crea el proceso hijo después de importar la app)."""
+    c = getattr(_pg_local, "c", None)
+    if c is None or c.closed or getattr(_pg_local, "pid", None) != os.getpid():
+        _pg_local.c, _pg_local.pid = _pg_nueva(), os.getpid()
+    return _pg_local.c
+
+def _pg_hacer(fn):
+    """Ejecuta fn(conexión). Si la conexión se cayó (los Postgres en la nube cierran las inactivas), reconecta una vez."""
+    import psycopg
+    for intento in (1, 2):
+        try:
+            return fn(_pg_conn())
+        except psycopg.OperationalError:
+            try: _pg_local.c.close()
+            except Exception: pass
+            _pg_local.c = None
+            if intento == 2: raise
+
+def _pg_sql(sql, con_args):
+    """Del dialecto de la app (SQLite, con ?) al de psycopg (%s)."""
+    return (sql.replace("%", "%%") if con_args else sql).replace("?", "%s")
+
 def conn():
     c = sqlite3.connect(DB)
     c.row_factory = sqlite3.Row
@@ -57,17 +117,30 @@ def conn():
     return c
 
 def consultar(sql, args=()):
+    if _usa_pg(sql):
+        return _pg_hacer(lambda c: [dict(r) for r in c.execute(_pg_sql(sql, bool(args)), tuple(args) if args else None).fetchall()])
     with closing(conn()) as c:
         return [dict(r) for r in c.execute(sql, args).fetchall()]
 
 def ejecutar(sql, args=()):
     """Escribe y devuelve el id de la fila nueva (si aplica)."""
+    if _usa_pg(sql):
+        ins = bool(_INSERTA_PG.match(sql)); q = _pg_sql(sql, bool(args)) + (" RETURNING id" if ins else "")
+        def hacer(c):
+            cur = c.execute(q, tuple(args) if args else None)
+            return cur.fetchone()["id"] if ins else cur.rowcount
+        return _pg_hacer(hacer)
     with closing(conn()) as c:
         cur = c.execute(sql, args)
         c.commit()
         return cur.lastrowid
 
 def ejecutar_varios(sql, filas):
+    if _usa_pg(sql):
+        def hacer(c):
+            with c.transaction(), c.cursor() as cur:
+                cur.executemany(_pg_sql(sql, True), [tuple(f) for f in filas])
+        return _pg_hacer(hacer)
     with closing(conn()) as c:
         c.executemany(sql, filas)
         c.commit()
@@ -105,3 +178,18 @@ def init(forzar=False):
                 pass
         for p in _leer("perfiles_suelo.json"):
             guardar("perfiles", dict(id=p["id"], nombre=p["nombre"], datos=json.dumps(p)), 0, EJEMPLO)
+    if PG_URL: _init_pg()
+
+def _init_pg():
+    """Crea las tablas de cuentas en Postgres si no existen (nunca borra nada). Conexión propia y cerrada al final,
+    para que el proceso hijo de gunicorn no herede un socket abierto."""
+    import time
+    for intento in range(3):
+        try:
+            with closing(_pg_nueva()) as c:
+                for q in SCHEMA_PG: c.execute(q)
+            return
+        except Exception as e:
+            if intento == 2:
+                raise RuntimeError(f"No se pudo conectar a la base de cuentas (DATABASE_URL): {e}") from e
+            time.sleep(3)

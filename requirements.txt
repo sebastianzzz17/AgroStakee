@@ -2,6 +2,8 @@ flask
 requests
 # Servidor para producción (Render): gunicorn -c gunicorn.conf.py app:app
 gunicorn
+# Cuentas en Postgres (solo se usa si existe la variable DATABASE_URL)
+psycopg[binary]
 # Opcional, solo para Google Earth Engine (pendiente y NDVI de Landsat):
 # earthengine-api
 # Opcional, solo para Copernicus CDS (python importar.py cds):

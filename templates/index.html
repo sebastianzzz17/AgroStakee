@@ -225,6 +225,7 @@ details ol,details ul{color:var(--txt3);font-size:16px;padding-left:20px;margin:
 .factores span{font-size:14px;font-weight:600;border-radius:999px;padding:5px 11px;background:var(--card2)}
 .estaca{display:inline-flex;align-items:center;gap:6px;font-size:16px;font-weight:600;color:var(--lima);background:var(--card);border-radius:999px;padding:8px 14px;margin:-4px 0 6px 2px}
 .estaca-sub{font-size:15px;color:var(--sec);margin:0 4px 14px}
+.origen-lote{display:block;font-size:18px;font-weight:600;color:var(--txt);line-height:1.3}
 .token{font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--card2);border-radius:12px;padding:12px;word-break:break-all;margin:8px 0}
 .error{color:var(--rojo);font-size:16px;margin:8px 2px}
 .ok-txt{color:var(--verde);font-size:16px;margin:8px 2px}
@@ -262,6 +263,7 @@ details ol,details ul{color:var(--txt3);font-size:16px;padding-left:20px;margin:
 .expl p{margin:0 0 6px}.expl b{color:var(--txt)}
 .porque{font-size:17px;color:var(--txt3);margin:12px 0 0}
 .acciones{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.ext-aplicado{margin:14px 0 0;padding:10px 14px;border-radius:14px;background:color-mix(in srgb,var(--verde, #30d158) 16%,transparent);color:var(--txt);font-size:16px;font-weight:700}
 .btn{background:var(--acento);color:#000;font-weight:700;border-radius:999px;padding:13px 24px;font-size:17px}
 .btn:disabled{opacity:.5}
 .btn2{background:var(--btn2);color:var(--txt);font-weight:600;border-radius:999px;padding:12px 19px;font-size:17px}
@@ -518,24 +520,26 @@ html,body{max-width:100%;overflow-x:clip}
 .estaca.off{background:color-mix(in srgb,var(--rojo) 15%,transparent)} .estaca.off .estado-estaca{color:var(--rojo)}
 .estaca.on{background:color-mix(in srgb,var(--verde) 15%,transparent)} .estaca.on .estado-estaca{color:var(--verde)}
 .plan-accion h2{font-size:22px}.pa2-sub{font-size:16px;margin:2px 0 12px}
-.pa2-tira{display:flex;gap:2px}.pa2-tira i{flex:1;height:22px;border-radius:3px}
-.pa2-tira i.ini{border-top-left-radius:11px;border-bottom-left-radius:11px}.pa2-tira i.fin{border-top-right-radius:11px;border-bottom-right-radius:11px}
-.pa2-meses{display:flex;gap:2px;margin-top:4px}.pa2-meses span{flex:1;text-align:center;font-size:12px;color:var(--txt3);min-width:0}
-.pa2-meses .hoy{color:var(--lima);font-weight:800}
-.pa2-ley{display:flex;flex-wrap:wrap;gap:6px 14px;margin:12px 0 4px;font-size:15px;color:var(--txt2)}
-.pa2-ley i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-1px}
-.pa2-etapas{margin-top:16px}
-.pa2-etapa{position:relative;padding:0 0 20px 32px}
-.pa2-etapa::before{content:"";position:absolute;left:10px;top:26px;bottom:2px;width:2px;background:var(--sep)}
-.pa2-etapa.ultima::before{display:none}
-.pa2-etapa .punto{position:absolute;left:2px;top:6px;width:18px;height:18px;border-radius:50%;background:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 28%,transparent)}
-.pa2-cab{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pa2-cab .ico{font-size:24px}.pa2-cab b{font-size:21px}
-.pa2-cab .dur{font-size:13.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:color-mix(in srgb,var(--c) 24%,transparent);color:var(--txt)}
-.pa2-fechas{margin:3px 0 10px;font-size:16px;color:var(--txt2)}
-.pa2-ev{display:grid;gap:8px}
-.pa2-ev > div{display:flex;gap:12px;align-items:flex-start;background:var(--card2);border-radius:16px;padding:12px 14px}
-.pa2-ev .ic{font-size:22px;line-height:1.2;flex:none}.pa2-ev p{margin:0;font-size:18px;line-height:1.38}
-.pa2-ev .cuando{display:block;font-size:13.5px;font-weight:700;color:var(--txt2);margin-bottom:2px;text-transform:capitalize}
+.pa3-rango{margin:0 0 12px;font-size:15px;font-weight:600;color:var(--txt2)}
+.pa3{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.pa3-mes{display:flex;gap:14px;align-items:flex-start;background:var(--card2);border-radius:18px;padding:12px}
+.pa3-mes.quieto{background:transparent;border:1px dashed var(--sep);padding:10px 12px}
+.pa3-cal{flex:none;width:62px;border-radius:12px;overflow:hidden;text-align:center;background:var(--card);border:1px solid var(--sep)}
+.pa3-cal::before{content:"";display:block;height:8px;background:var(--c)}
+.pa3-cal b{display:block;font-size:19px;font-weight:800;letter-spacing:.5px;margin-top:5px;line-height:1.1}
+.pa3-cal .a{display:block;font-size:12.5px;font-weight:700;color:var(--txt2);margin-top:1px}
+.pa3-cal small{display:block;font-size:12px;color:var(--txt3);padding:1px 0 6px}
+.pa3-mes.hoy .pa3-cal{border:2px solid var(--lima)}
+.pa3-cuerpo{flex:1;min-width:0}
+.pa3-titulo{margin:2px 0 6px;font-size:18px;font-weight:700;line-height:1.25}
+.pa3-mes.quieto .pa3-titulo{font-size:16.5px}
+.pa3-titulo .tag{display:inline-block;margin-left:8px;font-size:12.5px;font-weight:800;padding:2px 9px;border-radius:999px;background:var(--lima);color:var(--on-lima);vertical-align:2px}
+.pa3-etapas{display:flex;flex-wrap:wrap;gap:6px}
+.pa3-etapa{display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:700;padding:3px 10px;border-radius:999px;background:color-mix(in srgb,var(--c) 26%,transparent);color:var(--txt)}
+.pa3-tarea{display:flex;gap:10px;align-items:flex-start;margin-top:10px}
+.pa3-tarea .ic{font-size:22px;line-height:1.2;flex:none}
+.pa3-tarea p{margin:0;font-size:18px;line-height:1.38}
+.pa3-nada{margin:6px 0 0;font-size:16px;color:var(--txt2)}
 .capa-ley{margin:8px 2px 4px;padding:12px 14px;border-radius:16px;background:var(--card)}
 .capa-ley .ley-t{font-size:15px;margin-bottom:8px}
 .ley-barra{height:14px;border-radius:7px;box-shadow:inset 0 0 0 1px #0002}
@@ -622,7 +626,7 @@ const NIVC = {nulo:"verde", bajo:"verde", medio:"amarillo", alto:"rojo"};
 const NIVT = n => ({nulo:L("Sin riesgo","No risk"), bajo:L("Bajo","Low"), medio:L("Medio","Medium"), alto:L("Alto","High")})[n];
 const TIPOC = {cereal:"#ffcc4d", leguminosa:"#30d158", tuberculo:"#d08a4c", oleaginosa:"#ff9f0a", abono_verde:"#a8f04a", cobertura:"#8e8e93"};
 const PRI = () => [["agua","💧",L("Ahorrar agua","Save water"),L("Cultivos que piden menos agua","Crops that need less water")],
-             ["forraje","🐄",L("Comida para el ganado","Feed for livestock"),L("Rastrojo y follaje para los animales","Residue and leaves for animals")],
+             ["forraje","🐄",L("Comida para el ganado","Feed for livestock"),L("Rastrojo y hojas para los animales","Residue and leaves for animals")],
              ["nitrogeno","🌱",L("Abono natural","Natural fertilizer"),L("Plantas que fijan nitrógeno al suelo","Plants that fix nitrogen in the soil")],
              ["erosion","⛰️",L("Frenar la erosión","Stop erosion"),L("Suelo cubierto, menos arrastre","Covered soil, less runoff")],
              ["materia_organica","🍂",L("Materia orgánica","Organic matter"),L("Tierra más viva y fértil","Livelier, more fertile soil")],
@@ -1394,6 +1398,8 @@ const interpLluvia = mm => mm < 30 ? L("Mes seco","Dry month") : mm < 90 ? L("Me
 const interpSecado = (ev, m) => { const d = ev / DIAS_MES[m]; return d < 4 ? L("La tierra se seca poco","The soil dries little") : d < 5.5 ? L("La tierra se seca a ritmo normal","The soil dries at a normal pace") : L("La tierra se seca mucho","The soil dries a lot"); };
 const estadoHum = h => h < 20 ? L("seca","dry") : h <= 35 ? L("bien","good") : L("encharcada","waterlogged");
 const lista = xs => xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + L(" y "," and ") + xs[xs.length - 1];
+/* Pie de fuentes: el mismo al final de Resumen, Mi lote, Rotación y Proyección */
+const pieFuentes = () => `<p class="fuentes-pie">${L("Fuentes de datos: NASA POWER, NASA MODIS (ORNL DAAC), SRTM, ISRIC SoilGrids, IDEAM, NASA AppEEARS, Google Earth Engine, Copernicus CDS y USDA PLANTS (estas cuatro cuando hay cuenta o conexión). Con la estaca no conectada, los valores se llenan con datos históricos de tu zona. Gráficas y animaciones generadas con inteligencia artificial.","Data sources: NASA POWER, NASA MODIS (ORNL DAAC), SRTM, ISRIC SoilGrids, IDEAM, NASA AppEEARS, Google Earth Engine, Copernicus CDS and USDA PLANTS (the last four when an account or connection is available). With the stake not connected, values are filled with your area's historical data. Charts and animations generated with artificial intelligence.")}</p>`;
 function renderResumen(){
   const el = $("#v0"), p = S.panel;
   if (!p) { el.innerHTML = cabecera(L("Resumen","Summary")) + esqueleto([300, "c2"], [190], [190], [190], [190], [240, "c2"]); return; }
@@ -1435,7 +1441,7 @@ function renderResumen(){
        return `<div>${anillo(r[k].valor, SEMC[NIVC[nv]], "", 76, 8, e)}<b>${t}</b><span class="${NIVC[nv]}">${NIVT(nv)}</span></div>`; }).join("")}</div></section>
    ${extra === 2 ? luna + sol : ""}
   </div>
-  ${S.punto ? `<p class="pie">${L(`Marcaste un punto a ${S.punto.km} km de ${corto(S.zona)}. Usamos el clima y el suelo de esa zona.`, `You marked a point ${S.punto.km} km from ${corto(S.zona)}. We use that area's weather and soil.`)}</p>` : ""}`;
+  ${S.punto ? `<p class="pie">${L(`Marcaste un punto a ${S.punto.km} km de ${corto(S.zona)}. Usamos el clima y el suelo de esa zona.`, `You marked a point ${S.punto.km} km from ${corto(S.zona)}. We use that area's weather and soil.`)}</p>` : ""}${pieFuentes()}`;
   ponerAltavoces(el);
 }
 function textoVoz(k){
@@ -1510,8 +1516,8 @@ $("#v1").addEventListener("click", e => {
 
 /* ================= 2. Mi lote ================= */
 const NUT = () => ({
- n:[L("Nitrógeno","Nitrogen"), L("Hace crecer hojas y tallos","Grows leaves and stems"), [["bajo", L("Bajo","Low"), L("Hojas amarillas, la planta crece lento","Yellow leaves, slow growth")], ["medio", L("Medio","Medium"), L("Hojas verdes y parejas","Even green leaves")], ["alto", L("Alto","High"), L("Mucho follaje y poco fruto","Lots of leaves, little fruit")]]],
- p:[L("Fósforo","Phosphorus"), L("Ayuda a raíces y flores","Helps roots and flowers"), [["bajo", L("Bajo","Low"), L("Hojas moradas o rojizas, raíces débiles","Purplish leaves, weak roots")], ["medio", L("Medio","Medium"), L("Plantas parejas y floración normal","Even plants, normal flowering")], ["alto", L("Alto","High"), L("No se nota a simple vista; sale en el laboratorio","Not visible; shows in a lab test")]]],
+ n:[L("Nitrógeno","Nitrogen"), L("Hace crecer hojas y tallos","Grows leaves and stems"), [["bajo", L("Bajo","Low"), L("Hojas amarillas, la planta crece lento","Yellow leaves, slow growth")], ["medio", L("Medio","Medium"), L("Hojas verdes y parejas","Even green leaves")], ["alto", L("Alto","High"), L("Muchas hojas y poco fruto","Lots of leaves, little fruit")]]],
+ p:[L("Fósforo","Phosphorus"), L("Ayuda a raíces y flores","Helps roots and flowers"), [["bajo", L("Bajo","Low"), L("Hojas moradas o rojizas, raíces débiles","Purplish leaves, weak roots")], ["medio", L("Medio","Medium"), L("Plantas parejas y floración normal","Even plants, normal flowering")], ["alto", L("Alto","High"), L("Ayuda a raíces y flores","Helps roots and flowers")]]],
  k:[L("Potasio","Potassium"), L("Da resistencia y buen fruto","Gives strength and good fruit"), [["bajo", L("Bajo","Low"), L("Bordes de las hojas secos, fruto pequeño","Dry leaf edges, small fruit")], ["medio", L("Medio","Medium"), L("Hojas sanas y fruto normal","Healthy leaves, normal fruit")], ["alto", L("Alto","High"), L("No se nota a simple vista; sale en el laboratorio","Not visible; shows in a lab test")]]]});
 const TEX = () => ({arenoso:["🏖️", L("Arenoso","Sandy"), L("Áspero. El agua se va rápido.","Gritty. Water drains fast.")],
   franco:["🌱", L("Franco","Loam"), L("Suave y equilibrado.","Soft and balanced.")], arcilloso:["🧱", L("Arcilloso","Clay"), L("Pegajoso. Guarda mucha agua.","Sticky. Holds lots of water.")]});
@@ -1618,7 +1624,7 @@ function textoOrigen(){
   return S.fuente ? L(`${esc(S.fuente.nombre)} · última lectura ${haceCuanto(S.fuente.fecha)}. Puedes ajustar los valores a mano.`, `${esc(S.fuente.nombre)} · last reading ${haceCuanto(S.fuente.fecha)}. You can adjust the values by hand.`)
     : S.origenSuelo === "historico" ? L("Todavía no hay lecturas de tu estaca: llenamos los datos con el historial de tu zona.","No stake readings yet: we filled in the data with your area's history.")
     : S.origenSuelo === "mapas" ? L("Valores tomados de los mapas globales.","Values taken from the global maps.")
-    : S.origenSuelo === "manual" ? L("Valores ajustados a mano.","Values adjusted by hand.")
+    : S.origenSuelo === "manual" ? `<span class="origen-lote">${L("Aquí están los datos de tu lote","Here are your plot's data")}</span>`
     : L("Todavía no hay lecturas de tu estaca.","No stake readings yet.");
 }
 const ORIGEN_EXT = o => ({satelite:["🛰️", L("Satélite / mapa","Satellite / map")], zona:["📍", L("Promedio de la zona","Area average")], estimado:["≈", L("Estimado","Estimated")]})[o];
@@ -1650,12 +1656,13 @@ function tarjetaGlobal(){
     : X.cargando ? animConsulta()
     : X.error ? `<p class="error">${esc(X.error)}</p><button type="button" class="btn2" data-ext>${L("Intentar de nuevo","Try again")}</button>`
     : `<div class="ext-vars">${X.variables.map(x => { const [ic, t] = ORIGEN_EXT(x.origen); return `<div class="ext-var ${x.origen}"><span class="nom">${esc(x.nombre)}</span><b class="n">${valorExt(x)}</b><span class="org" title="${esc(x.fuente || "")}">${ic} ${t}</span></div>`; }).join("")}</div>
-       <div class="acciones"><button type="button" class="btn" data-usar-ext>${L("Usar estos datos","Use these data")}</button><button type="button" class="btn2" data-ext>${L("Consultar de nuevo","Look up again")}</button></div>`;
+       ${X.aplicado ? `<p class="ext-aplicado">✓ ${L("Datos aplicados a tu lote","Data applied to your plot")}</p>` : ""}
+       <div class="acciones">${X.aplicado ? "" : `<button type="button" class="btn" data-usar-ext>${L("Usar estos datos","Use these data")}</button>`}<button type="button" class="btn2" data-ext>${L("Consultar de nuevo","Look up again")}</button></div>`;
   return `<section class="card c4 sin-voz" id="global-card"><h2>${L("Suelo según mapas globales","Soil from global maps")}</h2><p class="sub" style="margin-bottom:12px">${intro}</p>${cuerpo}</section>`;
 }
 function renderLote(){
   const s = S.suelo, z = S.zona, sug = S.texHist || z.suelo, T = TEX();
-  const opt = (k, v, e, t, d, act, sg) => `<button type="button" class="opt" data-k="${k}" data-v="${v}" aria-pressed="${act}"><span class="e">${e}</span><b>${t}</b><small>${d}</small>${sg ? `<span class="sug">${L("Sugerido","Suggested")}</span>` : ""}</button>`;
+  const opt = (k, v, e, t, d, act, sg) => `<button type="button" class="opt" data-k="${k}" data-v="${v}" aria-pressed="${act}">${e ? `<span class="e">${e}</span>` : ""}<b>${t}</b><small>${d}</small>${sg ? `<span class="sug">${L("Sugerido","Suggested")}</span>` : ""}</button>`;
   $("#v2").innerHTML = cabecera(L("Mi lote","My plot")) + `<p class="estaca ${estacaConectada() ? "on" : "off"}">📡 ${L("Estaca conectada:","Stake:")} <b class="estado-estaca">${estacaConectada() ? L("Conectada","Connected") : L("Sin conexión","Not connected")}</b></p>
    <p class="estaca-sub" id="estado-suelo">${textoOrigen()}</p>
    ${z.punto ? `<p class="estaca-sub punto-sub">📍 ${S.puntoEstado === "descargando" ? L(`Descargando el clima de la NASA para tu punto (${N(z.lat, 3)}, ${N(z.lon, 3)})…`, `Downloading NASA weather for your point (${z.lat}, ${z.lon})…`)
@@ -1673,10 +1680,10 @@ function renderLote(){
    <section class="card c2" data-lee="nutrientes"><h2>${L("Nutrientes","Nutrients")}</h2><p class="sub" style="margin-bottom:12px">${L("El alimento que la tierra le da a tus plantas.","The food your soil gives your plants.")}</p>
      ${["n", "p", "k"].map(k => { const nu = NUT()[k]; return `<div class="nut" data-nut="${k}"><header><b>${nu[0]}</b><span>${nu[1]}</span></header><div class="seg">${nu[2].map(([v, t]) => `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${s[k] === v}">${t}</button>`).join("")}</div><p>${nu[2].find(x => x[0] === s[k])[2]}</p></div>`; }).join("")}</section>
    <section class="card c2" data-lee="sales"><h2>${L("Sales en el suelo","Salt in the soil")}</h2><div class="opts">
-     ${opt("salinidad", "normal", "✅", L("Normal","Normal"), L("Sin costras blancas; las plantas crecen parejas.","No white crusts; plants grow evenly."), s.salinidad === "normal")}
-     ${opt("salinidad", "alta", "🧂", L("Alta","High"), L("Costras blancas, puntas de hojas quemadas o agua salobre.","White crusts, burnt leaf tips or brackish water."), s.salinidad === "alta")}</div></section>
+     ${opt("salinidad", "normal", "", L("Normal","Normal"), L("Sin costras blancas; las plantas crecen parejas.","No white crusts; plants grow evenly."), s.salinidad === "normal")}
+     ${opt("salinidad", "alta", "", L("Alta","High"), L("Costras blancas, puntas de hojas quemadas o agua salobre.","White crusts, burnt leaf tips or brackish water."), s.salinidad === "alta")}</div></section>
   </div>
-  <p class="fuentes-pie">${L("Fuentes de datos: NASA POWER, NASA MODIS (ORNL DAAC), SRTM, ISRIC SoilGrids, IDEAM, NASA AppEEARS, Google Earth Engine, Copernicus CDS y USDA PLANTS (estas cuatro cuando hay cuenta o conexión). Con la estaca no conectada, los valores se llenan con datos históricos de tu zona. Gráficas y animaciones generadas con inteligencia artificial.","Data sources: NASA POWER, NASA MODIS (ORNL DAAC), SRTM, ISRIC SoilGrids, IDEAM, NASA AppEEARS, Google Earth Engine, Copernicus CDS and USDA PLANTS (the last four when an account or connection is available). With the stake not connected, values are filled with your area's historical data. Charts and animations generated with artificial intelligence.")}</p>
+  ${pieFuentes()}
   <div class="guardar-fila"><button type="button" class="btn grande" id="btn-guardar" data-guardar>${ICO.guardar} ${L("Guardar datos","Save data")}</button></div>`;
   renderSaludLote(); ponerAltavoces($("#v2"));
 }
@@ -1753,7 +1760,8 @@ $("#v2").addEventListener("click", async e => {
     if (S.externos.n_desde_mo) S.suelo.n = S.externos.n_desde_mo;
     if (V.humedad_pct != null) S.suelo.humedad_pct = Math.round(Math.max(5, Math.min(50, V.humedad_pct)) * 10) / 10;
     if (V.temp_suelo_c != null) S.suelo.temp_suelo_c = Math.round(Math.max(18, Math.min(45, V.temp_suelo_c)) * 10) / 10;
-    marcarManual("mapas"); renderLote(); actualizar(); return;
+    S.externos.aplicado = true; marcarManual("mapas"); renderLote(); actualizar();
+    avisar(L("Datos aplicados: tu lote ya usa los valores de los mapas globales.","Data applied: your plot now uses the values from the global maps."), "✅"); return;
   }
   const o = e.target.closest("[data-k][data-v]");
   if (o) { const k = o.dataset.k; if (k === "textura") S.textura = o.dataset.v; else S.suelo[k] = o.dataset.v; marcarManual(); renderLote(); actualizar();
@@ -1766,7 +1774,7 @@ function lecturaNutriente(k, raiz){
   const nu = NUT()[k], fila = (raiz || document).querySelector(`.nut[data-nut="${k}"]`);
   const marcado = fila?.querySelector('[aria-pressed="true"]')?.dataset.v || S.suelo[k];
   const x = nu[2].find(z => z[0] === marcado) || nu[2][1];
-  return `${nu[0]}: ${x[1]}. ${x[2]}.`;
+  return L(`${nu[0]} ${x[1].toLowerCase()}. ${x[2]}.`, `${x[1]} ${nu[0].toLowerCase()}. ${x[2]}.`);
 }
 const LECTORES = {
   "lluvia-res": () => { const C = S.panel.clima, m = C.mes_actual - 1; return L(`Lluvia de ${MES(m)}: ${N(C.lluvia_mes)} milímetros. ${interpLluvia(C.lluvia_mes)}.`, `Rain in ${MES(m)}: ${N(C.lluvia_mes)} millimeters. ${interpLluvia(C.lluvia_mes)}.`); },
@@ -1819,7 +1827,7 @@ function renderRot(){
   if (!r) { el.innerHTML = cabecera(L("Rotación","Rotation")) + `<div class="grid">${prios}</div><div style="height:12px"></div>` + esqueleto([420, "c4"], [420, "c4"]); ponerAltavoces(el); return; }
   let h = r.notas.map(n => `<div class="card c4 nota-box">${n}</div>`).join("") + r.planes.map((p, i) => tarjetaPlan(p, i, r)).join("");
   if (r.descartados.length) h += `<section class="card c4"><h2>${L("Cultivos que quedaron por fuera","Crops left out")}</h2><div>${r.descartados.map(d => `<div class="alerta"><span style="font-size:24px">${d.icono}</span><div><b>${d.cultivo}</b><p>${cap(d.razon)}.</p></div></div>`).join("")}</div></section>`;
-  el.innerHTML = cabecera(L("Rotación","Rotation")) + `<div class="${clsGrid()}">${prios}${h}</div><p class="pie">${L("Es una guía basada en reglas escritas, no un pronóstico. No reemplaza un análisis de laboratorio ni a un agrónomo.","It is a rule-based guide, not a forecast. It does not replace a lab test or an agronomist.")}</p>`;
+  el.innerHTML = cabecera(L("Rotación","Rotation")) + `<div class="${clsGrid()}">${prios}${h}</div><p class="pie">${L("Es una guía basada en reglas escritas, no un pronóstico. No reemplaza un análisis de laboratorio ni a un agrónomo.","It is a rule-based guide, not a forecast. It does not replace a lab test or an agronomist.")}</p>${pieFuentes()}`;
   ponerAltavoces(el);
 }
 function tarjetaPlan(p, i, r){
@@ -1855,34 +1863,39 @@ function eventosPlan(c){
 }
 const EVI = t => ({siembra:"🌱", cosecha:"🧺", cambio:"🔁", cobertura:"☘️", hoy:"⏳"})[t] || "•";
 function planAccion(c){
+  /* Agenda mes a mes: cada fila es un mes (o varios meses seguidos sin tareas) con su hojita de calendario,
+     el nombre del mes en palabras, la etapa en la que está el lote y lo que hay que hacer. */
   const {s, mes, ev} = eventosPlan(c);
   const etapas = (s > 0 ? [{espera:true, nombre:L("Preparar el lote","Prepare the plot"), icono:"⏳", ini:0, fin:s - 1}] : [])
     .concat(c.gantt.filas.map(f => ({nombre:f.nombre, icono:f.icono, tipo:f.tipo, ini:s + f.inicio, fin:s + f.inicio + f.largo - 1})))
     .sort((a, b) => a.ini - b.ini);
   const total = Math.max(...etapas.map(e => e.fin), ...ev.map(e => e.k)) + 1;
   const color = e => e.espera ? "var(--grid2)" : TIPOC[e.tipo] || COL.gris;
-  etapas.forEach(e => e.ev = []);
-  ev.forEach(x => {                                   // cada tarea va a la etapa en la que cae (la del mismo cultivo si hay dos)
-    const en = etapas.filter(e => x.k >= e.ini && x.k <= e.fin);
-    const et = en.find(e => e.nombre === x.cultivo) || en.find(e => !e.espera) || en[0]
-            || etapas.reduce((a, b) => Math.abs(b.ini - x.k) < Math.abs(a.ini - x.k) ? b : a);
-    et.ev.push(x);
-  });
-  const nomMes = k => { const [m, y] = mes(k); return `${MES(m)} ${L("de","")} ${y}`.replace("  ", " "); };
-  const rango = e => e.ini === e.fin ? cap(nomMes(e.ini)) : (() => { const [m1, y1] = mes(e.ini), [m2, y2] = mes(e.fin);
-      return y1 === y2 ? L(`${cap(MES(m1))} a ${MES(m2)} de ${y2}`, `${cap(MES(m1))} to ${MES(m2)} ${y2}`) : L(`${cap(MES(m1))} de ${y1} a ${MES(m2)} de ${y2}`, `${cap(MES(m1))} ${y1} to ${MES(m2)} ${y2}`); })();
-  const celda = k => etapas.find(e => !e.espera && k >= e.ini && k <= e.fin) || etapas.find(e => k >= e.ini && k <= e.fin);
-  let h = `<div class="pa2-tira" role="img" aria-label="${L("Calendario de la rotación","Rotation calendar")}">${Array.from({length:total}, (_, k) => {
-      const e = celda(k), a = celda(k - 1), b = celda(k + 1);
-      return `<i class="${e && a !== e ? "ini" : ""} ${e && b !== e ? "fin" : ""}" style="background:${e ? color(e) : "transparent"}" title="${e ? esc(e.nombre) : ""}"></i>`; }).join("")}</div>
-    <div class="pa2-meses">${Array.from({length:total}, (_, k) => { const [m] = mes(k); return `<span class="${k === 0 ? "hoy" : ""}">${k === 0 ? "•" : MC(m)[0]}</span>`; }).join("")}</div>
-    <div class="pa2-ley">${etapas.map(e => `<span><i style="background:${color(e)}"></i>${e.icono} ${esc(e.nombre)}</span>`).join("")}</div>
-    <div class="pa2-etapas">`;
-  h += etapas.map((e, n) => `<div class="pa2-etapa ${n === etapas.length - 1 ? "ultima" : ""}" style="--c:${color(e)}"><span class="punto"></span>
-      <div class="pa2-cab"><span class="ico">${e.icono}</span><b>${esc(e.nombre)}</b><span class="dur">${e.fin - e.ini + 1} ${e.fin === e.ini ? L("mes","month") : L("meses","months")}</span></div>
-      <p class="pa2-fechas">${e.ini === 0 ? L("Desde hoy","From today") + " · " : ""}${rango(e)}</p>
-      <div class="pa2-ev">${e.ev.map(x => { const [m, y] = mes(x.k); return `<div><span class="ic">${EVI(x.tipo)}</span><p><span class="cuando">${x.k === 0 ? L("Hoy","Today") : `${cap(MC(m))} ${y}`}</span>${esc(x.texto)}</p></div>`; }).join("")}</div></div>`).join("");
-  return h + "</div>";
+  const activas = k => { const en = etapas.filter(e => k >= e.ini && k <= e.fin); return en.some(e => !e.espera) ? en.filter(e => !e.espera) : en; };
+  const nom = k => { const [m, y] = mes(k); return L(`${MES(m)} de ${y}`, `${MES(m)} ${y}`); };
+  const filas = [];
+  for (let k = 0; k < total; k++) {
+    const et = activas(k), tareas = ev.filter(x => x.k === k), firma = et.map(e => e.nombre).join("|"), ult = filas.at(-1);
+    if (!tareas.length && ult && !ult.tareas.length && ult.firma === firma && ult.ini !== 0) { ult.fin = k; continue; }
+    filas.push({ini:k, fin:k, et, tareas, firma});
+  }
+  const hoja = f => {
+    const [m1, y1] = mes(f.ini), [m2, y2] = mes(f.fin), uno = f.ini === f.fin;
+    return `<div class="pa3-cal" aria-hidden="true"><b>${MC(m1).toUpperCase()}</b>${uno ? "" : `<span class="a">${L("a","to")} ${MC(m2).toUpperCase()}</span>`}<small>${y1 === y2 ? y1 : `${y1}–${String(y2).slice(2)}`}</small></div>`;
+  };
+  const titulo = f => { if (f.ini === f.fin) return cap(nom(f.ini)); const [m1, y1] = mes(f.ini), [m2, y2] = mes(f.fin);
+    return y1 === y2 ? L(`${cap(MES(m1))} a ${MES(m2)} de ${y2}`, `${cap(MES(m1))} to ${MES(m2)} ${y2}`) : L(`${cap(nom(f.ini))} a ${nom(f.fin)}`, `${cap(nom(f.ini))} to ${nom(f.fin)}`); };
+  const quieto = f => !f.et.length ? L("Lote sin cultivo.","Plot without a crop.")
+    : f.et[0].espera ? L("El lote espera la temporada de siembra.","The plot waits for the planting season.")
+    : f.et.map(e => L(`${e.nombre}: sigue en el lote.`, `${e.nombre}: still in the plot.`)).join(" ");
+  return `<p class="pa3-rango">${L(`De ${nom(0)} a ${nom(total - 1)} · ${total} meses`, `From ${nom(0)} to ${nom(total - 1)} · ${total} months`)}</p>
+    <ol class="pa3">${filas.map(f => `<li class="pa3-mes ${f.tareas.length ? "" : "quieto"} ${f.ini === 0 ? "hoy" : ""}" style="--c:${f.et[0] ? color(f.et[0]) : COL.gris}">
+      ${hoja(f)}<div class="pa3-cuerpo">
+        <p class="pa3-titulo">${titulo(f)}${f.ini === 0 ? `<span class="tag">${L("Este mes","This month")}</span>` : ""}</p>
+        ${f.et.length ? `<div class="pa3-etapas">${f.et.map(e => `<span class="pa3-etapa" style="--c:${color(e)}">${e.icono} ${esc(e.nombre)}</span>`).join("")}</div>` : ""}
+        ${f.tareas.length ? f.tareas.map(x => `<div class="pa3-tarea"><span class="ic">${EVI(x.tipo)}</span><p>${esc(x.texto)}</p></div>`).join("")
+                          : `<p class="pa3-nada">${quieto(f)}</p>`}
+      </div></li>`).join("")}</ol>`;
 }
 function abrirInforme(i){
   const r = S.res, p = r.planes[i], f = p.informe;
@@ -1902,12 +1915,12 @@ async function renderImp(){
   const r = S.res, el = $("#v4");
   if (!r || !r.planes.length) { el.innerHTML = cabecera(L("Proyección","Outlook")) + `<div class="card">${L("Primero necesitamos una recomendación. Revisa Mi lote o Rotación.","We need a recommendation first. Check My plot or Rotation.")}</div>`; return; }
   const anim = S.animar, p = r.planes[S.planSim];
-  el.innerHTML = cabecera(L("Proyección","Outlook"), L("Qué pasaría en tu lote con la rotación, frente a seguir sembrando lo mismo.","What would happen in your plot with the rotation, compared with planting the same thing.")) + `<div class="grid"><section class="card c4 sin-voz" id="imp-ctl"></section></div><div id="imp-res"></div>`;
+  el.innerHTML = cabecera(L("Proyección","Outlook"), L("Qué pasaría en tu lote con la rotación, frente a seguir sembrando lo mismo.","What would happen in your plot with the rotation, compared with planting the same thing.")) + `<div class="grid"><section class="card c4 sin-voz" id="imp-ctl"></section></div><div id="imp-res"></div>${pieFuentes()}`;
   $("#imp-ctl").innerHTML = `<h2>${L("Rotación a evaluar","Rotation to evaluate")}</h2><div class="tog grande tres" id="tog-sim">${r.planes.map((_, i) => `<button type="button" data-p="${i}" aria-pressed="${i === S.planSim}"><span class="t-largo">${L("Recomendación","Recommendation")}</span><span class="t-corto">${L("Opción","Option")}</span><b class="n">${i + 1}</b></button>`).join("")}</div>
     <div class="evaluar">${p.secuencia.map(x => `<div style="grid-column:span ${x.ocupa}"><span class="e">${x.icono}</span><b>${x.nombre}</b><small>${x.temporada}</small></div>`).join("")}</div>
     <div class="fila" style="border-top:1px solid var(--sep);padding-top:12px;margin-top:10px"><div><b>${L("Hectáreas","Hectares")}</b></div><div class="stepper"><button type="button" data-ha="-0.5" aria-label="${L("Menos hectáreas","Fewer hectares")}">−</button><input class="n ha-in" id="i-ha" type="text" inputmode="decimal" value="${N(S.ha, 1)}" aria-label="${L("Hectáreas","Hectares")}"><button type="button" data-ha="0.5" aria-label="${L("Más hectáreas","More hectares")}">+</button></div></div>
     <div class="fila" style="display:block"><div style="display:flex;justify-content:space-between"><b>${L("Años a proyectar","Years to project")}</b><b class="n" id="o-anios">${S.anios}</b></div><input class="rng" type="range" id="i-anios" min="1" max="10" value="${S.anios}" aria-label="${L("Años a proyectar","Years to project")}" style="--track:linear-gradient(90deg,${COL.lima} ${(S.anios - 1) / 9 * 100}%,${COL.pista} ${(S.anios - 1) / 9 * 100}%)"></div>
-    <div class="guardar-fila" style="margin-top:6px"><button type="button" class="btn grande" data-proyectar>📈 ${L("Realizar proyección","Run projection")}</button></div>`;
+    <div class="guardar-fila" style="margin-top:6px"><button type="button" class="btn grande" data-proyectar>${L("Realizar proyección","Run projection")}</button></div>`;
   if (S.sim && S.simPedida && S.simFirma === firmaSim()) { pintarImp(S.sim, anim); return; }
   $("#imp-res").innerHTML = `<div class="grid" style="margin-top:12px"><section class="card c4 imp-vacio"><span class="ico">📈</span>
     <p><b>${L("Escribe las hectáreas y los años a proyectar.","Enter the hectares and the years to project.")}</b> ${L("Luego toca <b>Realizar proyección</b> para ver cuánta agua ahorras y cómo mejora tu suelo.","Then tap <b>Run projection</b> to see how much water you save and how your soil improves.")}</p></section></div>`;
@@ -1929,7 +1942,7 @@ function pintarImp(s, anim){
   const prev = S.animar; S.animar = anim;
   const notas = [s.nota_largo, s.nota_agua].filter(Boolean);
   $("#imp-res").innerHTML = `<div class="grid ${anim ? "anim" : ""}" style="margin-top:12px">
-   <section class="card c4 compara"><p>⚖️ <b>${L("Comparado con:","Compared with:")}</b> ${esc(s.base.descripcion || "")}.</p>${notas.map(t => `<p class="nota-imp">💡 ${esc(t)}</p>`).join("")}</section>
+   ${notas.length ? `<section class="card c4 compara">${notas.map(t => `<p class="nota-imp">💡 ${esc(t)}</p>`).join("")}</section>` : ""}
    <section class="card c2 ${anim ? "dibuja" : ""}"><h2>${L("Resiliencia climática","Climate resilience")}</h2><div class="estado-in">${anillos([{v:P.total, c:COL.clima}, {v:B.total, c:COL.gris}], 150, 18, 4)}
      <div class="ley-an"><div><span>${L("Con la rotación","With rotation")}</span><b class="n" style="color:${COL.clima}">${P.total}<small>%</small></b></div><div><span>${L("Sin rotar","Without rotating")}</span><b class="n" style="color:${COL.gris}">${B.total}<small>%</small></b></div>
       <div><span>${L("Diferencia","Difference")}</span><b class="n ${d >= 0 ? "verde" : "rojo"}">${d >= 0 ? "+" : ""}${d}<small>%</small></b></div></div></div></section>

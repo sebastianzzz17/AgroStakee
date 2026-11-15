@@ -32,6 +32,19 @@ meses. Mientras descarga, la app muestra el avance; si no hay internet, sigue co
   los datos de la NASA de las 8 zonas (y solo bajará lo de los últimos meses).
 - `GET /salud` responde `ok`: sirve como chequeo de Render y para un "ping" que lo mantenga despierto.
 
+### Que las cuentas no se pierdan
+
+Crea una base Postgres y pon su dirección en la variable **`DATABASE_URL`** (Render → tu servicio → Environment).
+Con eso, las cuentas, las estacas y sus lecturas se guardan allá y sobreviven a los reinicios; el clima y el catálogo
+se siguen guardando en el disco del servidor porque la app los vuelve a crear sola. Sin `DATABASE_URL` todo funciona
+igual que antes, con SQLite.
+
+- **Neon** (neon.tech) o **Supabase**: tienen plan gratis permanente. Copia la "connection string" que empieza por
+  `postgresql://` (con `sslmode=require` al final).
+- **Postgres de Render**: se conecta en dos clics ("Internal Database URL"), pero el gratis vence a los 30 días.
+
+Para comprobarlo: `/api/estado_datos` debe decir `"cuentas": "postgres"`.
+
 ## Fuentes de datos
 
 | Dato | Fuente | ¿Pide cuenta? |

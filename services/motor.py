@@ -540,7 +540,7 @@ def _porque(c, prev, i, nbajo, ladera, largo, prios):
     if c["fija_n"] and i == 0 and nbajo: return tr(f"{n} va primero porque tu nitrógeno está bajo y esta leguminosa lo repone.", f"{n} goes first because your nitrogen is low and this legume restores it.")
     if c["tipo"] == "abono_verde": return tr(f"{n} repone nitrógeno y mucha materia orgánica; se incorpora al suelo antes de que semille.",
                                              f"{n} restores nitrogen and lots of organic matter; it is worked into the soil before it sets seed.")
-    if c["fija_n"] and "forraje" in prios and c["forraje"] >= .7: return tr(f"{n} repone nitrógeno y su follaje sirve de comida para los animales.", f"{n} restores nitrogen and its leaves feed your animals.")
+    if c["fija_n"] and "forraje" in prios and c["forraje"] >= .7: return tr(f"{n} repone nitrógeno y sus hojas sirven de comida para los animales.", f"{n} restores nitrogen and its leaves feed your animals.")
     if c["fija_n"]: return tr(f"{n} repone nitrógeno y cubre el suelo.", f"{n} restores nitrogen and covers the soil.")
     if prev and prev["fija_n"] and c["demanda_n"] >= .6: return tr(f"{n} aprovecha el nitrógeno que dejó {_nom(prev).lower()}.", f"{n} uses the nitrogen left by {_nom(prev).lower()}.")
     if "forraje" in prios and c["forraje"] >= .7: return tr(f"{n} deja rastrojo que sirve de forraje para tus animales.", f"{n} leaves residue that works as forage for your animals.")
@@ -568,7 +568,7 @@ def _explicaciones(bl, ind, n_fin, cob, eros, s, cl, ctx, fs, calor, largo):
           tr("Dejar los residuos en el lote y no quemarlos sube la materia orgánica.", "Leaving residues in the field instead of burning them raises organic matter.")]
     fo = [tr("Valor como comida para animales (0 a 100): ", "Value as animal feed (0 to 100): ") + lista("forraje") + "."]
     buenos = [nom(b) for b in bl if b["c"]["forraje"] >= .7]
-    if buenos: fo.append(tr("Dejan buen forraje (rastrojo o follaje): ", "Leave good forage (residue or leaves): ") + ", ".join(buenos) + ".")
+    if buenos: fo.append(tr("Dejan buen forraje (rastrojo u hojas): ", "Leave good forage (residue or leaves): ") + ", ".join(buenos) + ".")
     me = [tr("Qué tanto se vende en la zona (0 a 100): ", "How well it sells locally (0 to 100): ") + lista("mercado") + ".",
           tr("Se combina con el valor relativo de cada cultivo. No es un precio: ajústalo con los precios reales de tu zona.",
              "It is combined with each crop's relative value. It is not a price: adjust it with real local prices.")]

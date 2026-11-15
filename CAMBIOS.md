@@ -1,5 +1,24 @@
 # Cambios
 
+## Versión 12 (cuentas que no se pierden, plan de acción por meses)
+
+- **Cuentas guardadas aparte:** con la variable `DATABASE_URL` (una base Postgres: Neon, Supabase o Render), las
+  cuentas, las estacas y sus lecturas se guardan allá y sobreviven a los reinicios de Render, que borra su disco.
+  El clima y el catálogo siguen en el disco porque la app los vuelve a crear sola. Sin la variable, todo sigue con
+  SQLite como antes. Probado con un Postgres 16: cuenta, perfil, estaca y lecturas siguen ahí con el disco borrado;
+  la app se reconecta sola si la base corta la conexión; 8 registros a la vez bajo gunicorn sin errores.
+  `/api/estado_datos` dice `"cuentas": "postgres"` cuando está activo.
+- **Plan de acción por meses:** en vez de la tira con iniciales, una agenda: cada fila es un mes con su hojita de
+  calendario (mes y año, del color de la etapa), el nombre del mes en palabras, la etapa y las tareas. Los meses
+  seguidos sin tareas se juntan ("Mayo a julio de 2027: Guandul sigue en el lote").
+- **Suelo según mapas globales:** al tocar "Usar estos datos" sale el aviso "Datos aplicados" y la tarjeta lo marca;
+  "Consultar de nuevo" vuelve a mostrar la animación de carga.
+- **Fuentes de datos** al final de Resumen, Rotación y Proyección (el mismo texto de Mi lote).
+- **Mi lote:** "Valores ajustados a mano" cambia por "Aquí están los datos de tu lote", en letra más grande.
+- **Sales en el suelo** sin emojis. **Fósforo alto:** "Ayuda a raíces y flores", y la voz dice "Fósforo alto. Ayuda a
+  raíces y flores." "Follaje" cambia por "hojas" en toda la app.
+- **Proyección:** el botón "Realizar proyección" sin emoji y sin el recuadro "Comparado con".
+
 ## Versión 11 (Render: lentitud y Clima en blanco)
 
 - **Clima en blanco (corregido):** al escoger un punto libre del mapa, la pestaña Clima fallaba

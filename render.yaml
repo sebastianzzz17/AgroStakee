@@ -12,3 +12,5 @@ services:
     envVars:
       - key: ROTACION_SECRET        # firma de las sesiones; así no se cierran solas cada vez que el servicio reinicia
         generateValue: true
+      - key: DATABASE_URL           # base Postgres para las cuentas (Neon, Supabase o Render); Render la pide al crear
+        sync: false
