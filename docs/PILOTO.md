@@ -91,3 +91,10 @@ python importar.py usda            # USDA PLANTS: crea data/usda_plants.json
 
 Para `cds` hace falta una cuenta en el Climate Data Store de Copernicus, aceptar la licencia de ERA5-Land en la página del conjunto y guardar el token en `~/.cdsapirc` (o en `CDSAPI_URL` y `CDSAPI_KEY`). **Nunca subas ese archivo ni el token a GitHub.** Estas dos importaciones no se pudieron probar en vivo desde el entorno donde se programaron; si el formato de respuesta cambió, el programa avisa y la app sigue con la estimación.
 
+## Descarga automática (versión 7)
+
+Ya no hace falta correr `importar.py`: al arrancar, `services/sincronizar.py` descarga en segundo plano el clima de
+NASA POWER (20 años), el NDVI de MODIS (ORNL DAAC) y la pendiente (SRTM) de las 8 zonas, y los datos de los
+últimos meses. Si un dato no se puede descargar, se conserva el anterior y la zona queda marcada con los campos que
+siguen siendo de ejemplo (`campos_ejemplo`). El avance se ve en la app y en `GET /api/estado_datos`.
+

@@ -3,3 +3,7 @@ rotacion.db
 __pycache__/
 cache/
 firmware/estaca_esp32s3/secretos.h
+data/cache/
+data/usda_plants.json
+data/historico_suelo.json
+.cdsapirc

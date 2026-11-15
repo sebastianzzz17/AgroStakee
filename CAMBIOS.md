@@ -1,5 +1,80 @@
 # Cambios
 
+## Versión 9 (plan de acción, leyenda del mapa, estado de la estaca)
+
+- **Nutrientes:** la voz lee exactamente el nivel marcado en la pantalla y lo que causa, nunca los otros niveles de la escala. Al tocar un nivel lo dice enseguida, solo para ese nutriente.
+- **Ver detalle:** queda solo el plan de acción, rediseñado:
+  - una franja de colores con los meses desde hoy y una leyenda de etapas;
+  - una línea de tiempo por etapas (preparar el lote y cada cultivo), con sus fechas, su duración y las tareas de cada mes;
+  - letra más grande.
+- **Últimos 6 meses:** sin el enunciado.
+- **Mapa:** leyenda para cada capa (verdor, calor, humedad y lluvia), con los colores de los colormaps oficiales de NASA GIBS, los valores, los extremos en palabras ("Seco", "Muy húmedo"…) y qué significa donde no hay color.
+- **Estaca:** "Estaca conectada: Sin conexión" en rojo, o "Estaca conectada: Conectada" en verde cuando hay lecturas de las últimas 24 horas.
+- **Animación de "Consultar mi punto":** ya no se reinicia cuando la página se redibuja (eso la hacía ver trabada); dura unos 3,4 s como mínimo.
+- **Pantallas de carga de 4,5 s** con mensajes que van cambiando: "Cargando recomendaciones", "Guardando información" y la nueva "Realizando proyección" al tocar "Realizar proyección".
+
+## Versión 8 (ajustes finales)
+
+- **Suelo según mapas globales:**
+  - Texto más corto.
+  - Ya no muestra la línea de "variables medidas" ni la lista de fuentes con ✓ y ✗.
+  - Al tocar "Consultar mi punto" aparece una animación breve: un satélite gira sobre el pin y van pasando las fuentes.
+- **Consulta del punto mucho más rápida.** Antes podía tardar minutos porque:
+  - el servidor esperaba a la fuente más lenta aunque ya se le hubiera acabado el tiempo;
+  - pedía el catálogo completo del IDEAM y los precios, que la tarjeta no muestra;
+  - probaba MODIS en tres satélites seguidos;
+  - esperaba 30 s a SoilGrids (pausada) en cada consulta.
+
+  Ahora:
+  - Usa lo que la descarga automática ya trajo para ese lugar, sin internet.
+  - El resto corre en paralelo con un límite total de 8 s; lo que no llegue se completa con el promedio de la zona.
+  - SoilGrids no se vuelve a esperar por 6 horas si no respondió.
+  - La respuesta se guarda (7 días si llegó completa, 1 día si faltó algo).
+
+  En pruebas con APIs lentas simuladas: 8 s el peor caso la primera vez, y al instante si el punto ya se consultó o la zona ya se descargó.
+- **Proyección:** ya no calcula nada al entrar. El usuario escribe las hectáreas (se pueden teclear, con coma o punto) y elige los años, y toca "Realizar proyección". Si después cambia algo, el resultado anterior se atenúa hasta volver a tocar el botón.
+- **"Estaca no conectada"** en lugar de "Sin estaca".
+
+## Versión 7 (AgroStake: datos reales automáticos, puntos libres, proyección corregida, sin señal)
+
+- **Nuevo nombre: AgroStake.**
+- **Datos reales de la NASA sin comandos** (`services/sincronizar.py`): al arrancar, la app descarga sola y en segundo plano, para las 8 zonas:
+  - el clima de 20 años de NASA POWER, con humedad (GWETTOP) y temperatura de la superficie (TS);
+  - el verdor normal de cada mes (NDVI de MODIS por la API de ORNL DAAC, con respaldo en Aqua y VIIRS);
+  - la pendiente (elevación SRTM con Open-Elevation, o Copernicus DEM con Open-Meteo).
+
+  También descarga los últimos ~7 meses (lluvia y temperatura diarias, NDVI reciente). Repite el clima cada 30 días y lo reciente cada día. Si no hay internet, vuelve a intentar cada 30 minutos. Luego actualiza IDEAM y USDA, y Copernicus si hay credenciales. Se apaga con `AGROSTAKE_SIN_DESCARGA=1`. Avance en `GET /api/estado_datos` y en la app.
+- **"Últimos 6 meses" y la lluvia día por día ahora son reales** cuando ya se descargaron (antes eran de ejemplo). Si falta algún mes, se avisa.
+- **Punto libre del mapa:** si tocas un lugar que no es una de las 8 zonas, la app busca el clima de la NASA para esa latitud y longitud (`POST /api/punto`, zona `p:lat,lon`). El suelo sale de los estudios de la zona más cercana. Sin internet, usa el clima de la zona más cercana y lo dice.
+- **Suelo según mapas globales**, ahora debajo de la salud del suelo:
+  - Abre con el enunciado de qué datos de la NASA usa.
+  - Suma NASA POWER (humedad y temperatura del suelo de los últimos 30 días), MODIS (NDVI) y SRTM (pendiente), que no piden cuenta.
+  - Toda variable que falte se llena con el promedio de la zona más cercana y, si tampoco hay, con un valor típico. Cada valor dice de dónde salió (satélite o mapa, promedio de la zona o estimado).
+  - "Usar estos datos" también pasa la humedad y la temperatura.
+- **Proyección corregida.** Antes salían números negativos para planes buenos porque:
+  - (1) el abono verde y el rastrojo contaban como riego;
+  - (2) "sin rotar" dejaba el verano vacío;
+  - (3) se comparaba con repetir el último cultivo, aunque fuera frijol o yuca.
+
+  Ahora "sin rotar" siembra el cereal de referencia (maíz, o arroz si eso sembraba el agricultor) en las mismas temporadas productivas del plan, y las coberturas no se riegan. El nitrógeno cambia de forma gradual, en vez de saltar a 0% o 100%. La app dice contra qué compara, y explica cuando un plan pide más agua (por ejemplo, porque incluye arroz) o es un solo cultivo de todo el año. Se revisaron 4.032 combinaciones: ningún plan con 70% o más sale peor en más de un indicador.
+- **Mapa:** las capas de calor y humedad usaban imágenes de un solo día, que salen vacías con nubes. Ahora:
+  - Usan el servicio WMS de GIBS (la imagen más reciente disponible) con composiciones de 8 días: VIIRS para calor y verdor, SMAP L4 para humedad.
+  - Si una capa sale vacía o falla, se prueba sola la siguiente fuente.
+  - MODIS queda de último porque NASA anunció que Terra y Aqua empiezan a apagarse entre finales de 2026 e inicios de 2027.
+- **Uso sin señal:**
+  - La app guarda las últimas respuestas (panel, recomendaciones, proyección, suelo) y las muestra con un aviso de cuándo son.
+  - El service worker (`static/sw.js`) guarda la app y las teselas del mapa ya vistas.
+  - Se puede instalar como app (`manifest.webmanifest`).
+- **Etiqueta de la estaca:** dice "Datos recolectados por nuestra estaca" solo si hay estaca; si no, "Sin estaca: datos históricos de tu zona".
+- **Revisión en celular (360 a 412 px):**
+  - En Proyección, los tres botones "Recomendación 1, 2, 3" eran más anchos que la pantalla; en Android eso ensanchaba toda la vista y dejaba iconos corridos y la ✕ de las hojas por fuera. Ahora dicen "Opción 1, 2, 3" en pantallas angostas.
+  - Títulos que se partían ("Proyecció n").
+  - Meses de la gráfica de lluvia que se montaban.
+  - "Proyección" cortado en la barra.
+  - "Cerrar sesión" que se salía de la tarjeta.
+- Se corrigió la lectura de los estudios del piloto: "40% de las muestras alto" ya no se toma como 40% de materia orgánica.
+- `python importar.py nasa` hace lo mismo que la descarga automática, pero de una vez.
+
 ## Versión 6 (relleno histórico, carga animada, avisos, recorrido hablado)
 
 - **Sin estaca, los datos se llenan con el historial de la zona** (`services/historico.py`, `GET /api/suelo_historico?zona=&mes=`):

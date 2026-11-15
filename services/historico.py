@@ -27,12 +27,16 @@ def _era5(zona_id):
 
 def suelo(zona_id, mes):
     """mes: 1 a 12. Devuelve los valores del suelo y de dónde salió cada uno."""
-    ref = PILOTO["zonas"].get(zona_id)
+    punto = motor.es_punto(zona_id)
+    zp = motor.zona(zona_id) if punto else None
+    ref_id = zp["cercana"] if punto else zona_id          # un punto libre usa los estudios de la zona más cercana
+    ref = PILOTO["zonas"].get(ref_id)
     base = dict(ref["suelo"] if ref else TIPICO)
     tex = base.pop("textura")
     cl, _ = motor.clima_de(zona_id)
-    era, i = _era5(zona_id), mes - 1
-    origen = {"suelo": "estudios de suelos de la zona" if ref else "valores típicos del Caribe"}
+    era, i = (None if punto else _era5(zona_id)), mes - 1
+    origen = {"suelo": (f"estudios de suelos de la zona más cercana ({zp['cercana_nombre']}, a {zp['km_cercana']} km)" if punto
+                        else "estudios de suelos de la zona") if ref else "valores típicos del Caribe"}
 
     h = era["humedad_pct"][i] if era and era.get("humedad_pct") else None
     if h is not None: origen["humedad"] = era["fuente"]

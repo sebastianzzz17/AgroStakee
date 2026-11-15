@@ -6,7 +6,7 @@ Cultivos: ciclo, agua, pH, familia, fijación de nitrógeno, cobertura, forraje,
 Prioridades del agricultor: agua, forraje, nitrógeno, erosión, materia orgánica y mercado.
 
 Idioma: app.py fija IDIOMA ("es" o "en") en cada petición; tr(es, en) elige el texto."""
-import calendar, contextvars, json, math, random
+import calendar, contextvars, json, math, random, re
 from datetime import date
 from itertools import product
 import db
@@ -33,6 +33,16 @@ NIVEL = {"bajo": .2, "medio": .5, "alto": .8}
 RETENCION = {"arenoso": .85, "franco": 1.0, "arcilloso": 1.1}
 LARGO = 135
 LEGUM = ("leguminosa", "abono_verde")
+NO_RIEGO = ("cobertura", "abono_verde")   # coberturas y abonos verdes viven de la lluvia: no se riegan ni suman agua de riego
+
+def _productivo(c): return c is not None and c["tipo"] not in NO_RIEGO
+
+def _meta_n(c):
+    """Nivel de nitrógeno (0 a 1) hacia el que lleva el suelo repetir este cultivo: las leguminosas lo suben,
+    los cultivos exigentes lo bajan. Aproximación cualitativa, no un balance de nutrientes."""
+    if c["fija_n"]: return .85
+    if c["tipo"] == "cobertura": return .5
+    return .55 - .4 * c["demanda_n"]
 UMBRAL_CALOR = 35   # °C: día de calor si la máxima pasa de este valor
 UMBRAL_FRIO = 18    # °C: día frío si la mínima baja de este valor (para cultivos de tierra caliente; ajustable)
 DIAS_MES = [calendar.monthrange(2023, m + 1)[1] for m in range(12)]
@@ -92,11 +102,70 @@ def _completar(cl, lat):
     cl["f_evap"] = round(_clamp(cl["evap_anual_mm"] / 365 / ET0_REF, .85, 1.25), 2)
     return cl
 
+# ---------------------------------------------------------------- Zonas guardadas y puntos libres del mapa
+_PUNTO = re.compile(r"^p:(-?\d{1,2}(?:\.\d{1,6})?),(-?\d{1,3}(?:\.\d{1,6})?)$")
+
+def es_punto(zid): return bool(_PUNTO.match(str(zid or "")))
+
+def punto_coords(zid):
+    m = _PUNTO.match(str(zid or ""))
+    if not m: raise ValueError("punto no válido")
+    lat, lon = float(m[1]), float(m[2])
+    if not (-90 <= lat <= 90 and -180 <= lon <= 180): raise ValueError("punto fuera de rango")
+    return round(lat, 3), round(lon, 3)
+
+def id_punto(lat, lon): return f"p:{round(float(lat), 3)},{round(float(lon), 3)}"
+
+def km(a, b, c, d):
+    r = math.pi / 180
+    x = math.sin((c - a) * r / 2) ** 2 + math.cos(a * r) * math.cos(c * r) * math.sin((d - b) * r / 2) ** 2
+    return 12742 * math.asin(math.sqrt(x))
+
+def zona_cercana(lat, lon):
+    zs = db.consultar("SELECT * FROM zonas")
+    z = min(zs, key=lambda z: km(lat, lon, float(z["lat"]), float(z["lon"])))
+    return z, round(km(lat, lon, float(z["lat"]), float(z["lon"])))
+
+def canon(zona_id):
+    """Forma única del id de un punto ("p:9.810,-75.123" y "p:9.81,-75.123" son el mismo)."""
+    return id_punto(*punto_coords(zona_id)) if es_punto(zona_id) else zona_id
+
+def zona(zona_id):
+    """Fila de la zona. Un punto libre ("p:lat,lon") hereda textura y riego típicos de la zona guardada más cercana."""
+    if es_punto(zona_id):
+        zona_id = canon(zona_id)
+        lat, lon = punto_coords(zona_id)
+        zc, d = zona_cercana(lat, lon)
+        nom = zc["nombre"].split(" (")[0]
+        return {"id": zona_id, "nombre": tr(f"Mi punto ({_num(lat, 3)}, {_num(lon, 3)})", f"My point ({lat}, {lon})"), "lat": lat, "lon": lon,
+                "suelo": zc["suelo"], "riego": zc["riego"], "punto": True, "cercana": zc["id"], "cercana_nombre": nom, "km_cercana": d}
+    f = db.consultar("SELECT * FROM zonas WHERE id=?", (zona_id,))
+    if not f: raise KeyError(zona_id)
+    return f[0]
+
 def clima_de(zona_id):
+    """Clima de la zona. Para un punto libre: el descargado de NASA para ese punto; si todavía no se ha podido
+    descargar, el de la zona guardada más cercana (y se marca como no verificado)."""
+    zona_id = canon(zona_id)
     f = db.consultar("SELECT datos, verificado FROM clima WHERE zona_id=?", (zona_id,))
+    if es_punto(zona_id):
+        lat, _ = punto_coords(zona_id)
+        if f: return _completar(json.loads(f[0]["datos"]), lat), bool(f[0]["verificado"])
+        z = zona(zona_id)
+        cl, _ = clima_de(z["cercana"])
+        return dict(cl, prestado_de=z["cercana"]), False
     if not f: return None, False
     z = db.consultar("SELECT lat FROM zonas WHERE id=?", (zona_id,))
     return _completar(json.loads(f[0]["datos"]), float(z[0]["lat"]) if z else 10.0), bool(f[0]["verificado"])
+
+def _reales(zona_id):
+    """Datos recientes descargados de NASA POWER y MODIS para la zona (solo lo guardado, sin usar internet)."""
+    try:
+        from services import descargas
+        z = zona(zona_id)
+        return descargas.recientes(float(z["lat"]), float(z["lon"]), solo_cache=True)
+    except Exception:
+        return None
 
 def _lluvia(cl, offset, meses=4):
     m0 = cl["inicio_lluvias_mes"] - 1 + offset
@@ -141,9 +210,18 @@ def _pesos(prios):
 
 # ---------------------------------------------------------------- Datos de clima
 def diario(zona_id, mes, anio):
-    """Lluvia día por día. DE EJEMPLO: se reparte el total mensual de forma determinista."""
+    """Lluvia día por día: real de NASA POWER si ya se descargó ese mes; si no, DE EJEMPLO (se reparte el
+    total mensual normal de forma determinista)."""
     cl, ok = clima_de(zona_id)
     n = calendar.monthrange(anio, mes)[1]
+    rd = ((_reales(zona_id) or {}).get("diario") or {}).get("PRECTOTCORR") or {}
+    reales = [rd.get(f"{anio}{mes:02d}{d:02d}") for d in range(1, n + 1)]
+    if sum(v is not None for v in reales) >= n - 2:
+        dias = [{"dia": d + 1, "lluvia_mm": round(v, 1) if v is not None else None} for d, v in enumerate(reales)]
+        tot = round(sum(v for v in reales if v is not None))
+        return {"mes": mes, "dias": dias, "total_mm": tot, "evap_mm": cl["evap_mensual_mm"][mes - 1],
+                "dias_con_lluvia": sum(1 for v in reales if v is not None and v >= 1), "ejemplo": False, "real": True,
+                "fuente": "NASA POWER"}
     total = cl["lluvia_mensual_mm"][mes - 1]
     rng = random.Random(f"{zona_id}-{mes}")
     prob = min(.75, .12 + total / 260)
@@ -152,11 +230,18 @@ def diario(zona_id, mes, anio):
     tot = sum(w)
     dias = [{"dia": d + 1, "lluvia_mm": round(total * w[d] / tot, 1)} for d in range(n)]
     return {"mes": mes, "dias": dias, "total_mm": total, "evap_mm": cl["evap_mensual_mm"][mes - 1],
-            "dias_con_lluvia": sum(1 for x in dias if x["lluvia_mm"] > 0), "ejemplo": not ok}
+            "dias_con_lluvia": sum(1 for x in dias if x["lluvia_mm"] > 0), "ejemplo": True, "real": False}
 
 def reciente(zona_id, hoy):
-    """Últimos 6 meses completos (lluvia, temperatura y verdor reales vs normales). DE EJEMPLO."""
+    """Últimos 6 meses completos: lluvia y temperatura de NASA POWER y verdor de MODIS si ya se descargaron
+    (servicio de descarga automática); si falta algún mes, ese mes es DE EJEMPLO y se marca con real=False."""
     cl, ok = clima_de(zona_id)
+    R = _reales(zona_id) or {}
+    pr, t2 = (R.get("diario") or {}).get("PRECTOTCORR") or {}, (R.get("diario") or {}).get("T2M") or {}
+    nd = {}
+    for x in R.get("ndvi") or []:
+        try: nd.setdefault(x["fecha"][:7], []).append(float(x["ndvi"]))
+        except (KeyError, TypeError, ValueError): pass
     out = []
     for k in range(6, 0, -1):
         m = (hoy.month - k - 1) % 12 + 1
@@ -166,10 +251,16 @@ def reciente(zona_id, hoy):
         f = _clamp(.55 + .9 * rng.random() + cl["tendencia_lluvia_pct"] / 100, .2, 1.8)
         tn = cl["temp_mensual"][m - 1]
         nn = cl["ndvi_mensual"][m - 1]
-        nv = nn * _clamp(.78 + .3 * rng.random() + (f - 1) * .12, .5, 1.15)
-        out.append({"mes": m, "anio": a, "nombre": (MC_EN if _en() else MC)[m - 1], "lluvia_mm": round(normal * f), "lluvia_normal_mm": normal,
-                    "temp_c": round(tn + rng.uniform(-.4, .9) + cl["tendencia_temp_c"] * .3, 1), "temp_normal_c": round(tn, 1),
-                    "ndvi": round(nv, 2), "ndvi_normal": round(nn, 2)})
+        n = calendar.monthrange(a, m)[1]
+        ll = [pr[x] for x in (f"{a}{m:02d}{d:02d}" for d in range(1, n + 1)) if x in pr]
+        tt = [t2[x] for x in (f"{a}{m:02d}{d:02d}" for d in range(1, n + 1)) if x in t2]
+        real = len(ll) >= n - 2 and len(tt) >= n - 2
+        nv = nd.get(f"{a}-{m:02d}")
+        out.append({"mes": m, "anio": a, "nombre": (MC_EN if _en() else MC)[m - 1], "lluvia_normal_mm": normal, "temp_normal_c": round(tn, 1),
+                    "lluvia_mm": round(sum(ll) * n / len(ll)) if real else round(normal * f),
+                    "temp_c": round(sum(tt) / len(tt), 1) if real else round(tn + rng.uniform(-.4, .9) + cl["tendencia_temp_c"] * .3, 1),
+                    "ndvi": round(sum(nv) / len(nv), 2) if nv else round(nn * _clamp(.78 + .3 * rng.random() + (f - 1) * .12, .5, 1.15), 2),
+                    "ndvi_normal": round(nn, 2), "real": real, "ndvi_real": bool(nv)})
     return out, ok
 
 def clima_resumen(cl, rec, hoy):
@@ -219,7 +310,7 @@ def salud_suelo(s):
 
 def panel(zona_id, suelo, textura, riego, hoy=None):
     hoy = hoy or date.today()
-    z = db.consultar("SELECT * FROM zonas WHERE id=?", (zona_id,))[0]
+    z = zona(zona_id)
     cl, ok = clima_de(zona_id)
     rec, _ = reciente(zona_id, hoy)
     C = clima_resumen(cl, rec, hoy)
@@ -291,7 +382,9 @@ def panel(zona_id, suelo, textura, riego, hoy=None):
             "temperatura": {"suelo": t, "aire": cl["temp_media"], "anomalia": dt, "estado": "baja" if t < 22 else "alta" if t > 33 else "adecuada"},
             "alertas": alertas, "n_alertas": sum(1 for x in alertas if x["nivel"] != "bien"),
             "riesgos": {k: {"valor": v, "nivel": niv(v)} for k, v in riesgos.items()},
-            "reciente": rec, "ejemplo": not ok}
+            "reciente": rec, "reciente_real": all(r["real"] for r in rec), "ejemplo": not ok,
+            "fuente_clima": cl.get("fuente"), "prestado_de": cl.get("prestado_de"),
+            "campos_ejemplo": cl.get("campos_ejemplo") or []}
 
 # ---------------------------------------------------------------- Recomendaciones
 def _ctx(z, cl, suelo, textura, riego):
@@ -306,7 +399,7 @@ def _lista_ultimos(ultimos):
     return [ultimos] if isinstance(ultimos, str) else [u for u in ultimos if u]
 
 def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, riego=None, textura=None, top=3):
-    z = db.consultar("SELECT * FROM zonas WHERE id=?", (zona_id,))[0]
+    z = zona(zona_id)
     cl, cl_ok = clima_de(zona_id)
     prios = _prios(prioridades)
     w = _pesos(prios)
@@ -535,24 +628,26 @@ def _eval_seq(seq, largo, ctx, cl, n0, anios):
     bl = seq[:1] if largo else seq
     dem = defi = cob = seco = mo = 0.0
     for i, c in enumerate(bl):
-        if c is None: seco += .4; continue
+        if c is None: seco += .4; continue                     # temporada con la tierra destapada
         ll = _lluvia(cl, 0, 12) * .85 if largo else _lluvia(cl, TEMPORADAS[i][2])
-        d = _dem(c, ctx)
+        d = _dem(c, ctx) if _productivo(c) else 0.0             # el abono verde y el rastrojo no se riegan
         dem += d; defi += max(0, d - ll * RETENCION[ctx["textura"]])
         cob += c["cobertura"]; mo += c["materia_organica"]
         seco += 1.0 if c["tipo"] == "cobertura" else _clamp(_ratio(c, ll * fs, ctx, .7) + .1 * (c["tol_sequia"] - 1) - calor)
     k = len(bl); cob /= k; seco /= k; mo /= k
+    # Nitrógeno: cada temporada el suelo se acerca un poco al nivel que deja ese cultivo (no salta de golpe a 0 o 100)
+    vel = .35 if largo else .2
     n, serie = n0, [round(n0 * 100)]
     for _ in range(anios):
         for c in bl:
-            n = _clamp(n - .01) if c is None else _clamp(n + .5 * (.3 * c["fija_n"] - .25 * c["demanda_n"] * (1.5 if largo else 1)))
+            n = _clamp(n - .01) if c is None else _clamp(n + vel * (_meta_n(c) - n))
         serie.append(round(n * 100))
     ret, sq, ex = 100 * (.5 * serie[1] / 100 + .5 * cob), 100 * seco, 100 * (1 - (.2 + .8 * eros) * (1 - cob))
     return {"demanda_mm": round(dem), "deficit_mm": round(defi), "cobertura_pct": round(cob * 100), "materia_organica": round(mo * 100), "n_serie": serie,
             "indices": {"retencion": round(ret), "sequia": round(sq), "lluvias": round(ex), "total": round((ret + sq + ex) / 3)}}
 
 def simular(zona_id, suelo, textura, riego, secuencia, ultimos, ha, anios):
-    z = db.consultar("SELECT * FROM zonas WHERE id=?", (zona_id,))[0]
+    z = zona(zona_id)
     cl, ok = clima_de(zona_id)
     cult = {c["cultivo"]: c for c in db.consultar("SELECT * FROM cultivos")}
     ctx = _ctx(z, cl, suelo, textura, riego)
@@ -560,15 +655,43 @@ def simular(zona_id, suelo, textura, riego, secuencia, ultimos, ha, anios):
     largo = len(cs) == 1
     plan = cs * 3 if largo else cs
     ul = [u for u in _lista_ultimos(ultimos) if u in cult]
-    b = cult[ul[0]] if ul else cult["maiz"]          # práctica de comparación: repetir el primer cultivo anterior
+    # Práctica de comparación: el monocultivo de cereal, que es lo que se rota en la región. Si el agricultor venía
+    # sembrando maíz o arroz, se compara con seguir sembrando ese cereal; si venía de otro cultivo, con maíz.
+    b = cult[ul[0]] if ul and cult[ul[0]]["tipo"] == "cereal" else cult["maiz"]
     bl_largo = b["ciclo_dias"] > LARGO
-    base = [b, b, b] if (bl_largo or ctx["riego"]) else [b, b, None]
+    # Comparación justa: "sin rotar" siembra el mismo cultivo en las MISMAS temporadas en que el plan produce.
+    # Donde el plan pone abono verde o rastrojo, sin rotar deja la tierra destapada. Con riego, sin rotar siembra todo el año.
+    if bl_largo or ctx["riego"]: base = [b, b, b]
+    elif largo: base = [b, b, None]
+    else: base = [b if _productivo(c) else None for c in plan]
+    if not any(base): base = [b, b, None]
     n0 = NIVEL[ctx["suelo"]["n"]]
     P, B = _eval_seq(plan, largo, ctx, cl, n0, anios), _eval_seq(base, bl_largo, ctx, cl, n0, anios)
     ah_def = B["deficit_mm"] - P["deficit_mm"]
     m3ha, m3 = ah_def * 10, ah_def * 10 * ha
-    return {"base": dict(B, cultivo=_nom(b)), "plan": P,
-            "ahorro": {"demanda_mm": B["demanda_mm"] - P["demanda_mm"], "deficit_mm": ah_def, "m3_ha": round(m3ha), "m3_total": round(m3),
-                       "pct_deficit": round(100 * ah_def / B["deficit_mm"]) if B["deficit_mm"] else 0},
+    nb = _nom(b)
+    tempos = [_temp(i) for i, c in enumerate(base) if c is not None]
+    base_txt = tr(f"Sembrar solo {nb.lower()} todo el año", f"Planting only {nb.lower()} all year") if len(tempos) == 3 else \
+        tr(f"Sembrar solo {nb.lower()} en las mismas temporadas ({', '.join(t.lower() for t in tempos)})",
+           f"Planting only {nb.lower()} in the same seasons ({', '.join(t.lower() for t in tempos)})")
+    nota = None
+    if ah_def < 0:
+        prod = [c for c in (plan[:1] if largo else plan) if _productivo(c)]
+        mayor = max(prod, key=lambda c: c["agua_mm"]) if prod else None
+        mejoras = []
+        if P["n_serie"][-1] > B["n_serie"][-1]: mejoras.append(tr("deja más nitrógeno", "leaves more nitrogen"))
+        if P["cobertura_pct"] > B["cobertura_pct"]: mejoras.append(tr("cubre más el suelo", "covers the soil more"))
+        if P["indices"]["total"] > B["indices"]["total"]: mejoras.append(tr("aguanta mejor los años secos", "copes better with dry years"))
+        nota = tr(f"Esta rotación pide más agua que sembrar solo {nb.lower()}" + (f" porque incluye {_nom(mayor).lower()}" if mayor and mayor["agua_mm"] > b["agua_mm"] else "") + "."
+                  + (f" A cambio, {' y '.join(mejoras)}." if mejoras else ""),
+                  f"This rotation needs more water than planting only {nb.lower()}" + (f" because it includes {_nom(mayor).lower()}" if mayor and mayor["agua_mm"] > b["agua_mm"] else "") + "."
+                  + (f" In return, it {' and '.join(mejoras)}." if mejoras else ""))
+    pct = round(100 * ah_def / B["deficit_mm"]) if B["deficit_mm"] else (0 if not P["deficit_mm"] else None)
+    nota_largo = tr(f"Esta recomendación es un solo cultivo de todo el año ({_nom(cs[0]).lower()}). La proyección supone que lo repites cada año; "
+                    "para rotar de verdad, alterna con una leguminosa como frijol o guandul al año siguiente.",
+                    f"This recommendation is a single all-year crop ({_nom(cs[0]).lower()}). The outlook assumes you repeat it every year; "
+                    "to truly rotate, alternate with a legume such as beans or pigeon pea the next year.") if largo and cs else None
+    return {"base": dict(B, cultivo=nb, descripcion=base_txt), "plan": P, "nota_agua": nota, "nota_largo": nota_largo,
+            "ahorro": {"demanda_mm": B["demanda_mm"] - P["demanda_mm"], "deficit_mm": ah_def, "m3_ha": round(m3ha), "m3_total": round(m3), "pct_deficit": pct},
             "proyeccion": {"anios": list(range(anios + 1)), "agua_acum_m3": [round(m3 * a) for a in range(anios + 1)], "n_plan": P["n_serie"], "n_base": B["n_serie"]},
-            "ha": ha, "anios": anios, "ejemplo": not ok}
+            "ha": ha, "anios": anios, "ejemplo": not ok, "riego": ctx["riego"]}

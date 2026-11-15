@@ -1,17 +1,21 @@
-"""Rotación Caribe: servidor Flask.
+"""AgroStake: servidor Flask.
+
+Al arrancar descarga SOLA, en segundo plano, los datos reales de la NASA de las 8 zonas (services/sincronizar.py).
+Para apagarlo: AGROSTAKE_SIN_DESCARGA=1.
 
 Variables de entorno (todas opcionales):
   ROTACION_SECRET        clave para firmar las sesiones (si no está, se crea .secret_key junto a la app)
   ROTACION_HTTPS=1       marca la cookie de sesión como segura (úsalo detrás de HTTPS)
   DATOS_ABIERTOS_CLAVES  claves separadas por coma para la API de datos abiertos; si está vacía, la API es pública
   EARTHDATA_USER/PASS, GEE_PROJECT, SOCRATA_DATASET, SOCRATA_COL_CIUDAD, SOCRATA_TOKEN: ver services/orquestador.py
+  AGROSTAKE_SIN_DESCARGA=1  apaga la descarga automática de datos de la NASA (services/sincronizar.py)
 """
 import hashlib, json, os, re, secrets, time
 from datetime import date, datetime, timedelta, timezone
 from functools import wraps
 from flask import Flask, Response, g, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
-from services import estacas, historico, ideam, motor
+from services import estacas, historico, ideam, motor, sincronizar
 import db
 
 PILOTO = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "piloto.json"), encoding="utf-8"))
@@ -34,6 +38,12 @@ db.init()
 @app.before_request
 def _idioma():
     motor.IDIOMA.set("en" if (request.headers.get("X-Idioma") or request.args.get("idioma")) == "en" else "es")
+    sincronizar.iniciar()          # descarga automática de datos reales (una sola vez, en segundo plano)
+
+def _zona_valida(zid):
+    """Zona guardada o punto libre del mapa ("p:lat,lon"). Devuelve la fila o None."""
+    try: return motor.zona(zid)
+    except (KeyError, ValueError): return None
 
 def _t(es, en): return motor.tr(es, en)
 def _error(es, en, codigo=400): return jsonify(error=_t(es, en)), codigo
@@ -198,23 +208,40 @@ def datos_lote():
     lat, lon = float(d["lat"]), float(d["lon"])
     if not (-90 <= lat <= 90 and -180 <= lon <= 180): return _error("Coordenadas no válidas.", "Invalid coordinates.")
     clave = f"{round(lat, 3)},{round(lon, 3)}"
-    f = db.consultar("SELECT datos, creado_en FROM externos WHERE clave=? AND creado_en >= datetime('now','-7 days')", (clave,))
-    if f: return jsonify(dict(json.loads(f[0]["datos"]), cache=True))
-    res = orquestador.perfil_lote(lat, lon)
-    if any(v == "ok" for v in res["fuentes"].values()):
+    # Respuesta guardada: 7 días si llegaron todas las fuentes del punto, 1 día si faltó alguna (para reintentarla)
+    f = db.consultar("SELECT datos, creado_en >= datetime('now','-1 day') AS reciente FROM externos WHERE clave=? AND creado_en >= datetime('now','-7 days')", (clave,))
+    idioma = "en" if motor._en() else "es"
+    if f and (json.loads(f[0]["datos"]).get("completo") or f[0]["reciente"]):
+        res = json.loads(f[0]["datos"])
+        return jsonify(dict(res, cache=True, **orquestador.completar(res, idioma)))
+    res = orquestador.perfil_lote(lat, lon, local=orquestador.datos_guardados(lat, lon))
+    del_punto = [k for k in ("nasa_power", "modis", "elevacion", "soilgrids") if res["fuentes"].get(k) == "ok"]
+    res["completo"] = len(del_punto) == 4
+    if del_punto:
         db.ejecutar("INSERT OR REPLACE INTO externos(clave, datos, creado_en) VALUES(?,?,datetime('now'))", (clave, json.dumps(res)))
-    return jsonify(dict(res, cache=False))
+    return jsonify(dict(res, cache=False, **orquestador.completar(res, idioma)))
 
 # ------------------------------------------------------------------ Catálogo y motor
 @app.route("/")
 def index():
     return send_from_directory("templates", "index.html")
 
+@app.get("/sw.js")
+def service_worker():
+    """Uso sin señal (ver static/sw.js). Se sirve desde la raíz para que pueda guardar toda la app."""
+    r = send_from_directory("static", "sw.js", mimetype="application/javascript")
+    r.headers.update({"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"})
+    return r
+
+@app.get("/manifest.webmanifest")
+def manifiesto():
+    return send_from_directory("static", "manifest.webmanifest", mimetype="application/manifest+json")
+
 # ------------------------------------------------------------------ Relleno histórico del suelo (sin estaca)
 @app.get("/api/suelo_historico")
 def suelo_historico():
     zid = request.args.get("zona", "")
-    if zid not in PILOTO["zonas"]: return _error("Zona no válida.", "Invalid area.")
+    if zid not in PILOTO["zonas"] and not (motor.es_punto(zid) and _zona_valida(zid)): return _error("Zona no válida.", "Invalid area.")
     try: mes = int(request.args.get("mes") or datetime.now().month)
     except ValueError: mes = 0
     if not 1 <= mes <= 12: return _error("Mes no válido.", "Invalid month.")
@@ -226,6 +253,7 @@ def referencia():
     """Suelo publicado para la zona y estaciones del IDEAM más cercanas al punto. No usa internet:
     las estaciones salen de la copia descargada o de la copia regional incluida (ver services/ideam.py)."""
     zid = request.args.get("zona", "")
+    if motor.es_punto(zid) and _zona_valida(zid): zid = motor.zona(zid)["cercana"]
     z = PILOTO["zonas"].get(zid)
     try:
         lat, lon = float(request.args["lat"]), float(request.args["lon"])
@@ -240,6 +268,33 @@ def referencia():
                     "interpretacion": PILOTO["interpretacion"], "nota": PILOTO["nota"],
                     "ideam": {"estaciones": sorted(est, key=lambda e: e["distancia_km"])[:4], "fuente": clima["fuente"],
                               "fecha_copia": clima["fecha_copia"], "origen": clima["origen"], "datos": clima["datos"]}})
+
+@app.get("/api/estado_datos")
+def estado_datos():
+    """Avance de la descarga automática y cuántas zonas ya tienen datos reales de la NASA."""
+    return jsonify(sincronizar.estado())
+
+@app.post("/api/punto")
+def punto():
+    """Punto libre del mapa: descarga el clima de la NASA para esa latitud y longitud (10 años) y lo guarda.
+    Si no hay internet, responde con la zona igual y la app usa el clima de la zona más cercana (lo dice)."""
+    d = request.get_json(force=True) or {}
+    try:
+        lat, lon = float(d["lat"]), float(d["lon"])
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180): raise ValueError
+    except (KeyError, TypeError, ValueError):
+        return _error("Coordenadas no válidas.", "Invalid coordinates.")
+    zid = motor.id_punto(lat, lon)
+    z = dict(motor.zona(zid)); z["riego"] = bool(z["riego"])
+    try:
+        info = sincronizar.actualizar(zid, *motor.punto_coords(zid), anios=10)
+        ok, err = True, None
+    except Exception as e:
+        info, ok, err = None, False, str(e)[:200]
+    cl, real = motor.clima_de(zid)
+    return jsonify(zona=z, clima_real=real, descarga=info, ok=ok, error=err,
+                   aviso=None if real else _t(f"No se pudo descargar el clima de la NASA para este punto; mientras tanto se usa el de {z['cercana_nombre']} (a {z['km_cercana']} km).",
+                                              f"NASA weather for this point could not be downloaded; meanwhile the data from {z['cercana_nombre']} ({z['km_cercana']} km away) is used."))
 
 @app.get("/api/zonas")
 def zonas():
@@ -265,23 +320,29 @@ def estado():
 
 @app.get("/api/clima_diario")
 def clima_diario():
+    if not _zona_valida(request.args.get("zona_id", "")): return _error("Zona no válida.", "Invalid area.")
     return jsonify(motor.diario(request.args["zona_id"], int(request.args["mes"]), int(request.args.get("anio", date.today().year))))
 
 @app.post("/api/panel")
 def panel():
     d = request.get_json(force=True)
+    if not _zona_valida(d.get("zona_id", "")): return _error("Zona no válida.", "Invalid area.")
     return jsonify(motor.panel(d["zona_id"], _suelo(d["suelo"]), d.get("textura"), d.get("riego")))
 
 @app.post("/api/recomendar")
 def recomendar():
     d = request.get_json(force=True)
+    if not _zona_valida(d.get("zona_id", "")): return _error("Zona no válida.", "Invalid area.")
     return jsonify(motor.recomendar(d["zona_id"], _suelo(d["suelo"]), d.get("prioridades"), _ultimos(d), d.get("riego"), d.get("textura")))
 
 @app.post("/api/simular")
 def simular():
     d = request.get_json(force=True)
+    if not _zona_valida(d.get("zona_id", "")): return _error("Zona no válida.", "Invalid area.")
     return jsonify(motor.simular(d["zona_id"], _suelo(d["suelo"]), d.get("textura"), d.get("riego"), d["secuencia"], _ultimos(d),
                                  max(.1, float(d.get("ha", 5))), max(1, min(10, int(d.get("anios", 5))))))
 
 if __name__ == "__main__":
+    sincronizar.iniciar()
+    print("AgroStake: abre http://127.0.0.1:%s  (los datos de la NASA se descargan solos en segundo plano)" % os.environ.get("PORT", 5000))
     app.run(debug=os.environ.get("FLASK_DEBUG") == "1", host=os.environ.get("HOST", "127.0.0.1"), port=int(os.environ.get("PORT", 5000)))

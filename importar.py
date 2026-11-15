@@ -3,7 +3,7 @@
   python importar.py zonas     datos.csv    (id,nombre,lat,lon,suelo,riego + fuente opcional)
   python importar.py clima     datos.json   ({"zona_id": {...mismos campos que data/clima_ejemplo.json...}})
   python importar.py perfiles  datos.json   (lista como data/perfiles_suelo.json)
-  python importar.py nasa      [años]       (descarga el clima real de cada zona desde NASA POWER; por defecto 20 años)
+  python importar.py nasa      [años]       (fuerza la descarga que la app ya hace sola: NASA POWER, NDVI MODIS y pendiente)
   python importar.py ideam                  (actualiza el catálogo de estaciones del IDEAM desde datos.gov.co)
   python importar.py piloto    [años]       (las dos anteriores: clima NASA de las 8 zonas y estaciones IDEAM)
   python importar.py cds       [años]       (humedad y temperatura del suelo de ERA5-Land, Copernicus CDS; pide cuenta)
@@ -35,19 +35,14 @@ def main(tabla, ruta):
         main("ideam", None)
         return main("nasa", ruta)
     elif tabla == "nasa":
-        from services import nasa
-        ejemplo = db._leer("clima_ejemplo.json")
-        for z in db.consultar("SELECT * FROM zonas"):
+        # Lo mismo que hace sola la app al arrancar (services/sincronizar.py), pero forzando la descarga ahora
+        from services import sincronizar
+        for z in db.consultar("SELECT id, lat, lon FROM zonas"):
             try:
-                d = nasa.construir(float(z["lat"]), float(z["lon"]), int(ruta or 20))
+                r = sincronizar.actualizar(z["id"], float(z["lat"]), float(z["lon"]), anios=int(ruta or 20), forzar=True)
+                print("Listo", z["id"], "· de ejemplo todavía:", ", ".join(r.get("faltan") or []) or "nada")
             except Exception as e:
-                print("No se pudo descargar", z["id"], "->", e); continue
-            previo = ejemplo.get(z["id"], {})
-            faltan = [k for k in ("ndvi_mensual", "pendiente_pct", "humedad_suelo_pct") if d.get(k) is None]
-            for k in faltan: d[k] = previo.get(k)
-            d["campos_ejemplo"] = faltan
-            db.guardar("clima", dict(zona_id=z["id"], datos=json.dumps(d)), 1, d["fuente"])
-            print("Listo", z["id"], d["periodo"], "· de ejemplo todavía:", ", ".join(faltan) or "nada")
+                print("No se pudo descargar", z["id"], "->", e)
     elif tabla == "clima":
         for zid, d in json.load(open(ruta, encoding="utf-8")).items():
             db.guardar("clima", dict(zona_id=zid, datos=json.dumps(d)), 1, d.pop("fuente", "NASA"))
