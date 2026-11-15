@@ -202,20 +202,26 @@ def _fuera_de_zona(c, ctx):
     if c["tipo"] == "pasto" and t is not None and t < TEMP_PASTO:
         return tr(f"la braquiaria crece mejor con más de {TEMP_PASTO} °C de promedio y aquí el promedio es de {_num(t)} °C",
                   f"brachiaria grows best above {TEMP_PASTO} °C on average and the average here is {_num(t)} °C")
+    if m and c["tipo"] == "abono_verde" and m.get("nuestros"):
+        return tr(f"mejora el suelo, pero casi no se siembra en las fincas y la EVA no lo registra en {m['n']}; si quieres probarlo, pregúntale a un técnico",
+                  f"it improves the soil, but it is rarely planted on farms and the EVA does not record it in {m['n']}; if you want to try it, ask an extension agent")
     if not m or k not in municipios.eva(): return None
     if k == "frijol" and not municipios.es_caribe(m):     # el caupí es de tierra caliente; fuera del Caribe la EVA no lo separa del fríjol común
         v, d = municipios.cerca(m, k, solo_caribe=True)
         if v: return None
         return tr("no hay siembras de fríjol registradas en el Caribe a menos de 100 km; el fríjol que la EVA registra en tu región puede ser fríjol común, no caupí",
                   "no bean plantings are recorded in the Caribbean within 100 km; the beans the EVA records in your region may be common beans, not cowpea")
-    if m.get("nuestros", {}).get(k, {}).get("ha", 0) > 0: return None
-    a = municipios.fuente_anios()
-    if not municipios.es_caribe(m):       # en las montañas, 100 km abarcan tierra fría y caliente: solo vale el municipio
-        return tr(f"no se siembra en {m['n']} (EVA {a}): es señal de que el clima o el suelo de la zona no le sirven",
-                  f"it is not planted in {m['n']} (EVA {a}): a sign that the local climate or soil does not suit it")
-    if municipios.cerca(m, k)[0]: return None
-    return tr(f"no se siembra en {m['n']} ni en ningún municipio a menos de 100 km (EVA {a}): es señal de que el clima o el suelo de la zona no le sirven",
-              f"it is not planted in {m['n']} or any town within 100 km (EVA {a}): a sign that the local climate or soil does not suit it")
+    nu, a = m.get("nuestros", {}), municipios.fuente_anios()
+    if not nu:                            # el municipio no reporta ninguno de nuestros cultivos: se mira alrededor
+        if municipios.es_caribe(m) and municipios.cerca(m, k)[0]: return None
+        return tr(f"no hay siembras registradas en {m['n']} ni cerca (EVA {a})", f"no plantings are recorded in {m['n']} or nearby (EVA {a})")
+    ha, minimo = nu.get(k, {}).get("ha", 0), municipios.minimo_local(m)
+    if ha >= minimo: return None
+    if ha >= 1:
+        return tr(f"en {m['n']} casi no se siembra (unas {_mil(ha)} ha al año, EVA {a}): no tiene potencial comprobado en la zona",
+                  f"it is hardly planted in {m['n']} (about {_mil(ha)} ha a year, EVA {a}): no proven potential in the area")
+    return tr(f"no se siembra en {m['n']} (EVA {a}): es señal de que el clima, el suelo o el mercado de la zona no le sirven",
+              f"it is not planted in {m['n']} (EVA {a}): a sign that the local climate, soil or market does not suit it")
 
 def _evaluar(c, lluvia, ctx):
     if c["tipo"] == "cobertura": return True, "", 1.0
@@ -244,7 +250,7 @@ def _pesos(prios, con_zona=False):
     """Cada indicador pesa 1; cada prioridad elegida suma 3. Se normaliza a 1. "zona" (lo que se siembra en el
     municipio en cada semestre, EVA) pesa 2 y solo cuenta donde hay datos."""
     w = {k: 1.0 for k in IND_KEYS}
-    if con_zona: w["zona"] = 2.0            # lo que de verdad se siembra en la zona pesa el doble (pedido del equipo)
+    if con_zona: w["zona"] = 3.0            # lo que de verdad se siembra en la zona pesa el triple (pedido del equipo)
     for p in prios: w[p] += 3
     t = sum(w.values())
     return {k: v / t for k, v in w.items()}
@@ -453,6 +459,7 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
     ults = [cult[u] for u in _lista_ultimos(ultimos) if u in cult]
     nbajo, ladera = s["n"] == "bajo", cl["pendiente_pct"] > 15
     notas, desc = [], {}
+    local = bool(mun and mun.get("nuestros"))      # hay datos de la EVA: la rotación se arma con lo que se siembra ahí
 
     def anotar(c, razon, ok):
         d = desc.setdefault(c["cultivo"], {"ok": False, "razones": []})
@@ -464,7 +471,7 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
         off, ll, lista = TEMPORADAS[t][2], _lluvia(cl, TEMPORADAS[t][2]), []
         for c in cult.values():
             if c["tipo"] == "cobertura":
-                if t == 2: lista.append((c, 1.0, 0))
+                if t == 2 or local: lista.append((c, 1.0, 0 if t == 2 else ll))   # en lluvias: descanso (penalizado abajo)
                 continue
             if c["ciclo_dias"] > LARGO: continue
             ok, razon, r = _evaluar(c, ll, ctx)
@@ -481,7 +488,7 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
 
     def valido(seq, act):
         for a, b in zip(seq, seq[1:]):
-            if a["familia"] == b["familia"]: return False
+            if a["familia"] == b["familia"] and a["tipo"] != "cobertura": return False
             if a["tipo"] == "cereal" and b["tipo"] not in LEGUM + ("cobertura",): return False
         if "ultimo" in act:
             for u in ults:
@@ -500,8 +507,12 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
         for c, r, ll in largos:
             if valido([c], act): cand.append(([c, c, c], [r] * 3, [ll] * 3, True))
         if cand:
-            if nbajo and "n_bajo" not in act: notas.append(tr("No hay leguminosa viable para empezar con el suelo y el clima de este lote; se relajó esa regla.",
-                                                             "No legume can start the rotation with this soil and climate; that rule was relaxed."))
+            if nbajo and "n_bajo" not in act:
+                if local and not any(c["fija_n"] and c["tipo"] != "abono_verde" and not _fuera_de_zona(c, ctx) for c in cult.values()):
+                    notas.append(tr(f"Tu suelo tiene poco nitrógeno, pero en {mun['n']} no se siembra ninguna leguminosa (fríjol o guandul) según la EVA, así que la rotación no empieza con una. Abona según el análisis de suelo.",
+                                    f"Your soil is low in nitrogen, but no legume (beans or pigeon pea) is planted in {mun['n']} according to the EVA, so the rotation does not start with one. Fertilize according to the soil test."))
+                else: notas.append(tr("No hay leguminosa viable para empezar con el suelo y el clima de este lote; se relajó esa regla.",
+                                      "No legume can start the rotation with this soil and climate; that rule was relaxed."))
             if "cobertura" not in act: notas.append(tr("No se pudo exigir cobertura en el verano con las condiciones dadas.", "Ground cover in the dry season could not be required with these conditions."))
             if ults and "ultimo" not in act: notas.append(tr("No se pudo evitar repetir la familia de lo que sembraste antes.", "It was not possible to avoid repeating the family of what you planted before."))
             break
@@ -536,7 +547,8 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
         if mun:
             zs = [v for v in (_zona_bloque(b["c"], i, largo, mun) for i, b in enumerate(bloques)) if v is not None]
             ind["zona"] = 100 * (sum(zs) / len(zs) if zs else .5)
-        res.append((sum(w[x] * ind[x] for x in ind), seq, ind, largo, bloques, n, cob))
+        descansos = 0 if largo else sum(1 for c in seq[:2] if c["tipo"] == "cobertura")   # temporada de lluvias sin sembrar
+        res.append((sum(w[x] * ind[x] for x in ind) * .88 ** descansos, seq, ind, largo, bloques, n, cob))
     res.sort(key=lambda r: -r[0])
 
     elegidos = []
@@ -581,6 +593,40 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
             "descartados": fuera, "notas": notas, "datos_de_ejemplo": ejemplo, "municipio": _municipio_app(mun, mun_km, cult)}
 
 SEM = lambda t, largo: "a" if largo or t == 0 else "b" if t == 1 else None   # primeras lluvias ≈ semestre A; segundas ≈ B
+
+def _mejor_largo_plazo(cosecha, cat, mun, ha):
+    """El cultivo de la rotación que conviene sostener en el tiempo: el que más se siembra en el municipio (EVA: se da
+    bien y tiene compradores), con un empujón a los que mejoran el suelo. La razón y la ventaja salen solo de datos
+    que la app tiene: hectáreas y cosecha de la EVA y las características del catálogo."""
+    nu = mun.get("nuestros", {})
+    mx = max((v.get("ha", 0) for v in nu.values()), default=0) or 1
+    def puntos(x):
+        c = cat[x["cultivo"]]
+        return math.sqrt(nu.get(x["cultivo"], {}).get("ha", 0) / mx) + .15 * c["fija_n"] + .1 * c["materia_organica"]
+    x = max(cosecha, key=puntos); c = cat[x["cultivo"]]; n = _nom(c); haloc = nu.get(x["cultivo"], {}).get("ha", 0)
+    otros = [y for y in cosecha if y is not x]
+    if haloc >= 1:
+        primero = all(nu.get(y["cultivo"], {}).get("ha", 0) <= haloc for y in otros)
+        donde = (tr(f"es el que más se siembra en {mun['n']} de los de tu rotación (unas {_mil(haloc)} ha al año)", f"it is the most planted crop of your rotation in {mun['n']} (about {_mil(haloc)} ha a year)") if primero and otros
+                 else tr(f"se siembra en {mun['n']} (unas {_mil(haloc)} ha al año)", f"it is planted in {mun['n']} (about {_mil(haloc)} ha a year)"))
+    else: donde = tr(f"se siembra en la región de {mun['d']}", f"it is planted in the {mun['d']} region")
+    rinde = tr(("allí" if x["de"] != "departamento" else f"en {mun['d']}") + f" se cosechan en promedio {_num(x['t_ha'])} t por hectárea en cada siembra",
+               f"on average {_num(x['t_ha'])} t per hectare are harvested per planting " + ("there" if x["de"] != "departamento" else f"in {mun['d']}"))
+    if c["fija_n"]: v = tr("deja nitrógeno en el suelo, así la siguiente siembra necesita menos abono", "it leaves nitrogen in the soil, so the next planting needs less fertilizer")
+    elif c["tol_sequia"] >= 3: v = tr("aguanta bien los veranos largos", "it copes well with long dry seasons")
+    elif c["cobertura"] >= .7: v = tr("cubre bien el suelo y lo protege de la erosión", "it covers the soil well and protects it from erosion")
+    elif c["ciclo_dias"] > LARGO: v = tr(f"con una sola siembra al año da unas {_num(x['t_ha'])} t por hectárea", f"a single planting a year gives about {_num(x['t_ha'])} t per hectare")
+    else: v = tr(f"es de ciclo corto: da cosecha en unos {c['ciclo_dias']} días y deja el lote libre para la siguiente siembra",
+                 f"it is a short-cycle crop: ready in about {c['ciclo_dias']} days, leaving the plot free for the next planting")
+    return {"cultivo": x["cultivo"], "nombre": n, "icono": c["icono"], "t_ha": x["t_ha"], "t_total": x["t_total"],
+            "frase": tr(f"{_art(c)} {n.lower() if not _en() else n} es la primera opción a largo plazo porque {donde} y {rinde}.",
+                        f"{n} is the first long-term option because {donde} and {rinde}."),
+            "ventaja": v[0].upper() + v[1:] + ".", "en_tu_lote": tr(f"En tus {_num(ha)} ha serían unas {_num(x['t_total'])} t en cada cosecha.",
+                                                                 f"On your {_num(ha)} ha that would be about {_num(x['t_total'])} t per harvest.")}
+
+def _art(c):
+    """Artículo en español para el nombre del cultivo: el maíz, la yuca, el ñame, el frijol caupí, el ajonjolí, el arroz."""
+    return "La" if c["cultivo"] in ("yuca",) else "El"
 
 def _zona_bloque(c, t, largo, mun):
     """0 a 1: qué tanto se siembra ese cultivo en el municipio en esa época (EVA por semestre). Verano: la mitad,
@@ -658,6 +704,9 @@ def _beneficio(ind, prios):
 
 def _porque(c, prev, i, nbajo, ladera, largo, prios):
     n = _nom(c)
+    if c["tipo"] == "cobertura" and i < 2 and not largo:
+        return tr("En esta temporada no hay un cultivo de tu zona que encaje después del anterior: deja descansar el lote con el rastrojo encima. Protege el suelo y le devuelve materia orgánica.",
+                  "No locally grown crop fits after the previous one in this season: let the plot rest with the crop residue on top. It protects the soil and returns organic matter.")
     if c["tipo"] == "cobertura":
         return tr("Deja el rastrojo como cobertura: protege " + ("la ladera de la erosión." if ladera else "el suelo del sol y del viento en el verano."),
                   "Leave crop residue as cover: it protects " + ("the slope from erosion." if ladera else "the soil from sun and wind in the dry season."))
@@ -836,8 +885,9 @@ def simular(zona_id, suelo, textura, riego, secuencia, ultimos, ha, anios):
         r, de = municipios.rendimiento(mun, c["cultivo"])
         if r: cosecha.append({"cultivo": c["cultivo"], "nombre": _nom(c), "icono": c["icono"], "t_ha": r, "t_total": round(r * ha, 1), "de": de,
                               "nombre_eva": municipios.nombre(municipios.eva()[c["cultivo"]], _en())})
+    mejor = _mejor_largo_plazo(cosecha, {c["cultivo"]: c for c in plan}, mun, ha) if mun and cosecha else None
     return {"base": dict(B, cultivo=nb, descripcion=base_txt), "plan": P, "nota_agua": nota, "nota_largo": nota_largo,
-            "cosecha": {"municipio": mun["n"], "departamento": mun["d"], "cultivos": cosecha, "fuente": municipios.fuente().get("cultivos"),
+            "cosecha": {"municipio": mun["n"], "departamento": mun["d"], "cultivos": cosecha, "fuente": municipios.fuente().get("cultivos"), "mejor": mejor,
                         "aviso": tr("Es lo que se cosecha en promedio por hectárea en cada siembra, según los reportes oficiales. Tu cosecha depende del manejo, la semilla y el año.",
                                     "This is the average harvest per hectare per planting, from official reports. Your harvest depends on management, seed and the year.")} if mun and cosecha else None,
             "ahorro": {"demanda_mm": B["demanda_mm"] - P["demanda_mm"], "deficit_mm": ah_def, "m3_ha": round(m3ha), "m3_total": round(m3), "pct_deficit": pct},

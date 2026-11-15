@@ -45,6 +45,18 @@ igual que antes, con SQLite.
 
 Para comprobarlo: `/api/estado_datos` debe decir `"cuentas": "postgres"`.
 
+### Entrada solo con el nombre (versión 17)
+
+La pantalla de inicio pide solo el nombre. `POST /api/entrar` crea una cuenta "invitado" (columna `invitado` = 1)
+con un correo de relleno en el dominio reservado `.invalid` (nunca recibe correo) y una contraseña al azar que
+nadie conoce. La sesión dura un año desde la última visita (`PERMANENT_SESSION_LIFETIME`). Si se borran los
+datos del navegador o se cierra la sesión, esa cuenta ya no se puede abrir. Para frenar abusos hay un límite de
+60 entradas nuevas por hora desde una misma conexión (`AGROSTAKE_ENTRADAS_POR_IP`).
+
+La autorización de datos (Ley 1581 de 2012) queda en una frase bajo el botón ("Al tocar «Iniciar aplicación»
+autorizas…"), es decir, por una conducta de la persona y no con una casilla. Conviene que alguien con formación en
+protección de datos confirme que eso basta para el uso que le van a dar.
+
 ### Códigos por correo y por mensaje de texto (versión 16)
 
 Al crear la cuenta se manda un código de 6 números al correo, y la contraseña se recupera con un código por correo
@@ -79,12 +91,17 @@ y `openpyxl`; el servidor no los usa):
 
     python herramientas/preparar_municipios.py --eva 20250617_BaseAgricola20192024.xlsx --divipola DIVIPOLA.csv --sivel datos-geo-col.sql
 
-- **En las rotaciones** la EVA hace tres cosas:
-  1. Un cultivo que no se siembra en el municipio (ni, en el Caribe, a menos de 100 km) no se recomienda: es señal
-     de que el clima o el suelo no le sirven. Por eso la app no recomienda ñame ni arroz en Tunja.
-  2. Nuevo indicador "Se siembra en tu zona" (pesa el doble que los demás): compara cada siembra con lo que se
-     siembra en el municipio en ese mismo semestre. Primeras lluvias ≈ semestre A; segundas lluvias ≈ semestre B.
-  3. La mitad del puntaje de mercado sale de cuánto se siembra cada cultivo en el municipio.
+- **En las rotaciones** la EVA hace estas cosas:
+  1. Un cultivo solo se recomienda si se siembra en el propio municipio con al menos 10 ha al año y el 1,5 % del
+     área del cultivo más sembrado allí: si no, es señal de que el clima, el suelo o el mercado no le sirven. Por eso
+     la app no recomienda ñame ni arroz en Tunja, ni guandul en Sahagún.
+  2. Donde hay datos de la EVA no se recomienda abono verde (casi no se siembra en las fincas). Si en una temporada
+     de lluvias no encaja ningún cultivo de la zona, la rotación deja el lote descansando con rastrojo, penalizado.
+  3. Indicador "Se siembra en tu zona" (pesa el triple que los demás): compara cada siembra con lo que se siembra
+     en el municipio en ese mismo semestre. Primeras lluvias ≈ semestre A; segundas lluvias ≈ semestre B.
+  4. La mitad del puntaje de mercado sale de cuánto se siembra cada cultivo en el municipio.
+  5. En Proyección, "Mejor cultivo a largo plazo" escoge el cultivo de la rotación que más se siembra en el
+     municipio (con un empujón a los que mejoran el suelo) y da su cosecha promedio por hectárea.
 - **Fuera del Caribe** la app avisa que es una guía en prueba: se armó para la tierra caliente del Caribe.
   El caupí solo se recomienda donde hay fríjol registrado en el Caribe a menos de 100 km (en el resto del país, el
   "Frijol" de la EVA puede ser fríjol común). La braquiaria no se recomienda con menos de 19 °C de temperatura

@@ -31,7 +31,7 @@ def _secreto():
 
 app.config.update(SECRET_KEY=_secreto(), SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
                   SESSION_COOKIE_SECURE=os.environ.get("ROTACION_HTTPS") == "1",
-                  PERMANENT_SESSION_LIFETIME=timedelta(days=30), MAX_CONTENT_LENGTH=256 * 1024)
+                  PERMANENT_SESSION_LIFETIME=timedelta(days=365), MAX_CONTENT_LENGTH=256 * 1024)
 SAL_DATOS = hashlib.sha256((app.config["SECRET_KEY"] + ":datos").encode()).hexdigest()
 db.init()
 
@@ -65,11 +65,12 @@ _fallos = {}   # correo -> [marcas de tiempo de intentos fallidos]
 def _usuario_actual():
     uid = session.get("uid")
     if not uid: return None
-    f = db.consultar("SELECT id,nombre,apellido,correo,compartir_datos,perfil,celular,celular_ok FROM usuarios WHERE id=?", (uid,))
+    f = db.consultar("SELECT id,nombre,apellido,correo,compartir_datos,perfil,celular,celular_ok,invitado FROM usuarios WHERE id=?", (uid,))
     return f[0] if f else None
 
 def _publico(u):
-    return {"id": u["id"], "nombre": u["nombre"], "apellido": u["apellido"], "correo": u["correo"],
+    inv = bool(u.get("invitado"))
+    return {"id": u["id"], "nombre": u["nombre"], "apellido": u["apellido"], "correo": None if inv else u["correo"], "invitado": inv,
             "compartir_datos": bool(u["compartir_datos"]), "perfil": json.loads(u["perfil"]) if u.get("perfil") else None,
             "celular": u.get("celular"), "celular_ok": bool(u.get("celular_ok"))}
 
@@ -129,6 +130,28 @@ def _enviar_codigo(via, destino, codigo, motivo):
 def _celular_de(texto):
     texto = (texto or "").strip()
     return mensajeria.normalizar_celular(texto) if texto else None
+
+# Entrada simple (versión 17): solo el nombre. Se crea una cuenta "invitado" que vive en la cookie de ese celular o
+# computador (un año desde la última visita). No tiene correo ni contraseña: si se borra la cookie o se cierra la
+# sesión, esos datos ya no se pueden abrir. Quien quiera, sigue pudiendo crear una cuenta con correo.
+_entradas_ip = {}
+@app.post("/api/entrar")
+def entrar_simple():
+    d = request.get_json(force=True)
+    nombre = " ".join((d.get("nombre") or "").split())[:60]
+    if not nombre: return _error("Escribe tu nombre para empezar.", "Type your name to start.")
+    ahora, ip = time.time(), _ip()
+    marcas = [t for t in _entradas_ip.get(ip, []) if ahora - t < 3600]
+    if len(marcas) >= int(os.environ.get("AGROSTAKE_ENTRADAS_POR_IP") or 60):
+        return _error("Demasiadas entradas nuevas desde esta conexión. Espera un rato e intenta de nuevo.",
+                      "Too many new sign-ins from this connection. Wait a while and try again.", 429)
+    _entradas_ip[ip] = marcas + [ahora]
+    if len(_entradas_ip) > 5000: _entradas_ip.clear()
+    uid = db.ejecutar("INSERT INTO usuarios(nombre,apellido,correo,clave_hash,acepta_datos_en,invitado) VALUES(?,?,?,?,?,1)",
+                      (nombre, "", f"invitado-{secrets.token_hex(10)}@agrostake.invalid",       # .invalid: dominio reservado que nunca recibe correo
+                       generate_password_hash(secrets.token_urlsafe(24)), datetime.now(timezone.utc).isoformat()))
+    session.clear(); session.permanent = True; session["uid"] = uid
+    return jsonify(usuario=_publico(_usuario_actual())), 201
 
 @app.get("/api/acceso/config")
 def acceso_config():
@@ -506,7 +529,7 @@ def zonas():
 _MUN = {}
 @app.get("/api/municipios")
 def lista_municipios():
-    """Los municipios de Colombia para el mapa y el buscador (unos 70 KB; comprimidos, unos 20 KB). Cambia solo
+    """Los municipios de Colombia para el mapa y el buscador (unos 92 KB; comprimidos, unos 18 KB). Cambia solo
     cuando se actualiza el archivo."""
     if not _MUN:
         crudo = json.dumps({"municipios": municipios.lista(), "fuente": municipios.fuente()}, ensure_ascii=False, separators=(",", ":")).encode()

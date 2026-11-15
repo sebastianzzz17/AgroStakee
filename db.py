@@ -83,7 +83,8 @@ SCHEMA_PG = [f"""CREATE TABLE IF NOT EXISTS usuarios(
   intentos INTEGER NOT NULL DEFAULT 0, enviado_en DOUBLE PRECISION NOT NULL, enviados INTEGER NOT NULL DEFAULT 1,
   ventana DOUBLE PRECISION NOT NULL, datos TEXT, PRIMARY KEY(destino, proposito))""",
  "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS celular TEXT",                    # versión 16: recuperar la cuenta por SMS
- "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS celular_ok INTEGER NOT NULL DEFAULT 0"]
+ "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS celular_ok INTEGER NOT NULL DEFAULT 0",
+ "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS invitado INTEGER NOT NULL DEFAULT 0"]     # versión 17: entrar solo con el nombre
 _pg_local = threading.local()
 
 def modo_cuentas():
@@ -174,6 +175,7 @@ def init(forzar=False):
         cols = {r[1] for r in c.execute("PRAGMA table_info(usuarios)")}      # versión 16: celular para recuperar la cuenta
         if "celular" not in cols: c.execute("ALTER TABLE usuarios ADD COLUMN celular TEXT")
         if "celular_ok" not in cols: c.execute("ALTER TABLE usuarios ADD COLUMN celular_ok INTEGER NOT NULL DEFAULT 0")
+        if "invitado" not in cols: c.execute("ALTER TABLE usuarios ADD COLUMN invitado INTEGER NOT NULL DEFAULT 0")   # versión 17
         c.execute(f"PRAGMA user_version={VERSION}")
         c.commit()
         sembrar = c.execute("SELECT COUNT(*) FROM cultivos").fetchone()[0] == 0

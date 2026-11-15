@@ -93,6 +93,12 @@ def nombre(eva_nombre, ingles=False):
     if eva_nombre.startswith("Malanga"): return "Taro" if ingles else "Malanga"
     return INGLES.get(eva_nombre, eva_nombre) if ingles else eva_nombre
 
+def minimo_local(m):
+    """Hectáreas al año desde las que un cultivo cuenta como "se siembra aquí": 10 ha y al menos el 1,5 % del más
+    sembrado de los nuestros en el municipio (así unas pocas hectáreas sueltas no bastan)."""
+    nu = (m or {}).get("nuestros", {})
+    return max(10.0, .015 * max((v.get("ha", 0) for v in nu.values()), default=0))
+
 def es_caribe(m): return bool(m) and m["d"] in _datos()["caribe_set"]
 
 def cerca(m, cultivo, solo_caribe=False):

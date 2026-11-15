@@ -164,6 +164,22 @@ button{cursor:pointer;background:none;border:0;padding:0;text-align:inherit}
 .pin{width:22px;height:22px;border-radius:50%;background:var(--acento);border:4px solid var(--bg);box-shadow:0 0 0 2px var(--lima)}
 .pin.on{background:var(--txt);box-shadow:0 0 0 3px var(--lima),0 0 18px var(--lima)}
 .buscar-lugar{position:relative;margin:0 0 12px;z-index:700}
+/* Versión 17 */
+.f-simple .ley{font-size:13.5px;line-height:1.4;color:var(--sec);margin:12px 2px 0}
+.acc-cuenta{text-align:center;margin:14px 0 0}.acc-cuenta .enlace{font-size:15px}
+.av-simple{text-align:left;margin:0}.av-simple .campo span{color:#ffffffd9}
+.av-simple input{background:#ffffff1f;border:1.5px solid #ffffff59;color:#fff;font-size:18px}
+.av-simple input::placeholder{color:#ffffffa6}.av-simple .ley{color:#ffffffb3}.av-simple .error{color:#ffd6d6}
+.av-simple .av-b1{height:54px;border-radius:999px;font-size:17px;font-weight:700}
+.av-botones .acc-cuenta .enlace{color:#fff;opacity:.9;font-weight:600}
+.empezar-guia{padding:4px 14px 10px}.empezar-guia .btn{width:100%;font-size:18px;padding:14px}
+.sin-rot{display:flex;gap:16px;align-items:flex-start}.sin-rot .e{font-size:38px;line-height:1}.sin-rot h2{margin:0 0 6px}.sin-rot p{margin:0 0 14px;color:var(--sec);font-size:16px}
+.mun-frase{font-size:17px;line-height:1.45;margin:-2px 0 8px}
+.mejor-top{display:flex;gap:14px;align-items:center}.mejor-top .e{font-size:44px;line-height:1}.mejor-top > div{display:flex;flex-direction:column}
+.mejor-top b{font-size:19px}.mejor-frase{font-size:17px;line-height:1.45;margin:14px 0 8px}.mejor-ventaja{font-size:16px;margin:0;padding:10px 12px;border-radius:12px;background:var(--campo)}
+@keyframes cambia{0%,100%{text-shadow:none}50%{text-shadow:0 0 14px currentColor}}
+.cambia{animation:cambia .6s ease-in-out 3}
+@media (prefers-reduced-motion:reduce){.cambia{animation:none}}
 .buscar-fila{display:flex;gap:8px;align-items:stretch}.buscar-fila .buscar{flex:1;min-width:0;margin:0}
 .mi-ubic{display:inline-flex;align-items:center;gap:6px;flex:none;padding:0 14px;border-radius:12px;font-size:16px}
 .mi-ubic:disabled{opacity:.7}
@@ -177,7 +193,7 @@ button{cursor:pointer;background:none;border:0;padding:0;text-align:inherit}
 .chips-rend{display:flex;flex-wrap:wrap;gap:8px}.chip-rend{background:var(--campo);border-radius:999px;padding:8px 12px;font-size:15px}.chip-rend b{margin-left:4px}
 .cosecha{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
 .cosecha > div{display:flex;flex-direction:column;gap:2px}.cosecha .e{font-size:26px}
-@media (max-width:899px){.mun-card .mun-pie{display:none}}
+@media (max-width:899px){.mun-card .mun-pie{display:none}.mun-card > .sub{font-size:14.5px}}
 .sug-lugar{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border-radius:14px;box-shadow:0 10px 30px #0006;padding:6px;max-height:min(60vh,380px);overflow:auto}
 .sug-lugar button{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left;padding:11px 12px;border-radius:10px}
 .sug-lugar button b{font-size:17px}.sug-lugar button small{color:var(--sec);font-size:14.5px}
@@ -643,8 +659,9 @@ html,body{max-width:100%;overflow-x:clip}
 @media(max-width:380px){.tabbar button{font-size:9.6px;letter-spacing:-.02em}}
 @media(max-width:340px){.tabbar button{font-size:9px}}
 .tabbar button{overflow:visible}      /* las esquinas redondeadas recortaban el texto de abajo ("Proyecciór") */
-.cuenta-fila{gap:12px}.cuenta-fila > div{min-width:0}.cuenta-fila small{display:block;overflow-wrap:anywhere}
-.cuenta-fila .btn2{flex:none;white-space:nowrap}
+.cuenta-fila{gap:12px}.cuenta-fila > div{min-width:0;flex:1 1 60%}.cuenta-fila small{display:block;overflow-wrap:break-word}
+.cuenta-fila .btn2{flex:0 1 auto;max-width:45%;white-space:normal;text-align:center}
+.aviso-rojo{color:#ff6b6b!important;font-weight:600}
 .consulta-anim{display:grid;justify-items:center;gap:6px;padding:4px 0 6px}
 .radar{width:120px;height:120px}
 .onda-r{fill:none;stroke:var(--agua);stroke-width:2;transform-box:fill-box;transform-origin:center;opacity:0;animation:radar 1.8s ease-out infinite}
@@ -1172,11 +1189,11 @@ function renderVision(){
   el.setAttribute("aria-label", L("Qué es AgroStake","What AgroStake is"));
   el.innerHTML = `<div class="av-fondo">${escenaVertical()}</div>
     <div class="av-top"><div class="av-marca">${anillos([{v:80, c:COL.suelo}, {v:60, c:COL.agua}, {v:90, c:COL.clima}], 40, 5, 1.5)}<span>AgroStake</span></div>
-      <div class="av-top-der">${idiomaMini()}<button type="button" class="av-saltar" data-modo-acc="entrar">${L("Saltar","Skip")}</button></div></div>
+      <div class="av-top-der">${idiomaMini()}</div></div>
     <div class="av-slides">${V.map((v, i) => `<article class="av-slide" data-frase="${i}"><span class="av-k">${v.k}</span><h2 class="av-t">${v.t}</h2><p class="av-p">${v.p}</p><h2 class="av-c">${v.c}</h2><p class="av-m">${v.m}</p></article>`).join("")}</div>
     <div class="av-ctl"><div class="av-dots">${V.map((_, i) => `<button type="button" class="av-dot" data-ir-frase="${i}" aria-label="${L(`Frase ${i + 1} de ${V.length}`, `Message ${i + 1} of ${V.length}`)}"><i></i></button>`).join("")}</div>
       <button type="button" class="av-pausa" data-pausa-frases></button></div>
-    <div class="av-botones"><button type="button" class="av-b1" data-modo-acc="registro">${L("Crear cuenta","Create account")}</button><button type="button" class="av-b2" data-modo-acc="entrar">${L("Iniciar sesión","Sign in")}</button></div>
+    <div class="av-botones">${formSimple("", true)}</div>
     <div class="av-escena">${escenaVision("p")}</div>`;
   marcarFrase();
   if (!carrusel.reloj) carrusel.reloj = setInterval(() => {      // avanza solo mientras se ve la pantalla de entrada
@@ -1275,9 +1292,16 @@ function vistaAcceso(err){
     f: `<form class="card" id="f-olvido-clave" novalidate>${campoClave("clave", "new-password", L("Contraseña nueva","New password"))}${er}<button class="btn" type="submit" style="width:100%">${L("Guardar y entrar","Save and sign in")}</button></form>` };
   return null;
 }
+/* Entrada simple (versión 17): nombre y «Iniciar aplicación». La cuenta con correo sigue disponible en un enlace pequeño. */
+const formSimple = (err, enVision) => `<form class="f-simple ${enVision ? "av-simple" : "card"}" novalidate>
+    <label class="campo"><span>${L("¿Cómo te llamas?","What's your name?")}</span><input name="nombre" autocomplete="given-name" maxlength="60" required placeholder="${L("Escribe tu nombre","Type your name")}" enterkeyhint="go"></label>
+    ${err ? `<p class="error" role="alert">${esc(err)}</p>` : ""}
+    <button class="${enVision ? "av-b1" : "btn"}" type="submit" style="width:100%">${L("Iniciar aplicación","Start the app")}</button>
+    <p class="ley">${L("Al tocar «Iniciar aplicación» autorizas el uso de tu nombre y de los datos de tu lote para que la app funcione (Ley 1581 de 2012).","By tapping “Start the app” you authorize the use of your name and plot data so the app can work (Colombian Law 1581 of 2012).")}</p></form>
+  <p class="acc-cuenta"><button type="button" class="enlace" data-acc-correo>${L("¿Ya tienes cuenta con correo? Entra aquí","Already have an email account? Sign in here")}</button></p>`;
 function renderAcceso(err = ""){
   renderVision();
-  const reg = S.modoAcceso === "registro", vista = vistaAcceso(err);
+  const reg = S.modoAcceso === "registro", vista = vistaAcceso(err), simple = !vista && S.accModo !== "correo";
   if (!vista) dejarDeEsperarSMS();
   $("#acceso").dataset.paso = S.accPaso || "bienvenida";      // celular: bienvenida a pantalla completa y luego el formulario
   $("#acceso").classList.toggle("acc-paso-extra", !!vista);
@@ -1287,9 +1311,9 @@ function renderAcceso(err = ""){
    <h1>AgroStake</h1><p class="tag">${L("Datos de la NASA y de tu estaca para decidir qué sembrar", "NASA and stake data to decide what to plant")}</p>
    ${vista ? `<div class="acc-paso-tit"><h2>${vista.h}</h2><p>${vista.p}</p></div>` : ""}
    <div class="acc-hola"><div class="acc-logo">${anillos([{v:80, c:COL.suelo}, {v:60, c:COL.agua}, {v:90, c:COL.clima}], 48, 6, 2)}<span>AgroStake</span></div>
-     <h2>${vista ? vista.h : reg ? L("Crea tu cuenta","Create your account") : L("¡Hola de nuevo!","Welcome back!")}</h2>
-     <p>${vista ? vista.p : reg ? L("Es gratis. Guarda tu lote y conecta tu estaca cuando la tengas.","It's free. Save your plot and connect your stake when you have one.") : L("Entra para ver tu lote, tus rotaciones y el clima de la NASA de tu zona.","Sign in to see your plot, your rotations and NASA weather for your area.")}</p></div>
-   ${vista ? vista.f : `<div class="tog modo-acc" role="group"><button type="button" data-modo-acc="entrar" aria-pressed="${!reg}">${L("Iniciar sesión","Sign in")}</button><button type="button" data-modo-acc="registro" aria-pressed="${reg}">${L("Crear cuenta","Create account")}</button></div>
+     <h2>${vista ? vista.h : simple ? L("Bienvenido a AgroStake","Welcome to AgroStake") : reg ? L("Crea tu cuenta","Create your account") : L("¡Hola de nuevo!","Welcome back!")}</h2>
+     <p>${vista ? vista.p : simple ? L("Escribe tu nombre y empieza. No necesitas correo ni contraseña.","Type your name and start. No email or password needed.") : reg ? L("Es gratis. Guarda tu lote y conecta tu estaca cuando la tengas.","It's free. Save your plot and connect your stake when you have one.") : L("Entra para ver tu lote, tus rotaciones y el clima de la NASA de tu zona.","Sign in to see your plot, your rotations and NASA weather for your area.")}</p></div>
+   ${vista ? vista.f : simple ? formSimple(err, false) : `<div class="tog modo-acc" role="group"><button type="button" data-modo-acc="entrar" aria-pressed="${!reg}">${L("Iniciar sesión","Sign in")}</button><button type="button" data-modo-acc="registro" aria-pressed="${reg}">${L("Crear cuenta","Create account")}</button></div>
    <form class="card" id="f-acceso" novalidate>
      ${reg ? `<label class="campo"><span>${L("Nombre","First name")}</span><input name="nombre" autocomplete="given-name" required maxlength="60"></label>
               <label class="campo"><span>${L("Apellido","Last name")}</span><input name="apellido" autocomplete="family-name" required maxlength="60"></label>` : ""}
@@ -1303,7 +1327,8 @@ function renderAcceso(err = ""){
      <button class="btn" type="submit" style="width:100%">${reg ? L("Crear cuenta","Create account") : L("Entrar","Sign in")}</button>
    </form>
    <p class="acc-cambio">${reg ? `${L("¿Ya tienes cuenta?","Already have an account?")} <button type="button" data-modo-acc="entrar">${L("Inicia sesión","Sign in")}</button>`
-                               : `${L("¿No tienes cuenta?","No account yet?")} <button type="button" data-modo-acc="registro">${L("Regístrate aquí","Sign up here")}</button>`}</p>`}</div>`;
+                               : `${L("¿No tienes cuenta?","No account yet?")} <button type="button" data-modo-acc="registro">${L("Regístrate aquí","Sign up here")}</button>`}</p>
+   <p class="acc-volver"><button type="button" class="enlace" data-acc-simple>${L("Entrar solo con mi nombre","Sign in with just my name")}</button></p>`}</div>`;
   if (vista) setTimeout(() => { const i = $("#acceso-in form input:not([type=hidden])"); if (i && matchMedia("(pointer:fine)").matches) i.focus(); }, 30);
 }
 function irVistaAcc(v, extra = {}){ Object.assign(S, extra); S.accVista = v || null; S.accPaso = "form"; renderAcceso(); scrollTo(0, 0); }
@@ -1311,7 +1336,9 @@ $("#acceso").addEventListener("click", async e => {
   const i = e.target.closest("[data-idi]"); if (i) { aplicarIdioma(i.dataset.idi); return; }
   const m = e.target.closest("[data-modo-acc]"); if (m) { S.modoAcceso = m.dataset.modoAcc; S.accVista = null; S.accPaso = "form"; renderAcceso(); scrollTo(0, 0); return; }
   const va = e.target.closest("[data-acc-vista]"); if (va) { if (va.dataset.accVista === "olvido") S.accError = ""; irVistaAcc(va.dataset.accVista); return; }
-  const pa = e.target.closest("[data-acc-paso]"); if (pa) { S.accPaso = pa.dataset.accPaso; renderAcceso(); scrollTo(0, 0); return; }
+  const pa = e.target.closest("[data-acc-paso]"); if (pa) { S.accPaso = pa.dataset.accPaso; if (S.accPaso === "bienvenida") S.accModo = null; renderAcceso(); scrollTo(0, 0); return; }
+  if (e.target.closest("[data-acc-correo]")) { S.accModo = "correo"; S.modoAcceso = "entrar"; S.accVista = null; S.accPaso = "form"; renderAcceso(); scrollTo(0, 0); return; }
+  if (e.target.closest("[data-acc-simple]")) { S.accModo = null; S.accVista = null; S.accPaso = "bienvenida"; renderAcceso(); scrollTo(0, 0); return; }
   const vk = e.target.closest("[data-ver-clave]");
   if (vk) { const inp = vk.parentElement.querySelector("input"), ver = inp.type === "password"; inp.type = ver ? "text" : "password";
     vk.setAttribute("aria-pressed", ver); vk.textContent = ver ? L("Ocultar","Hide") : L("Ver","Show"); return; }
@@ -1340,7 +1367,9 @@ $("#acceso").addEventListener("submit", async e => {
   if (fm.dataset.enviando) return;
   fm.dataset.enviando = "1"; b.disabled = true;
   try {
-    if (fm.id === "f-acceso") {
+    if (fm.classList.contains("f-simple")) {
+      const r = await post("/api/entrar", {nombre:d.nombre}); S.accModo = null; await entrar(r.usuario);
+    } else if (fm.id === "f-acceso") {
       const reg = S.modoAcceso === "registro"; d.acepta_datos = f.get("acepta_datos") === "on";
       const r = await post(reg ? "/api/registro" : "/api/login", d);
       if (r.verificar) { irVistaAcc("codigo", {accCorreo:r.correo, accDestino:r.destino, accCelular:d.celular || "", accEspera:Date.now() + 60000}); return; }
@@ -1389,7 +1418,7 @@ async function entrar(u){
   let z = p && S.zonas.find(x => x.id === p.zona);
   if (!z && p && /^p:/.test(p.zona || "")) { const [la, lo] = p.zona.slice(2).split(",").map(Number); if (isFinite(la) && isFinite(lo)) z = zonaDePunto(la, lo); }
   cargarEstadoDatos();
-  if (z && S.configurado) { S.zona = z; if (!mapa) armarMapa(); mostrar("app"); ir(2); actualizar(true); cargarReferencia(); if (z.punto) descargarPunto(z); }
+  if (z && S.configurado) { S.zona = z; if (!mapa) armarMapa(); mostrar("app"); ir(0); actualizar(true); cargarReferencia(); if (z.punto) descargarPunto(z); }
   else { mostrar("intro"); intro(0); }
 }
 let esperaPerfil;
@@ -1503,7 +1532,8 @@ function renderCuentaCfg(err = ""){
   else if (u.celular && u.celular_ok && !S.celCambiar) cel = `<div class="fila"><div><b>${L("Celular para recuperar tu cuenta","Mobile to recover your account")}</b><small>${esc(u.celular)} · ${L("confirmado","confirmed")} ✓</small></div><button type="button" class="btn2" data-cel-cambiar>${L("Cambiar","Change")}</button></div>`;
   else if (S.accCfg.sms) cel = `<form id="f-celular" novalidate style="margin-top:12px"><label class="campo"><span>${L("Celular para recuperar tu cuenta","Mobile to recover your account")}</span><input name="celular" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="300 123 4567" value="${esc(u.celular || "")}"></label>
       <p class="sub" style="margin:-4px 2px 10px">${L("Si olvidas la contraseña, te mandamos un código por mensaje de texto.","If you forget your password, we send you a code by text message.")}</p>${er}<button class="btn" type="submit">${L("Confirmar por mensaje de texto","Confirm by text message")}</button></form>`;
-  el.innerHTML = `<h2>${L("Tu cuenta","Your account")}</h2><div class="fila cuenta-fila"><div><b>${esc(u.nombre)} ${esc(u.apellido)}</b><small>${esc(u.correo)}</small></div><button type="button" class="btn2" data-cfg="salir">${L("Cerrar sesión","Sign out")}</button></div>${cel}`;
+  if (u.invitado) cel = "";                    // entró solo con el nombre: no hay contraseña que recuperar
+  el.innerHTML = `<h2>${L("Tu cuenta","Your account")}</h2><div class="fila cuenta-fila"><div><b>${esc(u.nombre)} ${esc(u.apellido || "")}</b><small>${u.invitado ? L("Entraste solo con tu nombre: tus datos quedan guardados en este equipo.","You signed in with just your name: your data stays on this device.") : esc(u.correo)}</small></div><button type="button" class="btn2" data-cfg="salir">${L("Cerrar sesión","Sign out")}</button></div>${cel}`;
 }
 function renderEstacasCfg(){
   const el = $("#cfg-estacas"); if (!el) return;
@@ -1572,7 +1602,15 @@ $("#config-in").addEventListener("click", async e => {
   if (q && confirm(L("¿Quitar esta estaca? Se borran sus lecturas.","Remove this stake? Its readings will be deleted."))) { await post(`/api/estacas/${q.dataset.quitar}`, {}, "DELETE").catch(() => {}); await cargarEstacas(); renderEstacasCfg(); return; }
   if (e.target.closest("[data-copiar]")) { navigator.clipboard?.writeText(S.tokenNuevo).then(() => e.target.closest("[data-copiar]").textContent = L("Copiado ✓","Copied ✓")); return; }
   const c = e.target.closest("[data-cfg]"); if (!c) return;
-  if (c.dataset.cfg === "salir") { salir(); return; }
+  if (c.dataset.cfg === "salir") {
+    if (S.usuario?.invitado && c.dataset.seguro !== "1") {      // sin correo, cerrar sesión deja esos datos sin forma de abrirlos
+      const sm = c.closest(".cuenta-fila")?.querySelector("small"), antes = sm?.textContent;
+      c.dataset.seguro = "1"; c.textContent = L("Sí, salir","Yes, sign out");
+      if (sm) { sm.textContent = L("Si sales, los datos de este equipo ya no se podrán abrir. Toca «Sí, salir» para confirmar.","If you sign out, the data on this device can no longer be opened. Tap “Yes, sign out” to confirm."); sm.classList.add("aviso-rojo"); }
+      setTimeout(() => { if (c.isConnected) { c.dataset.seguro = ""; c.textContent = L("Cerrar sesión","Sign out"); if (sm) { sm.textContent = antes; sm.classList.remove("aviso-rojo"); } } }, 6000); return;
+    }
+    salir(); return;
+  }
   if (c.dataset.cfg === "ubicacion") { S.configurado = true; cambiarZona(); return; }
   const cambio = S.cfgAntes !== JSON.stringify([S.riego, S.ultimos]);
   S.configurado = true; S.buscar = ""; guardarPerfil();
@@ -1580,7 +1618,11 @@ $("#config-in").addEventListener("click", async e => {
   mostrar("app"); ir(S.tab);
   if (cambio || S.fuente) actualizar(true);
 });
-const iniciales = () => S.usuario ? (S.usuario.nombre[0] + S.usuario.apellido[0]).toUpperCase() : "";
+const iniciales = () => {       // "Rosa Díaz" → RD; con solo el nombre (invitado): las dos primeras palabras o la primera letra
+  if (!S.usuario) return "";
+  const p = `${S.usuario.nombre || ""} ${S.usuario.apellido || ""}`.trim().split(/\s+/).filter(Boolean);
+  return ((p[0]?.[0] || "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase();
+};
 
 /* ================= Mapa y capas NASA ================= */
 /* Capas por WMS de GIBS: no necesitan la matriz de teselas y, sin fecha, GIBS entrega la imagen más reciente.
@@ -1816,7 +1858,7 @@ function elegirZona(z, pt, confirmado = false){
   const rm = matchMedia("(prefers-reduced-motion: reduce)").matches, espera = rm || confirmado ? 700 : 3100;
   if (!confirmado) { mapa.panTo(c, {animate:!rm, duration:.7}); setTimeout(() => rm ? mapa.setView(c, 10) : mapa.flyTo(c, 10, {duration:2}), rm ? 0 : 750); }
   else rm ? mapa.setView(c, 10) : mapa.flyTo(c, 10, {duration:.6});
-  setTimeout(() => { $("#banner-mapa").hidden = true; mostrar("app"); ir(2); S.volando = false; tourSiToca(); }, espera);
+  setTimeout(() => { $("#banner-mapa").hidden = true; mostrar("app"); ir(0); S.volando = false; tourSiToca(); }, espera);
   actualizar(true); guardarPerfil(); cargarReferencia();
   if (z.punto) descargarPunto(z); else S.puntoEstado = null;
 }
@@ -1926,7 +1968,28 @@ function actualizar(rapido){
   guardarPerfil();
 }
 
-function tourSiToca(){ if (!S.tourHecho && !S.tourVisto && S.panel && S.pantalla === "app") { S.tourVisto = true; setTimeout(iniciarTour, 1400); } }
+/* Cada vez que se abre la app (usuario nuevo o de antes): saludo del asistente con voz y, al cerrarlo o tocar «Empezar»,
+   el recorrido (solo la primera vez) y después la guía paso a paso. */
+function tourSiToca(){ if (!S.bienvenidaHecha && S.panel && S.pantalla === "app") { S.bienvenidaHecha = true; setTimeout(bienvenida, 900); } }
+function bienvenida(){
+  if (S.pantalla !== "app" || !$("#tour").hidden || $("#asis-d").open || $("#hoja-d").open) { setTimeout(bienvenida, 1500); return; }
+  const nom = (S.usuario?.nombre || "").split(" ")[0];
+  const t = S.tourHecho
+    ? L(`¡Hola de nuevo${nom ? ", " + nom : ""}! Qué bueno verte. Te voy a guiar paso a paso: primero revisamos los datos de tu suelo y luego vemos qué te conviene sembrar.`,
+        `Hi again${nom ? ", " + nom : ""}! Good to see you. I will guide you step by step: first we check your soil data and then we see what to plant.`)
+    : L(`¡Hola${nom ? ", " + nom : ""}! Bienvenido a AgroStake. Soy tu asistente de voz. Primero te muestro la app y después te guío paso a paso para saber qué sembrar en tu lote.`,
+        `Hi${nom ? ", " + nom : ""}! Welcome to AgroStake. I am your voice assistant. First I will show you the app and then guide you step by step to know what to plant on your plot.`);
+  S.chat.push({de:"bot", t}); S.saludado = true; S.bienvenidaPend = true;
+  renderAsis(); $("#asis-d").showModal();
+  hablarCuandoPueda(paraVoz(t));
+}
+function hablarCuandoPueda(t){        // el navegador solo deja hablar después de que la persona toca la pantalla
+  if (!VOZ || !S.sonido) return;
+  if (!navigator.userActivation || navigator.userActivation.hasBeenActive) { hablar(t); return; }
+  const una = e => { document.removeEventListener("pointerdown", una, true); if ($("#asis-d").open && !e.target.closest("[data-empezar-guia],[data-cerrar-asis]")) hablar(t); };
+  document.addEventListener("pointerdown", una, true);
+}
+function arrancarAyuda(){ if (!S.tourHecho) iniciarTour(); else iniciarGuia(); }
 
 /* ================= 0. Resumen ================= */
 const interpLluvia = mm => mm < 30 ? L("Mes seco","Dry month") : mm < 90 ? L("Mes de pocas lluvias","Month with little rain") : mm < 180 ? L("Mes lluvioso","Rainy month") : L("Mes muy lluvioso","Very rainy month");
@@ -1938,7 +2001,7 @@ const pieFuentes = () => `<p class="fuentes-pie">${L("Fuentes de datos: NASA POW
 function renderResumen(){
   const el = $("#v0"), p = S.panel;
   if (!p) { el.innerHTML = cabecera(L("Resumen","Summary")) + esqueleto([300, "c2"], [190], [190], [190], [190], [240, "c2"]); return; }
-  const C = p.clima, A = p.anillos, m = C.mes_actual - 1, b = S.res?.planes?.[0], r = p.riesgos;
+  const C = p.clima, A = p.anillos, m = C.mes_actual - 1, b = S.rotLista ? S.res?.planes?.[0] : null, r = p.riesgos;
   const ser = C.serie, hm = p.humedad.suelo, extra = (S.luna ? 1 : 0) + (S.sol ? 1 : 0);
   let luna = "", sol = "";
   if (S.luna) { const Lu = lunaHoy(), dl = Math.round(Lu.llena), dn = Math.round(Lu.nueva);
@@ -1967,7 +2030,8 @@ function renderResumen(){
      <p class="sub" style="margin-top:8px">${L("Satélite","Satellite")}: ${N(p.humedad.satelite)}%</p></div>
    <div class="card enlace ${extra === 1 ? "" : "c2"}" role="button" tabindex="0" data-ir="3"><span class="chev"></span><h2>${L("Mejor rotación","Best rotation")}</h2>
      ${b ? `<div class="emo-tile" style="background:${TIPOC[b.secuencia[0].tipo]}">${b.secuencia[0].icono}</div><p class="seq-txt">${b.secuencia.map(x => x.nombre).join(" → ")}</p>
-     <span class="big n" style="color:${SEMC[b.semaforo]};margin:0">${b.puntaje}<small>%</small></span><span class="sub">${L("La más recomendada","Most recommended")}</span>` : `<p class="sub">${L("No hay una rotación posible con estos datos. Revisa Mi lote.","No rotation is possible with these data. Check My plot.")}</p>`}</div>
+     <span class="big n" style="color:${SEMC[b.semaforo]};margin:0">${b.puntaje}<small>%</small></span><span class="sub">${L("La más recomendada","Most recommended")}</span>` : `<p class="sub">${(S.rotLista ? L("No hay una rotación posible con estos datos. Revisa Mi lote.","No rotation is possible with these data. Check My plot.")
+      : L("Tus rotaciones salen cuando guardes los datos de tu suelo en Mi lote.","Your rotations appear when you save your soil data in My plot."))}</p>`}</div>
    ${extra === 1 ? luna + sol : ""}
    <section class="card ${extra === 2 ? "c4" : "c2"}"><h2>${L("Alertas del clima","Weather alerts")}</h2>${p.alertas.map(a => `<div class="alerta"><span class="dot ${a.nivel}"></span><div><b>${a.titulo}</b><p>${a.texto}</p></div></div>`).join("")}</section>
    <section class="card c2 ${S.animar ? "dibuja" : ""}"><h2>${L("Riesgos del clima","Weather risks")}</h2><div class="riesgos">
@@ -2223,7 +2287,7 @@ function renderLote(){
   <div class="guardar-fila"><button type="button" class="btn grande" id="btn-guardar" data-guardar>${ICO.guardar} ${L("Guardar datos","Save data")}</button></div>`;
   renderSaludLote(); ponerAltavoces($("#v2"));
 }
-function ponerMedida(k, v){
+function ponerMedida(k, v, silencioso){
   const [, mn, mx, st] = MED()[k]; v = Math.round(Math.max(mn, Math.min(mx, v)) / st) * st; v = +v.toFixed(1);
   S.suelo[k] = v;
   const o = $("#o-" + k), r = $("#r-" + k);
@@ -2231,7 +2295,7 @@ function ponerMedida(k, v){
   if (k === "ph") { o.style.color = colorPh(v); $("#t-ph").textContent = txtPh(v); $("#ph-liq")?.setAttribute("fill", colorPh(v)); }
   if (k === "humedad_pct" && $("#tq-nivel")) $("#tq-nivel").style.transform = `translateY(${100 - Math.max(0, Math.min(1, v / 50)) * 100}px)`;
   if (k === "temp_suelo_c") { const c = colorTemp(v); o.style.color = c; $("#term-merc").style.transform = `scaleY(${Math.max(.06, Math.min(1, (v - 20) / 20))})`; $("#term-merc").setAttribute("fill", c); $("#term-bulbo").setAttribute("fill", c); }
-  marcarManual(); actualizar();
+  if (!silencioso) { marcarManual(); actualizar(); }
 }
 /* Barra de progreso de todas las cargas: avanza sola hasta ~92% en `ms` (más lento si el servidor tarda), cuando la tarea
    termina sube suave hasta 100% y se queda llena un momento antes de cerrar. Se mueve con requestAnimationFrame y busca
@@ -2254,22 +2318,61 @@ function progreso(barra, ms, tarea, alPintar){
 }
 const refrescarYa = () => { actualizar(true); return new Promise(r => setTimeout(r, 30)).then(() => S.pendiente); };
 async function cargando(texto, ms, tarea, pasos){
-  const el = $("#cargador"), pr = $("#cargador-prog");
-  $("#cargador-planta").innerHTML = planta(90, true); $("#cargador-txt").textContent = texto; el.hidden = false;
+  const el = $("#cargador"), pr = $("#cargador-prog"), tit = Array.isArray(texto) ? texto : [texto];
+  $("#cargador-planta").innerHTML = planta(90, true); $("#cargador-txt").textContent = tit[0]; el.hidden = false;
   let sub = $("#cargador-sub"); if (!sub) { $("#cargador-txt").insertAdjacentHTML("afterend", `<p id="cargador-sub"></p>`); sub = $("#cargador-sub"); }
   sub.textContent = pasos ? pasos[0] : "";
-  const giro = pasos ? setInterval(() => { const i = Math.min(pasos.length - 1, Math.floor((performance.now() - t0) / (ms / pasos.length))); sub.textContent = pasos[i]; }, 250) : null, t0 = performance.now();
+  const t0 = performance.now(), dur = sinMov() ? 400 : ms;
+  const giro = setInterval(() => { const f = Math.min(.999, (performance.now() - t0) / dur);
+    $("#cargador-txt").textContent = tit[Math.floor(f * tit.length)]; if (pasos) sub.textContent = pasos[Math.floor(f * pasos.length)]; }, 200);
   pr.style.transition = "none"; pr.style.width = "0%";
   if (VOZ && S.sonido) speechSynthesis.cancel();
-  const res = await progreso(() => pr, sinMov() ? 400 : ms, tarea);
-  if (giro) clearInterval(giro);
+  const res = await progreso(() => pr, dur, tarea);
+  clearInterval(giro);
   el.hidden = true; return res;
 }
+const PASOS_GENERAR = () => [L("Revisando tu suelo…","Checking your soil…"), L("Cruzando con el clima de la NASA…","Matching with NASA weather…"),
+  L("Comparando con lo que se siembra en tu municipio…","Comparing with what is planted in your town…"), L("Ordenando según lo que te importa…","Ranking by what matters to you…")];
+const TIT_GENERAR = () => [L("Cargando datos…","Loading data…"), L("Generando rotaciones…","Generating rotations…")];
 async function guardarDatos(){
   guardarPerfil();
-  await cargando(L("Cargando recomendaciones…","Loading recommendations…"), 4500, refrescarYa(),
-    [L("Revisando tu suelo…","Checking your soil…"), L("Cruzando con el clima de la NASA…","Matching with NASA weather…"), L("Ordenando según lo que te importa…","Ranking by what matters to you…")]);
-  ir(3);
+  await cargando(TIT_GENERAR(), 4500, refrescarYa(), PASOS_GENERAR());
+  S.rotLista = true; ir(3);
+}
+/* «Usar estos datos»: los valores del lote cambian en vivo hasta los de los mapas, y luego "Cargando datos" →
+   "Generando rotaciones" → Rotación. */
+const dormir = ms => new Promise(r => setTimeout(r, ms));
+async function usarDatosExternos(){
+  if (S.usandoExt || !S.externos?.variables) return; S.usandoExt = true;
+  try {
+    const V = Object.fromEntries(S.externos.variables.map(x => [x.clave, x.valor])), meta = {};
+    if (V.ph != null) meta.ph = Math.round(V.ph * 10) / 10;
+    if (V.humedad_pct != null) meta.humedad_pct = Math.round(Math.max(5, Math.min(50, V.humedad_pct)) * 10) / 10;
+    if (V.temp_suelo_c != null) meta.temp_suelo_c = Math.round(Math.max(18, Math.min(45, V.temp_suelo_c)) * 10) / 10;
+    const desde = Object.fromEntries(Object.keys(meta).map(k => [k, S.suelo[k]]));
+    const caja = $("#o-ph")?.closest("section");
+    if (caja) { caja.scrollIntoView({block:"start", behavior:sinMov() ? "auto" : "smooth"}); await dormir(sinMov() ? 0 : 500); }
+    Object.keys(meta).forEach(k => $("#o-" + k)?.classList.add("cambia"));
+    await animarValores(desde, meta, sinMov() ? 0 : 1800);
+    if (V.textura) S.textura = V.textura;
+    if (S.externos.n_desde_mo) S.suelo.n = S.externos.n_desde_mo;
+    S.externos.aplicado = true; marcarManual("mapas"); renderLote();
+    await dormir(sinMov() ? 0 : 500);
+    await cargando(TIT_GENERAR(), 4200, refrescarYa(), PASOS_GENERAR());
+    S.rotLista = true; ir(3);
+    avisar(L("Listo: tu lote ya usa los datos de los mapas globales.","Done: your plot now uses the global map data."), "✅");
+  } finally { S.usandoExt = false; }
+}
+function animarValores(desde, hasta, ms){
+  return new Promise(fin => {
+    const t0 = performance.now();
+    const paso = ahora => {
+      const f = ms ? Math.min(1, (ahora - t0) / ms) : 1, e = 1 - Math.pow(1 - f, 3);
+      for (const k in hasta) if ($("#o-" + k)) ponerMedida(k, desde[k] + (hasta[k] - desde[k]) * e, true);
+      if (f < 1) requestAnimationFrame(paso); else { for (const k in hasta) S.suelo[k] = hasta[k]; fin(); }
+    };
+    requestAnimationFrame(paso);
+  });
 }
 $("#v2").addEventListener("input", e => { const k = e.target.dataset.k; if (k && e.target.type === "range") ponerMedida(k, parseFloat(e.target.value)); });
 $("#v2").addEventListener("click", async e => {
@@ -2289,16 +2392,7 @@ $("#v2").addEventListener("click", async e => {
     clearInterval(giro); S.externos = res;
     if (S.tab === 2) renderLote(); return;
   }
-  if (e.target.closest("[data-usar-ext]")) {
-    const V = Object.fromEntries(S.externos.variables.map(x => [x.clave, x.valor]));
-    if (V.ph != null) S.suelo.ph = Math.round(V.ph * 10) / 10;
-    if (V.textura) S.textura = V.textura;
-    if (S.externos.n_desde_mo) S.suelo.n = S.externos.n_desde_mo;
-    if (V.humedad_pct != null) S.suelo.humedad_pct = Math.round(Math.max(5, Math.min(50, V.humedad_pct)) * 10) / 10;
-    if (V.temp_suelo_c != null) S.suelo.temp_suelo_c = Math.round(Math.max(18, Math.min(45, V.temp_suelo_c)) * 10) / 10;
-    S.externos.aplicado = true; marcarManual("mapas"); renderLote(); actualizar();
-    avisar(L("Datos aplicados: tu lote ya usa los valores de los mapas globales.","Data applied: your plot now uses the values from the global maps."), "✅"); return;
-  }
+  if (e.target.closest("[data-usar-ext]")) { usarDatosExternos(); return; }
   const o = e.target.closest("[data-k][data-v]");
   if (o) { const k = o.dataset.k; if (k === "textura") S.textura = o.dataset.v; else S.suelo[k] = o.dataset.v; marcarManual(); renderLote(); actualizar();
     if (["n", "p", "k"].includes(k) && VOZ && S.sonido) hablar(paraVoz(lecturaNutriente(k, $("#v2")))); }
@@ -2357,34 +2451,50 @@ const LECTORES = {
 
 /* ================= 3. Rotación ================= */
 /* «Qué se siembra en tu municipio» (EVA 2019-2024): área sembrada al año y cuánto se cosecha por hectárea */
-function tarjetaMunicipio(m){
+function tarjetaMunicipio(m, r){
   if (!m || !m.top?.length) return "";
-  const mx = Math.max(...m.top.map(t => t.ha)), a = m.anios || [];
+  const enPlanes = new Set((r?.planes || []).flatMap(p => p.secuencia.map(x => x.cultivo)));
+  const mx = Math.max(...m.top.map(t => t.ha)), a = m.anios || [], min = t => S.idioma === "en" ? t : t.toLowerCase();
+  const recom = m.nuestros.filter(x => enPlanes.has(x.cultivo)).map(x => min(x.nombre));
+  const masSemb = m.top.slice(0, 3).map(t => min(t.nombre));
+  const frase = recom.length
+    ? L(`Según las Evaluaciones Agropecuarias Municipales de los últimos años, en ${esc(m.nombre)} los cultivos más recomendados son ${esc(lista(recom))}.`,
+        `According to the Municipal Agricultural Surveys of recent years, the most recommended crops in ${esc(m.nombre)} are ${esc(lista(recom))}.`)
+    : L(`Según las Evaluaciones Agropecuarias Municipales de los últimos años, en ${esc(m.nombre)} lo que más se siembra es ${esc(lista(masSemb))}.`,
+        `According to the Municipal Agricultural Surveys of recent years, what is planted most in ${esc(m.nombre)} is ${esc(lista(masSemb))}.`);
   const filas = m.top.map(t => `<div class="mun-fila"><span class="mun-nom">${esc(t.nombre)}</span>
-      <span class="mun-barra" aria-hidden="true"><i style="width:${Math.max(3, t.ha / mx * 100).toFixed(1)}%;background:${t.nuestro ? COL.clima : COL.gris}"></i></span>
+      <span class="mun-barra" aria-hidden="true"><i style="width:${Math.max(3, t.ha / mx * 100).toFixed(1)}%;background:${t.nuestro && enPlanes.has(t.nuestro) ? COL.clima : COL.gris}"></i></span>
       <span class="mun-ha n">${N(t.ha)} ha</span></div>`).join("");
-  const rend = m.nuestros.filter(x => x.rend).slice(0, 6).map(x => `<span class="chip-rend">${x.icono} ${esc(x.nombre)} <b>${N(x.rend, 1)} t/ha</b></span>`).join("");
+  const rend = m.nuestros.filter(x => x.rend && enPlanes.has(x.cultivo)).slice(0, 6).map(x => `<span class="chip-rend">${x.icono} ${esc(x.nombre)} <b>${N(x.rend, 1)} t/ha</b></span>`).join("");
   return `<section class="card c4 mun-card"><h2>${L(`Qué se siembra en ${esc(m.nombre)}`, `What is planted in ${esc(m.nombre)}`)}</h2>
-    <p class="sub" style="margin:-4px 0 12px">${L(`Hectáreas sembradas en un año promedio (${a[0]}-${a[1]}), según los reportes oficiales del municipio. En verde, los cultivos que AgroStake puede recomendar.`,
-      `Hectares planted in an average year (${a[0]}-${a[1]}), from the town's official reports. In green, crops AgroStake can recommend.`)}${m.km ? L(` Tu lote está a ${N(m.km, 1)} km de la cabecera.`, ` Your plot is ${N(m.km, 1)} km from the town center.`) : ""}</p>
+    <p class="mun-frase">${frase}</p>
+    <p class="sub" style="margin:0 0 12px">${L(`Hectáreas sembradas al año (promedio ${a[0]}-${a[1]}). En verde, los que entran en tus rotaciones.`, `Hectares planted per year (average ${a[0]}-${a[1]}). In green, those in your rotations.`)}${m.km ? L(` Tu lote está a ${N(m.km, 1)} km de la cabecera.`, ` Your plot is ${N(m.km, 1)} km from the town center.`) : ""}</p>
     <div class="mun-lista">${filas}</div>
     ${rend ? `<h3 class="mun-sub">${L("Cosecha promedio por hectárea en cada siembra","Average harvest per hectare per planting")}</h3><div class="chips-rend">${rend}</div>` : ""}
     <p class="pie mun-pie" style="margin-top:12px">${L("Lo que más se siembra suele tener compradores cerca; por eso lo usamos para calcular el mercado de cada rotación. Fuente: ","What is planted most usually has buyers nearby, so we use it to score each rotation's market. Source: ")}${esc(m.fuente || "EVA")}. ${L("Los dos últimos años pueden cambiar. «Frijol» junta todas las clases de fríjol.","The last two years may change. “Beans” groups all bean types.")}</p></section>`;
 }
+/* Proyección: el cultivo de la rotación que conviene sostener en el tiempo (lo calcula el servidor con la EVA) */
 function tarjetaCosecha(s){
-  const c = s.cosecha; if (!c || !c.cultivos.length) return "";
-  return `<section class="card c4"><h2>${L(`Cosecha típica en ${esc(c.municipio)}`, `Typical harvest in ${esc(c.municipio)}`)}</h2>
-    <div class="cosecha">${c.cultivos.map(x => `<div><span class="e">${x.icono}</span><b>${esc(x.nombre)}</b><span class="big n" style="color:${COL.clima}">${N(x.t_total, 1)}<small> t</small></span>
-      <span class="sub">${L(`${N(x.t_ha, 1)} t por hectárea en ${N(s.ha, 1)} ha`, `${N(x.t_ha, 1)} t per hectare on ${N(s.ha, 1)} ha`)}${x.de === "departamento" ? L(` (promedio de ${esc(c.departamento)})`, ` (${esc(c.departamento)} average)`) : ""}${x.cultivo === "frijol" ? L(". Dato de todo el fríjol, no solo del caupí", ". Data for all beans, not only cowpea") : ""}</span></div>`).join("")}</div>
-    <p class="pie" style="margin-top:10px">${esc(c.aviso)} ${L("Fuente: ","Source: ")}${esc(c.fuente)}.</p></section>`;
+  const c = s.cosecha, m = c?.mejor; if (!c || !m) return "";
+  const otros = c.cultivos.filter(x => x.cultivo !== m.cultivo);
+  return `<section class="card c4 mejor-card"><h2>${L("Mejor cultivo a largo plazo","Best long-term crop")}</h2>
+    <div class="mejor-top"><span class="e" aria-hidden="true">${m.icono}</span><div><b>${esc(m.nombre)}</b><span class="big n" style="color:${COL.clima}">${N(m.t_total, 1)}<small> t</small></span><span class="sub">${esc(m.en_tu_lote)}</span></div></div>
+    <p class="mejor-frase">${esc(m.frase)}</p>
+    <p class="mejor-ventaja"><b>${L("Ventaja:","Advantage:")}</b> ${esc(m.ventaja)}</p>
+    ${otros.length ? `<p class="sub" style="margin:10px 0 0">${L("Los otros de tu rotación: ","The others in your rotation: ")}${otros.map(x => `${x.icono} ${esc(x.nombre)} ${N(x.t_ha, 1)} t/ha`).join(" · ")}</p>` : ""}</section>`;
 }
+const sinRotaciones = () => `<section class="card c4 sin-rot"><span class="e" aria-hidden="true">🌱</span><div><h2>${L("Todavía no hay rotaciones","No rotations yet")}</h2>
+  <p>${L("Primero revisa los datos de tu suelo en Mi lote y toca «Guardar datos» o «Usar estos datos». Ahí te mostramos las rotaciones.","First check your soil data in My plot and tap “Save data” or “Use these data”. Then we show you the rotations.")}</p>
+  <button type="button" class="btn" data-ir-lote>${L("Ir a Mi lote","Go to My plot")}</button></div></section>`;
+document.addEventListener("click", e => { if (e.target.closest("[data-ir-lote]")) ir(2); });
 function renderRot(){
   const r = S.res, el = $("#v3");
   const prios = `<section class="card c4" data-lee="prios"><h2>${L("¿Qué es lo más importante para ti?","What matters most to you?")}</h2><p class="sub" style="margin-bottom:12px">${L("Elige hasta 3. Las recomendaciones se ordenan según lo que elijas.","Pick up to 3. Recommendations are ranked by what you choose.")}</p>
     <div class="prios">${PRI().map(([v, e, t, d]) => `<button type="button" class="opt" data-pri="${v}" aria-pressed="${S.prios.includes(v)}"><span class="e">${e}</span><b>${t}</b><small>${d}</small></button>`).join("")}</div></section>`;
+  if (!S.rotLista) { el.innerHTML = cabecera(L("Rotación","Rotation")) + `<div class="grid">${sinRotaciones()}${prios}</div>`; ponerAltavoces(el); return; }
   if (!r) { el.innerHTML = cabecera(L("Rotación","Rotation")) + `<div class="grid">${prios}</div><div style="height:12px"></div>` + esqueleto([420, "c4"], [420, "c4"]); ponerAltavoces(el); return; }
   let h = r.notas.map(n => `<div class="card c4 nota-box">${n}</div>`).join("") + r.planes.map((p, i) => tarjetaPlan(p, i, r)).join("");
-  h += tarjetaMunicipio(r.municipio);
+  h += tarjetaMunicipio(r.municipio, r);
   if (r.descartados.length) h += `<section class="card c4"><h2>${L("Cultivos que quedaron por fuera","Crops left out")}</h2><div>${r.descartados.map(d => `<div class="alerta"><span style="font-size:24px">${d.icono}</span><div><b>${d.cultivo}</b><p>${cap(d.razon)}.</p></div></div>`).join("")}</div></section>`;
   el.innerHTML = cabecera(L("Rotación","Rotation")) + `<div class="${clsGrid()}">${prios}${h}</div>${pieFuentes()}`;
   ponerAltavoces(el);
@@ -2472,6 +2582,7 @@ $("#hoja-d").addEventListener("close", () => { if (VOZ) speechSynthesis.cancel()
 const firmaSim = () => JSON.stringify([S.planSim, S.ha, S.anios, S.zona?.id, S.res?.planes?.[S.planSim]?.secuencia?.map(x => x.cultivo)]);
 async function renderImp(){
   const r = S.res, el = $("#v4");
+  if (!S.rotLista) { el.innerHTML = cabecera(L("Proyección","Outlook")) + `<div class="grid">${sinRotaciones()}</div>`; return; }
   if (!r || !r.planes.length) { el.innerHTML = cabecera(L("Proyección","Outlook")) + `<div class="card">${L("Primero necesitamos una recomendación. Revisa Mi lote o Rotación.","We need a recommendation first. Check My plot or Rotation.")}</div>`; return; }
   const anim = S.animar, p = r.planes[S.planSim];
   el.innerHTML = cabecera(L("Proyección","Outlook"), L("Qué pasaría en tu lote con la rotación, frente a seguir sembrando lo mismo.","What would happen in your plot with the rotation, compared with planting the same thing.")) + `<div class="grid"><section class="card c4 sin-voz" id="imp-ctl"></section></div><div id="imp-res"></div>${pieFuentes()}`;
@@ -2655,9 +2766,9 @@ addEventListener("resize", () => { if (!$("#tour").hidden && S.guia == null) { c
    espera a que toque cada botón. Solo se puede tocar lo resaltado (y lo que está dentro de esa parte). */
 const PASOS_GUIA = () => [
   {foco:"#tabbar [data-t='2']", clic:"#tabbar [data-t='2']",
-   t:L("Vamos paso a paso. Primero toca «Mi lote».","Let's go step by step. First tap “My plot”.")},
-  {foco:"#btn-guardar", permitir:"#v2", clic:"#btn-guardar",
-   t:L("Estos son los datos de tu suelo. Si un valor no es el de tu lote, cámbialo con los botones − y +. Cuando estén bien, toca «Guardar datos».","These are your soil data. If a value is not your plot's, change it with the − and + buttons. When they are right, tap “Save data”.")},
+   t:L("Aquí encontrarás los datos de tu suelo. Toca «Mi lote» para verlos.","Here you will find your soil data. Tap “My plot” to see them.")},
+  {foco:"#btn-guardar", permitir:"#v2", clic:"#btn-guardar, [data-usar-ext]",
+   t:L("Estos son los datos de tu suelo. Si un valor no es el de tu lote, cámbialo con − y +, o toca «Consultar» y luego «Usar estos datos» para traer los de los mapas. Cuando estén bien, toca «Guardar datos».","These are your soil data. If a value is not your plot's, change it with − and +, or tap “Look up” and then “Use these data” to bring the map values. When they are right, tap “Save data”.")},
   {foco:'#v3 [data-inf="0"]', clic:'#v3 [data-inf="0"]',
    t:L("Estas son tus rotaciones. La primera es la que más te conviene. Toca «Ver detalle» para ver por qué y qué hacer cada mes.","These are your rotations. The first one suits you best. Tap “See details” to see why and what to do each month.")},
   {dialogo:"#hoja-d",
@@ -2675,6 +2786,7 @@ let guiaReloj = null;
 const visible = el => !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== "hidden");
 function iniciarGuia(){
   S.tourHecho = true; guardarPerfil(); if (VOZ) speechSynthesis.cancel();
+  if (S.tab !== 0) ir(0);            // se arranca desde Resumen para señalar «Mi lote»
   const t = $("#tour"); t.hidden = false; t.classList.add("guia");
   clearInterval(guiaReloj); guiaReloj = setInterval(seguirGuia, 250);
   pasoGuia(0);
@@ -2756,7 +2868,7 @@ function renderAsis(){
   $("#asis").innerHTML = `<header><b>🎙️ ${L("Asistente","Assistant")}</b>
     <button type="button" class="tog-son btn2" style="padding:8px 12px;font-size:15px" data-sonido aria-pressed="${S.sonido}">${S.sonido ? "🔊 " + L("Voz activa","Voice on") : "🔇 " + L("Sin voz","Muted")}</button>
     <button type="button" class="x" data-cerrar-asis aria-label="${L("Cerrar","Close")}">✕</button></header>
-   <div class="asis-msgs" id="asis-msgs" aria-live="polite" tabindex="-1">${S.chat.map(m => `<div class="msg ${m.de}">${esc(m.t)}${m.de === "bot" && VOZ ? `<br><button type="button" class="leer-msg" data-decir="${esc(m.t)}">🔊 ${L("Escuchar","Listen")}</button>` : ""}</div>`).join("")}</div>
+   <div class="asis-msgs" id="asis-msgs" aria-live="polite" tabindex="-1">${S.chat.map(m => `<div class="msg ${m.de}">${esc(m.t)}${m.de === "bot" && VOZ ? `<br><button type="button" class="leer-msg" data-decir="${esc(m.t)}">🔊 ${L("Escuchar","Listen")}</button>` : ""}</div>`).join("")}</div>${S.bienvenidaPend ? `<div class="empezar-guia"><button type="button" class="btn" data-empezar-guia>${L("Empezar","Start")}</button></div>` : ""}
    <div class="asis-sug">${SUG().map(s => `<button type="button" class="chip" data-preg="${esc(s)}">${s}</button>`).join("")}</div>
    <form id="f-asis"><input id="asis-txt" autocomplete="off" placeholder="${L("Escribe o toca el micrófono…","Type or tap the microphone…")}" aria-label="${L("Tu pregunta","Your question")}">
     ${SR ? `<button type="button" class="mic ${escuchando ? "on" : ""}" data-mic aria-label="${escuchando ? L("Dejar de escuchar","Stop listening") : L("Hablar","Speak")}">${ICO.mic}</button>` : ""}
@@ -2764,14 +2876,15 @@ function renderAsis(){
   const m = $("#asis-msgs"); m.scrollTop = m.scrollHeight;
 }
 $("#asis-d").addEventListener("click", e => {
-  if (e.target === $("#asis-d") || e.target.closest("[data-cerrar-asis]")) { $("#asis-d").close(); return; }
+  if (e.target === $("#asis-d") || e.target.closest("[data-cerrar-asis]") || e.target.closest("[data-empezar-guia]")) { $("#asis-d").close(); return; }
   if (e.target.closest("[data-sonido]")) { S.sonido = !S.sonido; if (!S.sonido && VOZ) speechSynthesis.cancel(); renderAsis(); return; }
   const p = e.target.closest("[data-preg]"); if (p) { preguntar(p.dataset.preg); return; }
   const d = e.target.closest("[data-decir]"); if (d) { hablar(paraVoz(d.dataset.decir)); return; }
   if (e.target.closest("[data-mic]")) escucharVoz();
 });
 $("#asis-d").addEventListener("submit", e => { e.preventDefault(); const t = $("#asis-txt").value.trim(); if (t) preguntar(t); });
-$("#asis-d").addEventListener("close", () => { if (rec && escuchando) rec.stop(); if (VOZ) speechSynthesis.cancel(); });
+$("#asis-d").addEventListener("close", () => { if (rec && escuchando) rec.stop(); if (VOZ) speechSynthesis.cancel();
+  if (S.bienvenidaPend) { S.bienvenidaPend = false; setTimeout(arrancarAyuda, 350); } });
 function escucharVoz(){
   if (escuchando && rec) { rec.stop(); return; }
   if (VOZ) speechSynthesis.cancel();

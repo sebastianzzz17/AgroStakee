@@ -1,25 +1,54 @@
 # Cambios
 
-## Versión 17 (toda Colombia, la EVA en las rotaciones, ubicación del equipo)
+## Versión 17 (entrada simple, bienvenida con voz, toda Colombia y la EVA dentro de las rotaciones)
 
-- **Recorrido y guía independientes:** "Saltar" en el recorrido ya no salta la guía: la abre. Terminar el recorrido
-  ("Empezar") también la abre. "Salir de la guía" cierra solo la guía.
-- **Toda Colombia:** el mapa y el buscador tienen los 1.101 municipios con datos en la EVA (434 KB; 85 KB
-  comprimido). La lista para el mapa viaja comprimida (unos 20 KB).
-- **La EVA en las rotaciones:**
-  - un cultivo que no se siembra en el municipio (ni, en el Caribe, a menos de 100 km) queda por fuera, con la
-    razón;
-  - nuevo indicador **"Se siembra en tu zona"** (anillo 📍, pesa el doble): compara cada siembra con lo que se
-    siembra en el municipio en ese mismo semestre (la EVA separa el semestre A, de enero a junio, y el B, de julio a
-    diciembre). Ejemplo: en Sahagún el ñame y la yuca se siembran en el primer semestre y el fríjol y el ajonjolí en
-    el segundo;
+- **Entrada simple:** la pantalla de inicio ya no tiene "Crear cuenta" ni "Iniciar sesión". Solo pide el nombre y
+  tiene el botón **"Iniciar aplicación"**. Se crea una cuenta "invitado" que queda guardada en ese celular o
+  computador (cookie de un año desde la última visita). Debajo hay un enlace pequeño, "¿Ya tienes cuenta con
+  correo? Entra aquí", para quien ya tenía cuenta (y con él siguen el registro con código y "¿Olvidaste tu
+  contraseña?"). En Ajustes, la cuenta invitado dice que los datos quedan en ese equipo y "Cerrar sesión" pide
+  confirmar, porque sin correo esos datos ya no se pueden abrir. Las iniciales salen bien con solo el nombre.
+- **Bienvenida con voz cada vez que se abre la app** (usuario nuevo o de antes): el asistente saluda por nombre,
+  con voz, y tiene el botón "Empezar". La primera vez sigue el recorrido; las demás, la guía paso a paso directo.
+  El navegador solo deja hablar después del primer toque en la pantalla: si la app abre sin que la persona haya
+  tocado nada, el saludo se dice apenas toque.
+- **Recorrido y guía independientes:** "Saltar" en el recorrido ya no salta la guía: la abre.
+- **La guía arranca en Resumen** y su primer cuadro dice "Aquí encontrarás los datos de tu suelo. Toca «Mi lote»
+  para verlos". En Mi lote acepta "Guardar datos" o "Usar estos datos".
+- **Las rotaciones ya no salen solas:** Rotación y Proyección muestran "Todavía no hay rotaciones" con el botón
+  "Ir a Mi lote" hasta que la persona toca "Guardar datos" o "Usar estos datos". Cada vez que se abre la app hay
+  que volver a hacerlo (la guía lleva a eso).
+- **"Usar estos datos":** los valores del lote (pH, humedad y temperatura) se mueven en vivo hasta los de los mapas
+  globales, y luego sale la pantalla de carga con "Cargando datos…" y "Generando rotaciones…", y lleva a Rotación.
+  "Guardar datos" muestra la misma pantalla.
+- **La EVA dentro de las rotaciones** (pedido: "recomienda siembras que no son potenciales"):
+  - un cultivo solo entra si se siembra en el propio municipio con un área que cuente: al menos 10 ha al año y el
+    1,5 % de lo que ocupa el cultivo más sembrado allí. Se quitó el comodín de "se siembra a menos de 100 km";
+  - donde hay datos de la EVA, el abono verde no se recomienda (mejora el suelo, pero casi no se siembra en las
+    fincas y la EVA no lo registra); sale en "Cultivos que quedaron por fuera" con esa razón;
+  - si en una temporada de lluvias no hay un cultivo de la zona que encaje, la rotación puede dejar el lote
+    descansando con rastrojo, con una penalización para que solo pase cuando hace falta (antes, en Uribia no salía
+    ninguna rotación);
+  - nuevo indicador **"Se siembra en tu zona"** (anillo 📍, pesa el triple que los demás): compara cada siembra
+    con lo que se siembra en el municipio en ese mismo semestre (la EVA separa el semestre A, de enero a junio, y el
+    B, de julio a diciembre). Ejemplo real: en Sahagún la yuca y el ñame se registran en el semestre A y el fríjol
+    y el ajonjolí en el B;
+  - si el suelo tiene poco nitrógeno y en el municipio no se siembra ninguna leguminosa, la nota lo dice así;
   - el "por qué" de cada siembra dice cuántas hectáreas se siembran en el municipio en esa época.
-  - Fuera del Caribe sale un aviso de que es una guía en prueba. El caupí y la braquiaria tienen reglas propias
-    (ver README).
+  - Resultado en la prueba: en Ovejas sale yuca o ñame todo el año; en Sahagún, caupí y arroz; en Uribia, maíz en
+    la segunda temporada. Ya no salen guandul ni caupí donde no se siembran.
+- **"Qué se siembra en [municipio]":** empieza con "Según las Evaluaciones Agropecuarias Municipales de los últimos
+  años, en [municipio] los cultivos más recomendados son …": son los que se siembran allí y además entran en las
+  rotaciones de tu lote (en verde en las barras). En celular se quitó el párrafo de la fuente.
+- **Proyección: "Mejor cultivo a largo plazo"** reemplaza a "Cosecha típica": "El maíz es la primera opción a
+  largo plazo porque es el que más se siembra en Sincelejo de los de tu rotación (unas 1.084 ha al año) y allí se
+  cosechan en promedio 2,7 t por hectárea en cada siembra", una **ventaja** (deja nitrógeno, aguanta veranos
+  largos, cubre el suelo o es de ciclo corto, según el catálogo) y cuántas toneladas serían en tus hectáreas.
+- **Toda Colombia:** el mapa y el buscador tienen los 1.101 municipios con datos en la EVA. El archivo pesa
+  435 KB (87 KB comprimido) y ocupa unos 3,3 MB de memoria en el servidor; al celular le llega una lista de 18 KB.
+  Fuera del Caribe sale un aviso de que es una guía en prueba. El caupí y la braquiaria tienen reglas propias.
 - **Usar mi ubicación:** botón junto al buscador que usa el GPS del celular o del computador (el navegador pide
-  permiso). Luego sale la misma tarjeta de "Confirmar mi ubicación", con la precisión en metros.
-- **Celular:** en "Qué se siembra" se quitó el párrafo de la fuente para que no se vea cargado (la EVA sigue en el
-  pie de "Fuentes de datos"). El botón de ubicación va en su propia fila.
+  permiso). Luego sale la tarjeta de "Confirmar mi ubicación", con la precisión en metros.
 - **Computador:** los 8 anillos caben en una fila.
 - `data/municipios_caribe.json` pasó a ser `data/municipios.json`.
 
