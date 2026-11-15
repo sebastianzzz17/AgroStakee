@@ -98,3 +98,23 @@ NASA POWER (20 años), el NDVI de MODIS (ORNL DAAC) y la pendiente (SRTM) de las
 últimos meses. Si un dato no se puede descargar, se conserva el anterior y la zona queda marcada con los campos que
 siguen siendo de ejemplo (`campos_ejemplo`). El avance se ve en la app y en `GET /api/estado_datos`.
 
+
+## Pasto (versión 13)
+
+El cultivo "Pasto" toma como referencia la braquiaria (*Urochloa decumbens*, antes *Brachiaria decumbens*), una de las
+gramíneas mejoradas más sembradas en el trópico bajo de Colombia. En la app ocupa un año entero (como la yuca y el ñame).
+
+| Dato | Valor | De dónde sale |
+|---|---|---|
+| pH | 4,0 a 8,0 | Tropical Forages: se adapta a suelos con pH desde 3,5; la ficha no da límite alto, así que el 8,0 se toma de *U. brizantha* (pH 4 a 8). La app no deja bajar de 4. |
+| Agua | 1.000 mm al año; aguante a sequía medio | Tropical Forages: crece con lluvias desde 700 mm, sobre todo con 1.200 a 2.500 mm y hasta 5 meses secos; sigue verde en el verano, pero produce mucho menos. |
+| Salinidad | Baja | La ficha no trae el dato; se asume baja por precaución. |
+| Nitrógeno | No lo fija; demanda media-baja | Tropical Forages: aguanta suelos pobres, pero responde mucho al N y al P. |
+| Cobertura | Alta (0,9) | Tropical Forages: se extiende y cubre rápido el suelo; buena para controlar la erosión en laderas. |
+| Siembra | Al voleo, 2 a 4 kg de semilla por hectárea | Tropical Forages. |
+| Primer pastoreo y descanso | 70 a 120 días; potreros con 25 a 40 días de descanso | Ficha de semilla de *B. decumbens* cv. Basilisk (proveedor comercial). Varía con el suelo y la lluvia. |
+| Materia orgánica, mercado e ingreso | 0,7 · 0,3 · 0,5 | Estimados del equipo: el pasto no se vende, su valor llega por el ganado. Pendientes de validar. |
+
+Fuentes: Tropical Forages, fichas de *Urochloa decumbens* y *U. brizantha* (tropicalforages.info); ficha técnica de
+*Brachiaria decumbens* cv. Basilisk de un proveedor de semillas. Si el pasto de tu finca es otro (colosoana, angleton,
+guinea), sus valores cambian.

@@ -1,5 +1,21 @@
 # Cambios
 
+## Versión 13 (pasto y nueva pantalla de entrada)
+
+- **Pasto:** nuevo cultivo, con la braquiaria (*Urochloa decumbens*) como referencia. Ocupa un año entero, como la
+  yuca y el ñame. Sus datos (pH, lluvia, aguante a la sequía, cobertura) salen de la ficha de Tropical Forages; el
+  primer pastoreo y el descanso de los potreros, de una ficha de semilla de *B. decumbens* cv. Basilisk (detalle y
+  valores estimados en `docs/PILOTO.md`).
+  - Plan propio: siembra al voleo, primer pastoreo, pastoreo por turnos y fin del año de pasto (nunca "cosechar").
+  - Con las prioridades por defecto (nitrógeno y agua) no aparece. Sale de primero en 7 de las 8 zonas cuando se
+    prioriza forraje o erosión. En Riohacha no entra: allá llueven unos 515 mm al año y la braquiaria pide al menos 700.
+  - Las bases que ya existían reciben el cultivo nuevo sin tocar lo demás.
+- **Pantalla de entrada:** a un lado, un panel con la visión de AgroStake: seis frases que pasan solas cada 5,5 s
+  (cercanía con el agricultor, el ahorro de agua con la estaca, rotar es cuidar, los satélites, sin señal, el
+  ganadero), con puntos para saltar, pausa y deslizar con el dedo. Debajo va un dibujo propio del campo que resalta lo
+  que dice cada frase. Al otro lado, el formulario. En el celular el panel va arriba. Se detiene con el mouse encima
+  y no se mueve si el teléfono pide reducir el movimiento.
+
 ## Versión 12 (cuentas que no se pierden, plan de acción por meses)
 
 - **Cuentas guardadas aparte:** con la variable `DATABASE_URL` (una base Postgres: Neon, Supabase o Render), las

@@ -60,6 +60,7 @@ Para comprobarlo: `/api/estado_datos` debe decir `"cuentas": "postgres"`.
 | Pendiente y NDVI de Landsat, SoilGrids en la nube | Google Earth Engine | Sí |
 | Humedad y temperatura del suelo ERA5-Land | Copernicus CDS | Sí |
 | Características de cultivos | USDA PLANTS | No |
+| Pasto (braquiaria) | Tropical Forages y ficha de semilla (ver `docs/PILOTO.md`) | No |
 
 Las que piden cuenta se activan solas si están las variables de entorno (ver `app.py` y `services/orquestador.py`).
 Las credenciales nunca van en el código.

@@ -536,6 +536,9 @@ def _porque(c, prev, i, nbajo, ladera, largo, prios):
     if c["tipo"] == "cobertura":
         return tr("Deja el rastrojo como cobertura: protege " + ("la ladera de la erosión." if ladera else "el suelo del sol y del viento en el verano."),
                   "Leave crop residue as cover: it protects " + ("the slope from erosion." if ladera else "the soil from sun and wind in the dry season."))
+    if c["tipo"] == "pasto":   # Tropical Forages (Urochloa decumbens): cubre rápido el suelo y sirve contra la erosión
+        return tr(f"{n} ocupa todo el año: es comida para tu ganado y cubre bien el suelo, lo que lo protege de la erosión.",
+                  f"{n} takes the whole year: it feeds your livestock and covers the soil well, protecting it from erosion.")
     if largo: return tr(f"{n} ocupa todo el año: tiene su propio ciclo largo y no se mezcla con otras siembras.", f"{n} takes the whole year: it has its own long cycle.")
     if c["fija_n"] and i == 0 and nbajo: return tr(f"{n} va primero porque tu nitrógeno está bajo y esta leguminosa lo repone.", f"{n} goes first because your nitrogen is low and this legume restores it.")
     if c["tipo"] == "abono_verde": return tr(f"{n} repone nitrógeno y mucha materia orgánica; se incorpora al suelo antes de que semille.",
@@ -607,13 +610,23 @@ def _cronograma(items, m0):
             ev.append((off, "cobertura", tr("Dejar el rastrojo como cobertura sobre el suelo", "Leave the crop residue as ground cover"), n))
             filas.append({"nombre": n, "icono": it["icono"], "tipo": t, "inicio": off, "largo": 4})
         else:
-            if t == "abono_verde":
+            if t == "pasto":
+                # Siembra: Tropical Forages (U. decumbens). Primer pastoreo y descanso: ficha de semilla de B. decumbens cv. Basilisk
+                # (70 a 120 días al primer pastoreo; rotación de 25 a 40 días). Ver docs/PILOTO.md.
+                ev.append((off, "siembra", tr("Sembrar el pasto al voleo (de 2 a 4 kg de semilla por hectárea) y pasar un rastrillo liviano",
+                                              "Broadcast the pasture seed (2 to 4 kg per hectare) and lightly harrow"), n))
+                ev.append((off + 3, "pastoreo", tr("Primer pastoreo, liviano: unos 70 a 120 días después de sembrar, cuando el pasto ya cubra el suelo",
+                                                   "First light grazing: about 70 to 120 days after sowing, once the grass covers the soil"), n))
+                ev.append((off + 4, "pastoreo", tr("Pastoreo por turnos: mueve el ganado y deja descansar cada potrero de 25 a 40 días",
+                                                   "Rotational grazing: move the herd and rest each paddock for 25 to 40 days"), n))
+            elif t == "abono_verde":
                 ev.append((off, "cobertura", tr(f"Sembrar {n.lower()} (cultivo de cobertura)", f"Sow {n.lower()} (cover crop)"), n))
                 ev.append((off + dur, "cobertura", tr(f"Incorporar el {n.lower()} al suelo antes de que semille", f"Work the {n.lower()} into the soil before it sets seed"), n))
             else:
                 ev.append((off, "siembra", tr(f"Sembrar {n}", f"Sow {n}"), n)); ev.append((off + dur, "cosecha", tr(f"Cosechar {n}", f"Harvest {n}"), n))
             filas.append({"nombre": n, "icono": it["icono"], "tipo": t, "inicio": off, "largo": dur + 1})
         if i + 1 < len(items): ev.append((items[i + 1]["off"], "cambio", tr(f"Cambio de cultivo: de {n} a {items[i + 1]['nombre']}", f"Crop change: from {n} to {items[i + 1]['nombre']}"), items[i + 1]["nombre"]))
+        elif len(items) == 1 and t == "pasto": ev.append((off + dur + 1, "cambio", tr("Fin del año de pasto: decide si lo dejas como potrero o vuelves a sembrar cultivos", "End of the pasture year: keep it as pasture or go back to crops"), n))
         elif len(items) == 1: ev.append((off + dur + 1, "cambio", tr("Fin del ciclo largo: prepara el cambio de cultivo", "End of the long cycle: get ready to change crops"), n))
         else: ev.append((12, "cambio", tr("Nuevo ciclo: revisa tus datos y empieza otra rotación", "New cycle: review your data and start another rotation"), n))
     ev.sort(key=lambda e: e[0])

@@ -187,5 +187,26 @@
   "materia_organica": 0.6,
   "mercado": 0,
   "nombre_en": "Crop residue cover"
+ },
+ {
+  "cultivo": "pasto",
+  "nombre": "Pasto",
+  "icono": "🐄",
+  "familia": "Poaceae",
+  "tipo": "pasto",
+  "ciclo_dias": 360,
+  "agua_mm": 1000,
+  "ph_min": 4.0,
+  "ph_max": 8.0,
+  "tol_sequia": 2,
+  "tol_salinidad": "baja",
+  "fija_n": 0,
+  "demanda_n": 0.4,
+  "cobertura": 0.9,
+  "ingreso_rel": 0.5,
+  "forraje": 1.0,
+  "materia_organica": 0.7,
+  "mercado": 0.3,
+  "nombre_en": "Pasture grass"
  }
 ]

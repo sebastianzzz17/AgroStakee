@@ -178,6 +178,11 @@ def init(forzar=False):
                 pass
         for p in _leer("perfiles_suelo.json"):
             guardar("perfiles", dict(id=p["id"], nombre=p["nombre"], datos=json.dumps(p)), 0, EJEMPLO)
+    # Cultivos nuevos del catálogo (por ejemplo, el pasto) en bases que ya existían: se agregan sin tocar los demás
+    with closing(conn()) as c:
+        hay = {r[0] for r in c.execute("SELECT cultivo FROM cultivos")}
+    for r in _leer("cultivos.json"):
+        if r["cultivo"] not in hay: guardar("cultivos", r, 0, EJEMPLO)
     if PG_URL: _init_pg()
 
 def _init_pg():
