@@ -3004,3 +3004,82 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localho
 </script>
 </body>
 </html>
+<!-- ============================================================================
+  ESTACA EN VIVO (datos del ESP32 por MQTT)
+  Cómo usarlo: pega TODO este bloque en templates/index.html, justo ANTES de la
+  última línea </body>. No hay que cambiar nada más del archivo.
+  Usa la ruta /api/estaca/local, que ya existe en app.py, y los colores de la app.
+============================================================================= -->
+<style>
+#ev{position:fixed;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:850;width:min(310px,calc(100% - 24px));
+  background:var(--card);color:var(--txt);border:1px solid var(--sep);border-radius:18px;box-shadow:0 8px 28px #0006;
+  font-family:var(--font);overflow:hidden}
+#ev[hidden]{display:none}
+#ev .ev-cab{display:flex;align-items:center;gap:8px;width:100%;padding:11px 14px;background:none;border:0;color:inherit;
+  font:inherit;font-weight:700;font-size:14px;cursor:pointer;text-align:left}
+#ev .ev-punto{width:10px;height:10px;border-radius:50%;background:var(--rojo);flex:none}
+#ev.on .ev-punto{background:var(--verde)}
+#ev .ev-flecha{margin-left:auto;color:var(--sec);transition:transform .2s}
+#ev.cerrado .ev-flecha{transform:rotate(-90deg)}
+#ev .ev-cuerpo{padding:0 14px 12px}
+#ev.cerrado .ev-cuerpo{display:none}
+#ev .ev-rejilla{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#ev .ev-dato{background:var(--card2);border-radius:12px;padding:8px 4px;text-align:center}
+#ev .ev-dato b{display:block;font-family:var(--num);font-size:18px}
+#ev .ev-dato span{font-size:10.5px;color:var(--sec)}
+#ev:not(.on) .ev-rejilla{opacity:.45}
+#ev .ev-pie{margin-top:8px;font-size:11.5px;color:var(--sec);display:flex;justify-content:space-between;gap:8px}
+#ev .ev-aviso{margin-top:6px;font-size:11.5px;color:var(--amarillo)}
+</style>
+
+<div id="ev" class="on cerrado" hidden></div>
+
+<script>
+(function () {
+  const CADA_MS = 1000;                       // el ESP32 manda un dato por segundo
+  const CAMPOS = [                            // [clave del JSON, etiqueta es, etiqueta en, decimales]
+    ["ph", "pH", "pH", 2], ["humedad", "Humedad (%)", "Moisture (%)", 1], ["temp_suelo", "Temp. suelo (°C)", "Soil temp. (°C)", 1],
+    ["n", "N (mg/kg)", "N (mg/kg)", 0], ["p", "P (mg/kg)", "P (mg/kg)", 0], ["k", "K (mg/kg)", "K (mg/kg)", 0]
+  ];
+  const ev = document.getElementById("ev");
+  const en = () => { try { return S.idioma === "en"; } catch (e) { return false; } };
+  const t = (es, ing) => (en() ? ing : es);
+  const enApp = () => { try { return S.pantalla === "app"; } catch (e) { return true; } };
+
+  // Estructura (los datos se escriben siempre con textContent)
+  ev.innerHTML = '<button type="button" class="ev-cab"><span class="ev-punto"></span><span class="ev-tit"></span><span class="ev-flecha">▾</span></button>' +
+    '<div class="ev-cuerpo"><div class="ev-rejilla"></div><div class="ev-pie"><span class="ev-origen"></span><span class="ev-hora"></span></div><div class="ev-aviso" hidden></div></div>';
+  const tit = ev.querySelector(".ev-tit"), rej = ev.querySelector(".ev-rejilla"), org = ev.querySelector(".ev-origen"),
+        hor = ev.querySelector(".ev-hora"), avi = ev.querySelector(".ev-aviso");
+  const valores = CAMPOS.map(() => {
+    const d = document.createElement("div"); d.className = "ev-dato";
+    d.innerHTML = "<b>–</b><span></span>"; rej.appendChild(d); return d;
+  });
+  if (innerWidth >= 700) ev.classList.remove("cerrado");           // en pantallas grandes arranca abierto
+  ev.querySelector(".ev-cab").addEventListener("click", () => ev.classList.toggle("cerrado"));
+
+  async function consultar() {
+    ev.hidden = !enApp();
+    if (ev.hidden || document.hidden) return;
+    let r = null;
+    try { const res = await fetch("/api/estaca/local", { cache: "no-store" }); r = await res.json(); } catch (e) {}
+    const suelo = r && r.grupos && r.grupos.suelo;
+    const hay = !!(r && !r.sin_datos && suelo);
+    ev.classList.toggle("on", hay);
+    tit.textContent = hay ? t("Estaca en vivo", "Live stake") : t("Estaca sin datos", "Stake: no data");
+    CAMPOS.forEach((c, i) => {
+      const v = suelo ? suelo[c[0]] : null;
+      valores[i].firstChild.textContent = typeof v === "number" ? v.toFixed(c[3]) : "–";
+      valores[i].lastChild.textContent = en() ? c[2] : c[1];
+    });
+    org.textContent = !suelo ? "" : suelo.origen === "sensor" ? t("Medido por sensor", "Sensor reading") : t("Datos estimados (simulación)", "Estimated data (simulation)");
+    hor.textContent = suelo && suelo.recibido ? new Date(suelo.recibido * 1000).toLocaleTimeString() : "";
+    let aviso = "";
+    if (!r) aviso = t("No se pudo consultar el servidor.", "Could not reach the server.");
+    else if (r.error) aviso = r.error;
+    else if (r.mqtt_conectado === false) aviso = t("El servidor aún no se conecta al broker.", "The server is not connected to the broker yet.");
+    avi.textContent = aviso; avi.hidden = !aviso;
+  }
+  consultar(); setInterval(consultar, CADA_MS);
+})();
+</script>
