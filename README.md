@@ -45,23 +45,33 @@ igual que antes, con SQLite.
 
 Para comprobarlo: `/api/estado_datos` debe decir `"cuentas": "postgres"`.
 
-### Entrada solo con el nombre (versión 17)
+### Cuentas con celular (versión 18)
 
-La pantalla de inicio pide solo el nombre. `POST /api/entrar` crea una cuenta "invitado" (columna `invitado` = 1)
-con un correo de relleno en el dominio reservado `.invalid` (nunca recibe correo) y una contraseña al azar que
-nadie conoce. La sesión dura un año desde la última visita (`PERMANENT_SESSION_LIFETIME`). Si se borran los
-datos del navegador o se cierra la sesión, esa cuenta ya no se puede abrir. Para frenar abusos hay un límite de
-60 entradas nuevas por hora desde una misma conexión (`AGROSTAKE_ENTRADAS_POR_IP`).
+- **Crear cuenta:** nombre, apellido, número de celular y contraseña (y la autorización de datos de la Ley 1581).
+  Si hay SMS configurado (Twilio, abajo), llega un código por mensaje de texto y la cuenta se crea al escribirlo;
+  si no, la cuenta se crea de una vez.
+- **Iniciar sesión:** celular y contraseña. Las cuentas viejas creadas con correo (versión 16) siguen entrando: se
+  escribe el correo en el mismo campo.
+- **¿Olvidaste tu contraseña?:** se escribe el celular, llega un código por SMS (en Android se pone solo), y luego
+  la contraseña nueva. Las cuentas viejas con correo tienen el enlace "Mi cuenta es con correo".
+- En la base, la columna `correo` es obligatoria y única, así que las cuentas de celular guardan ahí un relleno fijo
+  por número (`cel573001234567@agrostake.invalid`; el dominio `.invalid` está reservado y nunca recibe correo).
+  Eso también impide dos cuentas con el mismo celular. La app nunca muestra ese relleno.
+- Las cuentas "solo con el nombre" de la versión 17, si alguien alcanzó a crear alguna, siguen funcionando mientras
+  no se cierre la sesión en ese equipo; ya no se pueden crear nuevas. La sesión dura un año desde la última visita.
 
-La autorización de datos (Ley 1581 de 2012) queda en una frase bajo el botón ("Al tocar «Iniciar aplicación»
-autorizas…"), es decir, por una conducta de la persona y no con una casilla. Conviene que alguien con formación en
-protección de datos confirme que eso basta para el uso que le van a dar.
+### Rotaciones guardadas (versión 18)
 
-### Códigos por correo y por mensaje de texto (versión 16)
+En cada rotación hay un botón "Guardar". Las guardadas quedan en la cuenta (tabla `rotaciones`, en Postgres si
+está `DATABASE_URL`) y aparecen en Rotación, en "Mis rotaciones guardadas", cada vez que se inicia sesión. Se
+guarda el plan tal como estaba ese día (con su plan de acción) y se puede ver o borrar. Antes de generar rotaciones
+nuevas, la tarjeta "Mejor rotación" de Resumen muestra la última guardada. Máximo 30 por cuenta.
 
-Al crear la cuenta se manda un código de 6 números al correo, y la contraseña se recupera con un código por correo
-o por mensaje de texto (SMS) al celular que la persona confirmó. **Mientras no pongas estas variables, todo sigue
-como antes:** la cuenta se crea sin código y la pantalla dice que la recuperación no está activa.
+### Códigos por mensaje de texto y por correo (versiones 16 y 18)
+
+Los códigos para crear la cuenta y para recuperar la contraseña van por mensaje de texto (SMS) al celular. El
+correo solo se usa para recuperar las cuentas viejas creadas con correo. **Mientras no pongas estas variables:** la
+cuenta se crea sin código y la pantalla dice que la recuperación no está activa.
 
 Render gratis **bloquea el correo por SMTP** (puertos 25, 465 y 587), por eso el correo sale por una API web:
 

@@ -3,7 +3,7 @@
    - Las teselas del mapa que ya viste se guardan (como máximo 500) para verlas sin conexión.
    - Las respuestas de la API las guarda la propia página (localStorage) y las muestra con un aviso.
    Solo funciona en https o en localhost (regla de los navegadores para los service workers). */
-const APP = "agrostake-app-v10", MAPA = "agrostake-mapa-v1";
+const APP = "agrostake-app-v11", MAPA = "agrostake-mapa-v1";
 const ARCHIVOS = ["/", "/manifest.webmanifest", "/static/icono-192.png", "/static/icono-512.png",
   "/static/vendor/leaflet/leaflet.js", "/static/vendor/leaflet/leaflet.css",
   "/static/vendor/leaflet/images/marker-icon.png", "/static/vendor/leaflet/images/marker-icon-2x.png",

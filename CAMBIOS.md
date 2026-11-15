@@ -1,5 +1,27 @@
 # Cambios
 
+## Versión 18 (cuentas con celular, rotaciones guardadas y letras como antes)
+
+- **Vuelven "Crear cuenta" e "Iniciar sesión"** (se quitó la entrada solo con el nombre).
+  - Crear cuenta pide **nombre, apellido, celular y contraseña** (y la autorización de la Ley 1581). Con SMS
+    configurado llega un código por mensaje de texto (se pone solo en Android) y la cuenta se crea al escribirlo.
+  - Iniciar sesión: **celular y contraseña**. Las cuentas viejas con correo siguen entrando con el correo.
+  - **¿Olvidaste tu contraseña?:** se escribe el celular y llega un **mensaje de texto** con el código; luego la
+    contraseña nueva. Para cuentas viejas con correo está el enlace "Mi cuenta es con correo".
+  - En Ajustes, la cuenta dice "Entras con tu celular +57 300 555 1230".
+- **Rotaciones guardadas:** botón "Guardar" en cada rotación. Quedan en la cuenta (también en Postgres) y aparecen
+  en Rotación, en "Mis rotaciones guardadas", cada vez que se inicia sesión; se pueden ver (con su plan de acción) y
+  borrar (pide confirmar). Antes de generar rotaciones nuevas, "Mejor rotación" en Resumen muestra la última
+  guardada. La guía, al final, cuenta que se pueden guardar.
+- **Letras como antes:** en la versión 16 agregué una regla de estilo para los enlaces de la pantalla de entrada con
+  un nombre (`enlace`) que ya usaban cinco tarjetas de Resumen (Lluvia, Secado de la tierra, Calor, Humedad del
+  suelo y Mejor rotación). Por eso salían en verde y negrita. Esos enlaces ahora usan otra clase (`lnk`) y las
+  tarjetas volvieron a verse como en la versión 15. Los textos nuevos de la versión 17 ("Qué se siembra", "Mejor
+  cultivo a largo plazo", "Todavía no hay rotaciones") usan ahora las letras normales de la app, sin tamaños
+  propios.
+- La base se actualiza sola al publicar (tabla nueva `rotaciones`); las cuentas existentes no se tocan.
+
+
 ## Versión 17 (entrada simple, bienvenida con voz, toda Colombia y la EVA dentro de las rotaciones)
 
 - **Entrada simple:** la pantalla de inicio ya no tiene "Crear cuenta" ni "Iniciar sesión". Solo pide el nombre y

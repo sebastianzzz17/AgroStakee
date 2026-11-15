@@ -56,11 +56,15 @@ CREATE TABLE IF NOT EXISTS codigos(       -- códigos de verificación (solo su 
   destino TEXT NOT NULL, proposito TEXT NOT NULL, codigo_hash TEXT NOT NULL, expira REAL NOT NULL,
   intentos INTEGER NOT NULL DEFAULT 0, enviado_en REAL NOT NULL, enviados INTEGER NOT NULL DEFAULT 1, ventana REAL NOT NULL,
   datos TEXT, PRIMARY KEY(destino, proposito));
+CREATE TABLE IF NOT EXISTS rotaciones(     -- versión 18: rotaciones que la persona guardó
+  id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  zona_id TEXT, zona TEXT, clave TEXT NOT NULL, datos TEXT NOT NULL, creada_en TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX IF NOT EXISTS ix_rotaciones_usuario ON rotaciones(usuario_id);
 """
 
 PG_URL = os.environ.get("DATABASE_URL", "").strip()
-_EN_PG = re.compile(r"\b(?:usuarios|estacas|lecturas|codigos)\b")
-_INSERTA_PG = re.compile(r"\s*INSERT\s+INTO\s+(?:usuarios|estacas|lecturas)\b", re.I)
+_EN_PG = re.compile(r"\b(?:usuarios|estacas|lecturas|codigos|rotaciones)\b")
+_INSERTA_PG = re.compile(r"\s*INSERT\s+INTO\s+(?:usuarios|estacas|lecturas|rotaciones)\b", re.I)
 _AHORA_PG = "to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')"   # mismo formato que datetime('now') de SQLite
 SCHEMA_PG = [f"""CREATE TABLE IF NOT EXISTS usuarios(
   id BIGSERIAL PRIMARY KEY,
@@ -84,7 +88,11 @@ SCHEMA_PG = [f"""CREATE TABLE IF NOT EXISTS usuarios(
   ventana DOUBLE PRECISION NOT NULL, datos TEXT, PRIMARY KEY(destino, proposito))""",
  "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS celular TEXT",                    # versión 16: recuperar la cuenta por SMS
  "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS celular_ok INTEGER NOT NULL DEFAULT 0",
- "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS invitado INTEGER NOT NULL DEFAULT 0"]     # versión 17: entrar solo con el nombre
+ "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS invitado INTEGER NOT NULL DEFAULT 0",
+ f"""CREATE TABLE IF NOT EXISTS rotaciones(
+  id BIGSERIAL PRIMARY KEY, usuario_id BIGINT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  zona_id TEXT, zona TEXT, clave TEXT NOT NULL, datos TEXT NOT NULL, creada_en TEXT NOT NULL DEFAULT ({_AHORA_PG}))""",   # versión 18
+ "CREATE INDEX IF NOT EXISTS ix_rotaciones_usuario ON rotaciones(usuario_id)"]     # versión 17: entrar solo con el nombre
 _pg_local = threading.local()
 
 def modo_cuentas():
@@ -144,7 +152,7 @@ def ejecutar(sql, args=()):
     with closing(conn()) as c:
         cur = c.execute(sql, args)
         c.commit()
-        return cur.lastrowid
+        return cur.lastrowid if sql.lstrip()[:6].upper() == "INSERT" else cur.rowcount   # igual que en Postgres
 
 def ejecutar_varios(sql, filas):
     if _usa_pg(sql):

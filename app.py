@@ -62,6 +62,8 @@ def _ultimos(d):
 CORREO = re.compile(r"^[^@\s]{1,64}@[^@\s]+\.[^@\s]{2,}$")
 _fallos = {}   # correo -> [marcas de tiempo de intentos fallidos]
 
+RELLENO = "@agrostake.invalid"     # .invalid: dominio reservado que nunca recibe correo (RFC 2606)
+
 def _usuario_actual():
     uid = session.get("uid")
     if not uid: return None
@@ -69,8 +71,9 @@ def _usuario_actual():
     return f[0] if f else None
 
 def _publico(u):
-    inv = bool(u.get("invitado"))
-    return {"id": u["id"], "nombre": u["nombre"], "apellido": u["apellido"], "correo": None if inv else u["correo"], "invitado": inv,
+    inv = bool(u.get("invitado")); relleno = (u["correo"] or "").endswith(RELLENO)
+    return {"id": u["id"], "nombre": u["nombre"], "apellido": u["apellido"], "correo": None if inv or relleno else u["correo"], "invitado": inv,
+            "con_celular": relleno,
             "compartir_datos": bool(u["compartir_datos"]), "perfil": json.loads(u["perfil"]) if u.get("perfil") else None,
             "celular": u.get("celular"), "celular_ok": bool(u.get("celular_ok"))}
 
@@ -131,73 +134,54 @@ def _celular_de(texto):
     texto = (texto or "").strip()
     return mensajeria.normalizar_celular(texto) if texto else None
 
-# Entrada simple (versión 17): solo el nombre. Se crea una cuenta "invitado" que vive en la cookie de ese celular o
-# computador (un año desde la última visita). No tiene correo ni contraseña: si se borra la cookie o se cierra la
-# sesión, esos datos ya no se pueden abrir. Quien quiera, sigue pudiendo crear una cuenta con correo.
-_entradas_ip = {}
-@app.post("/api/entrar")
-def entrar_simple():
-    d = request.get_json(force=True)
-    nombre = " ".join((d.get("nombre") or "").split())[:60]
-    if not nombre: return _error("Escribe tu nombre para empezar.", "Type your name to start.")
-    ahora, ip = time.time(), _ip()
-    marcas = [t for t in _entradas_ip.get(ip, []) if ahora - t < 3600]
-    if len(marcas) >= int(os.environ.get("AGROSTAKE_ENTRADAS_POR_IP") or 60):
-        return _error("Demasiadas entradas nuevas desde esta conexión. Espera un rato e intenta de nuevo.",
-                      "Too many new sign-ins from this connection. Wait a while and try again.", 429)
-    _entradas_ip[ip] = marcas + [ahora]
-    if len(_entradas_ip) > 5000: _entradas_ip.clear()
-    uid = db.ejecutar("INSERT INTO usuarios(nombre,apellido,correo,clave_hash,acepta_datos_en,invitado) VALUES(?,?,?,?,?,1)",
-                      (nombre, "", f"invitado-{secrets.token_hex(10)}@agrostake.invalid",       # .invalid: dominio reservado que nunca recibe correo
-                       generate_password_hash(secrets.token_urlsafe(24)), datetime.now(timezone.utc).isoformat()))
-    session.clear(); session.permanent = True; session["uid"] = uid
-    return jsonify(usuario=_publico(_usuario_actual())), 201
-
 @app.get("/api/acceso/config")
 def acceso_config():
     """Qué puede hacer la pantalla de entrada en este servidor (según los servicios configurados)."""
     return jsonify(verificar_correo=bool(mensajeria.proveedor_correo()), sms=bool(mensajeria.proveedor_sms()))
 
+# Cuentas (versión 18): se crean con nombre, apellido, celular y contraseña. Con el celular se entra y por él se
+# recupera la contraseña (SMS). Las cuentas viejas con correo siguen entrando con el correo.
+# La columna correo de la base es obligatoria y única: las cuentas de celular guardan ahí un relleno fijo por número
+# (cel573001234567@agrostake.invalid), que además impide dos cuentas con el mismo celular.
+def _relleno(cel): return "cel" + cel.lstrip("+") + RELLENO
+
+def _cuenta_de_celular(cel):
+    if not cel: return None
+    f = db.consultar("SELECT id, clave_hash FROM usuarios WHERE celular=? AND invitado=0 ORDER BY celular_ok DESC, id LIMIT 1", (cel,))
+    return f[0] if f else None
+
 @app.post("/api/registro")
 def registro():
     d = request.get_json(force=True)
     nombre, apellido = (d.get("nombre") or "").strip()[:60], (d.get("apellido") or "").strip()[:60]
-    correo, clave = (d.get("correo") or "").strip().lower()[:120], d.get("clave") or ""
+    clave, cel = d.get("clave") or "", _celular_de(d.get("celular"))
     if not nombre or not apellido: return _error("Escribe tu nombre y tu apellido.", "Please enter your first and last name.")
-    if not CORREO.match(correo): return _error("El correo no parece válido.", "That email does not look valid.")
+    if not cel: return _error("Escribe tu número de celular, así: 300 123 4567.", "Enter your mobile number, like 300 123 4567.")
     if not 8 <= len(clave) <= 128: return _error("La contraseña debe tener al menos 8 caracteres.", "The password must have at least 8 characters.")
-    celular = _celular_de(d.get("celular"))
-    if (d.get("celular") or "").strip() and not celular:
-        return _error("Ese celular no parece válido. Escríbelo así: 300 123 4567.", "That mobile number does not look valid. Write it like 300 123 4567.")
     if not d.get("acepta_datos"): return _error("Debes aceptar el tratamiento de tus datos personales para crear la cuenta.",
                                                 "You must accept the processing of your personal data to create an account.")
-    if db.consultar("SELECT 1 FROM usuarios WHERE correo=?", (correo,)):
-        return _error("Ya existe una cuenta con ese correo. Inicia sesión.", "An account with that email already exists. Please sign in.", 409)
-    datos = {"nombre": nombre, "apellido": apellido, "clave_hash": generate_password_hash(clave),
-             "acepta_datos_en": datetime.now(timezone.utc).isoformat(), "celular": celular}
-    if not mensajeria.proveedor_correo():        # sin servicio de correo configurado: la cuenta se crea de una vez
-        return _crear_cuenta(correo, datos)
+    if _cuenta_de_celular(cel) or db.consultar("SELECT 1 FROM usuarios WHERE correo=?", (_relleno(cel),)):
+        return _error("Ya existe una cuenta con ese celular. Inicia sesión.", "An account with that mobile number already exists. Please sign in.", 409)
+    datos = {"nombre": nombre, "apellido": apellido, "clave_hash": generate_password_hash(clave), "acepta_datos_en": datetime.now(timezone.utc).isoformat()}
+    if not mensajeria.proveedor_sms():           # sin servicio de SMS configurado: la cuenta se crea de una vez
+        return _crear_cuenta(cel, datos, verificado=False)
     lim = _limite_ip()
     if lim: return lim
-    codigo, err = codigos.crear(app.config["SECRET_KEY"], correo, "registro", datos)
+    codigo, err = codigos.crear(app.config["SECRET_KEY"], cel, "registro", datos)
     if err: return _error(err[0], err[1], 429)
-    try: _enviar_codigo("correo", correo, codigo, "registro")
+    try: _enviar_codigo("sms", cel, codigo, "registro")
     except Exception as e:
-        app.logger.error("No se pudo enviar el código de registro: %s", e)
-        return _error("No pudimos enviarte el correo. Revisa la dirección o intenta más tarde.", "We could not send you the email. Check the address or try later.", 502)
-    return jsonify(verificar=True, correo=correo, destino=mensajeria.tapar(correo)), 202
+        app.logger.error("No se pudo enviar el SMS de registro: %s", e)
+        return _error("No pudimos mandarte el mensaje. Revisa el número o intenta más tarde.", "We could not send you the message. Check the number or try later.", 502)
+    return jsonify(verificar=True, celular=cel, destino=mensajeria.tapar(cel)), 202
 
-def _crear_cuenta(correo, datos):
-    if db.consultar("SELECT 1 FROM usuarios WHERE correo=?", (correo,)):
-        return _error("Ya existe una cuenta con ese correo. Inicia sesión.", "An account with that email already exists. Please sign in.", 409)
-    uid = db.ejecutar("INSERT INTO usuarios(nombre,apellido,correo,clave_hash,acepta_datos_en,celular) VALUES(?,?,?,?,?,?)",
-                      (datos["nombre"], datos["apellido"], correo, datos["clave_hash"], datos["acepta_datos_en"], datos.get("celular")))
+def _crear_cuenta(cel, datos, verificado):
+    if _cuenta_de_celular(cel) or db.consultar("SELECT 1 FROM usuarios WHERE correo=?", (_relleno(cel),)):
+        return _error("Ya existe una cuenta con ese celular. Inicia sesión.", "An account with that mobile number already exists. Please sign in.", 409)
+    uid = db.ejecutar("INSERT INTO usuarios(nombre,apellido,correo,clave_hash,acepta_datos_en,celular,celular_ok) VALUES(?,?,?,?,?,?,?)",
+                      (datos["nombre"], datos["apellido"], _relleno(cel), datos["clave_hash"], datos["acepta_datos_en"], cel, 1 if verificado else 0))
     session.clear(); session.permanent = True; session["uid"] = uid
-    res = {"usuario": _publico(_usuario_actual())}
-    if datos.get("celular") and mensajeria.proveedor_sms():          # de una vez se confirma el celular (el código llega por SMS)
-        res["verificar_celular"] = _codigo_celular(uid, datos["celular"])
-        if res["verificar_celular"]: res["destino_celular"] = mensajeria.tapar(datos["celular"])
-    return jsonify(res), 201
+    return jsonify(usuario=_publico(_usuario_actual())), 201
 
 def _codigo_celular(uid, celular):
     if _limite_ip(): return False
@@ -210,46 +194,51 @@ def _codigo_celular(uid, celular):
 @app.post("/api/registro/verificar")
 def registro_verificar():
     d = request.get_json(force=True)
-    correo = (d.get("correo") or "").strip().lower()
-    ok, r = codigos.verificar(app.config["SECRET_KEY"], correo, "registro", d.get("codigo"))
+    cel = _celular_de(d.get("celular"))
+    ok, r = codigos.verificar(app.config["SECRET_KEY"], cel or "", "registro", d.get("codigo"))
     if not ok: return _error(r[0], r[1])
-    return _crear_cuenta(correo, r)
+    return _crear_cuenta(cel, r, verificado=True)
 
 @app.post("/api/registro/reenviar")
 def registro_reenviar():
     d = request.get_json(force=True)
-    correo = (d.get("correo") or "").strip().lower()
-    datos = codigos.pendiente(correo, "registro")
+    cel = _celular_de(d.get("celular"))
+    datos = codigos.pendiente(cel or "", "registro")
     if datos is None: return _error("Tu registro venció. Vuelve a llenar el formulario.", "Your sign-up expired. Fill in the form again.", 410)
     lim = _limite_ip()
     if lim: return lim
-    codigo, err = codigos.crear(app.config["SECRET_KEY"], correo, "registro", datos)
+    codigo, err = codigos.crear(app.config["SECRET_KEY"], cel, "registro", datos)
     if err: return _error(err[0], err[1], 429)
-    try: _enviar_codigo("correo", correo, codigo, "registro")
+    try: _enviar_codigo("sms", cel, codigo, "registro")
     except Exception as e:
-        app.logger.error("No se pudo reenviar el código: %s", e)
-        return _error("No pudimos enviarte el correo. Intenta más tarde.", "We could not send you the email. Try later.", 502)
+        app.logger.error("No se pudo reenviar el SMS: %s", e)
+        return _error("No pudimos mandarte el mensaje. Intenta más tarde.", "We could not send you the message. Try later.", 502)
     return jsonify(ok=True)
 
 def _destino_clave(d):
-    """(via, destino normalizado) para recuperar la contraseña; destino None si no es válido."""
-    via = "sms" if d.get("via") == "sms" else "correo"
-    if via == "sms": return via, _celular_de(d.get("destino"))
-    correo = (d.get("destino") or "").strip().lower()
-    return via, correo if CORREO.match(correo) else None
+    """(via, destino) para recuperar la contraseña: si escribió un correo (cuentas viejas), por correo; si no, SMS."""
+    txt = (d.get("destino") or "").strip()
+    if "@" in txt:
+        correo = txt.lower()
+        return "correo", correo if CORREO.match(correo) and not correo.endswith(RELLENO) else None
+    return "sms", _celular_de(txt)
 
 @app.post("/api/clave/olvido")
 def clave_olvido():
     d = request.get_json(force=True)
     via, destino = _destino_clave(d)
     if not (mensajeria.proveedor_sms() if via == "sms" else mensajeria.proveedor_correo()):
-        return _error("Esa forma de recuperar la cuenta no está activa en este servidor.", "That recovery method is not active on this server.", 503)
+        return _error("Recuperar la contraseña por mensaje de texto todavía no está activo en este servidor. Pídele ayuda a quien administra la app." if via == "sms"
+                      else "Recuperar la contraseña por correo no está activo en este servidor.",
+                      "Password recovery by text message is not active on this server yet. Ask the app administrator for help." if via == "sms"
+                      else "Password recovery by email is not active on this server.", 503)
     if not destino:
         return _error("Ese celular no parece válido. Escríbelo así: 300 123 4567." if via == "sms" else "El correo no parece válido.",
                       "That mobile number does not look valid." if via == "sms" else "That email does not look valid.")
     lim = _limite_ip()                      # cuenta aunque no haya cuenta con ese dato (misma respuesta para todos)
     if lim: return lim
-    f = db.consultar("SELECT id FROM usuarios WHERE celular=? AND celular_ok=1" if via == "sms" else "SELECT id FROM usuarios WHERE correo=?", (destino,))
+    if via == "sms": c = _cuenta_de_celular(destino); f = [c] if c else []
+    else: f = db.consultar("SELECT id FROM usuarios WHERE correo=? AND invitado=0", (destino,))
     if f:           # si no hay cuenta, la respuesta es la misma (así no se puede averiguar quién está registrado)
         codigo, err = codigos.crear(app.config["SECRET_KEY"], destino, "clave", {"uid": f[0]["id"]})
         if err: return _error(err[0], err[1], 429)
@@ -257,7 +246,7 @@ def clave_olvido():
         except Exception as e:
             app.logger.error("No se pudo enviar el código para recuperar la clave: %s", e)
             return _error("No pudimos enviar el código. Intenta más tarde.", "We could not send the code. Try later.", 502)
-    return jsonify(ok=True, destino=mensajeria.tapar(destino))
+    return jsonify(ok=True, via=via, destino=mensajeria.tapar(destino))
 
 @app.post("/api/clave/verificar")
 def clave_verificar():
@@ -275,21 +264,28 @@ def clave_restablecer():
     ok, r = codigos.verificar(app.config["SECRET_KEY"], destino or "", "clave", d.get("codigo"))
     if not ok: return _error(r[0], r[1])
     db.ejecutar("UPDATE usuarios SET clave_hash=? WHERE id=?", (generate_password_hash(clave), r["uid"]))
+    if via == "sms": db.ejecutar("UPDATE usuarios SET celular_ok=1 WHERE id=?", (r["uid"],))   # el código llegó: el celular es suyo
     session.clear(); session.permanent = True; session["uid"] = r["uid"]
     return jsonify(usuario=_publico(_usuario_actual()))
 
 @app.post("/api/login")
 def login():
+    """Se entra con el celular y la contraseña. Las cuentas viejas con correo siguen entrando con el correo."""
     d = request.get_json(force=True)
-    correo, clave = (d.get("correo") or "").strip().lower(), d.get("clave") or ""
+    ident, clave = (d.get("usuario") or d.get("celular") or d.get("correo") or "").strip(), d.get("clave") or ""
+    if "@" in ident:
+        llave = ident.lower()
+        f = db.consultar("SELECT id, clave_hash FROM usuarios WHERE correo=? AND invitado=0", (llave,))
+    else:
+        cel = _celular_de(ident); llave = cel or ident
+        c = _cuenta_de_celular(cel) if cel else None; f = [c] if c else []
     ahora = time.time()
-    intentos = [t for t in _fallos.get(correo, []) if ahora - t < 900]
+    intentos = [t for t in _fallos.get(llave, []) if ahora - t < 900]
     if len(intentos) >= 5: return _error("Demasiados intentos. Espera 15 minutos.", "Too many attempts. Wait 15 minutes.", 429)
-    f = db.consultar("SELECT id, clave_hash FROM usuarios WHERE correo=?", (correo,))
     if not f or not check_password_hash(f[0]["clave_hash"], clave):
-        _fallos[correo] = intentos + [ahora]
-        return _error("Correo o contraseña incorrectos.", "Wrong email or password.", 401)
-    _fallos.pop(correo, None)
+        _fallos[llave] = intentos + [ahora]
+        return _error("Celular o contraseña incorrectos.", "Wrong mobile number or password.", 401)
+    _fallos.pop(llave, None)
     session.clear(); session.permanent = True; session["uid"] = f[0]["id"]
     return jsonify(usuario=_publico(_usuario_actual()))
 
@@ -315,12 +311,61 @@ def perfil():
         db.ejecutar("UPDATE usuarios SET compartir_datos=? WHERE id=?", (1 if d["compartir_datos"] else 0, g.usuario["id"]))
     return jsonify(ok=True)
 
+# ------------------------------------------------------------------ Rotaciones guardadas (versión 18)
+MAX_GUARDADAS = 30
+
+def _limpiar(x):
+    """Lo que se guarda vuelve a la pantalla: se cambian <, > y comillas por signos parecidos que no son HTML."""
+    if isinstance(x, str): return x.replace("<", "‹").replace(">", "›").replace('"', "”")[:4000]
+    if isinstance(x, list): return [_limpiar(v) for v in x[:200]]
+    if isinstance(x, dict): return {str(k)[:60]: _limpiar(v) for k, v in list(x.items())[:80]}
+    return x if isinstance(x, (int, float, bool)) or x is None else None
+
+def _rot_pub(f):
+    d = json.loads(f["datos"])
+    return {"id": f["id"], "creada_en": f["creada_en"], "zona": f["zona"], "zona_id": f["zona_id"], "plan": d.get("plan"), "ha": d.get("ha")}
+
+@app.get("/api/rotaciones")
+@requiere_login
+def rotaciones_lista():
+    f = db.consultar("SELECT id, zona, zona_id, datos, creada_en FROM rotaciones WHERE usuario_id=? ORDER BY id DESC", (g.usuario["id"],))
+    return jsonify(rotaciones=[_rot_pub(x) for x in f])
+
+@app.post("/api/rotaciones")
+@requiere_login
+def rotaciones_guardar():
+    d = request.get_json(force=True)
+    plan = d.get("plan")
+    if not isinstance(plan, dict) or not isinstance(plan.get("secuencia"), list) or not plan["secuencia"] \
+       or not all(isinstance(x, dict) and x.get("cultivo") for x in plan["secuencia"]):
+        return _error("No se pudo guardar esa rotación.", "That rotation could not be saved.")
+    plan = _limpiar(plan)
+    zona_id, zona = _limpiar(str(d.get("zona_id") or ""))[:40], _limpiar(str(d.get("zona") or ""))[:120]
+    clave_r = zona_id + "|" + ",".join(str(x["cultivo"]) for x in plan["secuencia"])
+    ya = db.consultar("SELECT id, zona, zona_id, datos, creada_en FROM rotaciones WHERE usuario_id=? AND clave=?", (g.usuario["id"], clave_r))
+    if ya: return jsonify(rotacion=_rot_pub(ya[0]), ya_estaba=True)
+    if db.consultar("SELECT COUNT(*) AS n FROM rotaciones WHERE usuario_id=?", (g.usuario["id"],))[0]["n"] >= MAX_GUARDADAS:
+        return _error(f"Ya tienes {MAX_GUARDADAS} rotaciones guardadas. Borra alguna para guardar otra.", f"You already have {MAX_GUARDADAS} saved rotations. Delete one to save another.", 409)
+    datos = json.dumps({"plan": plan, "ha": d.get("ha") if isinstance(d.get("ha"), (int, float)) else None}, ensure_ascii=False)
+    if len(datos) > 200_000: return _error("Esa rotación es demasiado grande para guardarla.", "That rotation is too large to save.")
+    rid = db.ejecutar("INSERT INTO rotaciones(usuario_id, zona_id, zona, clave, datos) VALUES(?,?,?,?,?)", (g.usuario["id"], zona_id, zona, clave_r, datos))
+    f = db.consultar("SELECT id, zona, zona_id, datos, creada_en FROM rotaciones WHERE id=?", (rid,))
+    return jsonify(rotacion=_rot_pub(f[0]), ya_estaba=False), 201
+
+@app.delete("/api/rotaciones/<int:rid>")
+@requiere_login
+def rotaciones_borrar(rid):
+    n = db.ejecutar("DELETE FROM rotaciones WHERE id=? AND usuario_id=?", (rid, g.usuario["id"]))
+    return jsonify(ok=bool(n))
+
 @app.post("/api/celular")
 @requiere_login
 def celular_guardar():
     """Guarda el celular para recuperar la cuenta y, si hay SMS, le manda un código para confirmarlo."""
     d = request.get_json(force=True)
     cel = _celular_de(d.get("celular"))
+    if (g.usuario.get("correo") or "").endswith(RELLENO):
+        return _error("Con este celular entras a tu cuenta, así que no se puede cambiar aquí.", "You sign in with this mobile number, so it cannot be changed here.")
     if not cel: return _error("Ese celular no parece válido. Escríbelo así: 300 123 4567.", "That mobile number does not look valid. Write it like 300 123 4567.")
     if cel != g.usuario.get("celular"): db.ejecutar("UPDATE usuarios SET celular=?, celular_ok=0 WHERE id=?", (cel, g.usuario["id"]))
     verificar = bool(mensajeria.proveedor_sms()) and _codigo_celular(g.usuario["id"], cel)
