@@ -2,3 +2,5 @@ flask
 requests
 # Opcional, solo para Google Earth Engine (pendiente y NDVI de Landsat):
 # earthengine-api
+# Opcional, solo para Copernicus CDS (python importar.py cds):
+# cdsapi

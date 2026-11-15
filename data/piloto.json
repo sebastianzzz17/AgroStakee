@@ -1,0 +1,365 @@
+{
+ "version": "2026-11-14",
+ "nota": "Datos de referencia para la prueba piloto mientras no hay estaca. Salen de estudios de suelos publicados, no de una medición en el lote del agricultor. Los promedios departamentales de Contreras-Santos y otros (2021) son de fincas ganaderas de cada departamento (0 a 30 cm, abril y mayo de 2016). Las clases bajo, medio y alto son una interpretación aproximada con los umbrales de 'interpretacion'.",
+ "interpretacion": {
+  "n_por_materia_organica_pct": "bajo < 2; medio 2 a 4; alto > 4 (sin dato de nitrógeno se usa la materia orgánica)",
+  "p_mg_kg": "bajo < 15; medio 15 a 40; alto > 40",
+  "k_cmol_kg": "bajo < 0,2; medio 0,2 a 0,4; alto > 0,4",
+  "salinidad_ce_ds_m": "normal < 2; alta >= 2 (aproximado; depende del método)",
+  "aviso": "Umbrales aproximados de uso común en Colombia. Deben confirmarse con un agrónomo y con el método de laboratorio de cada estudio."
+ },
+ "fuentes": {
+  "contreras2021": {
+   "titulo": "Caracterización de sistemas ganaderos del Caribe seco para cuantificación de índices de calidad de suelo",
+   "autores": "Contreras-Santos, Martínez-Atencia, Falla-Guzmán, Garrido-Pineda y Rodríguez-Vitola",
+   "publicacion": "Agronomía Costarricense 45(2), 2021",
+   "url": "https://dialnet.unirioja.es/descarga/articulo/8018402.pdf",
+   "tipo": "72 fincas, 6 departamentos, 0 a 30 cm"
+  },
+  "aguirre2021": {
+   "titulo": "Relación entre nutrientes con carbono, nitrógeno y materia orgánica en suelos de la Zona Bananera de Colombia",
+   "autores": "Aguirre Forero, Piraneque Gambasica y Cruz O'Byrne (Universidad del Magdalena)",
+   "publicacion": "Revista de Investigación Agraria y Ambiental 13(2), 93 a 111",
+   "url": "https://dialnet.unirioja.es/descarga/articulo/8479099.pdf",
+   "tipo": "25 puntos, 0 a 20 cm"
+  },
+  "fao_bananera": {
+   "titulo": "Preliminary study of salt affected soils in the Zona Bananera, Magdalena (Colombia)",
+   "autores": "Rincón-Rodríguez, Loaiza-Usuga y Rubiano-Sanabria",
+   "publicacion": "FAO, Global Symposium on Salt-affected Soils (2021)",
+   "url": "https://fao.org/fileadmin/user_upload/GSP/GSAS21/069.pdf",
+   "tipo": "Estudio preliminar con imágenes"
+  },
+  "cuc_repelon": {
+   "titulo": "Caracterización fisicoquímica de los suelos agrícolas del distrito de riego del municipio de Repelón, Atlántico",
+   "autores": "Universidad de la Costa (trabajo de grado, Ingeniería Ambiental)",
+   "publicacion": "Repositorio CUC, 2017",
+   "url": "https://repositorio.cuc.edu.co/handle/11323/339",
+   "tipo": "Época seca (junio) y de lluvias (octubre)"
+  },
+  "unicordoba_sinu": {
+   "titulo": "Efecto de labranza y manejo de materiales orgánicos sobre algunas propiedades físicas y químicas de un Vertic Endoaquept del Valle del Sinú",
+   "autores": "Universidad de Córdoba",
+   "publicacion": "Dialnet",
+   "url": "https://dialnet.unirioja.es/descarga/articulo/4149636.pdf",
+   "tipo": "Tipo de suelo del valle (arcilloso, con arcillas expansivas)"
+  },
+  "mojana": {
+   "titulo": "Descripción de La Mojana, subregión de la Depresión Momposina",
+   "autores": "Documento académico (core.ac.uk)",
+   "publicacion": "core.ac.uk",
+   "url": "https://core.ac.uk/download/427674398.pdf",
+   "tipo": "Texturas moderadamente finas a medias; planicie inundable"
+  },
+  "igac_guajira2019": {
+   "titulo": "Resultados de análisis de suelos, proyecto Fortaleciendo emprendimientos artesanales wayuu (análisis del Laboratorio Nacional de Suelos del IGAC)",
+   "autores": "Artesanías de Colombia e IGAC",
+   "publicacion": "2019",
+   "url": "https://cendar-repositorio.metabiblioteca.org/bitstream/001/8200/6/INST-D%202019.%20199.%205.pdf",
+   "tipo": "5 predios en Uribia (Alta Guajira), no en Riohacha"
+  },
+  "salinizacion_caribe": {
+   "titulo": "Salinización de suelos en áreas agrícolas de la región Caribe y estrategias agroecológicas de recuperación. Revisión",
+   "autores": "INGE CUC 18(1), 2022",
+   "publicacion": "Redalyc",
+   "url": "https://www.redalyc.org/pdf/4977/497779341014.pdf",
+   "tipo": "Revisión"
+  }
+ },
+ "zonas": {
+  "monteria": {
+   "suelo": {
+    "ph": 6.3,
+    "textura": "arcilloso",
+    "n": "medio",
+    "p": "medio",
+    "k": "alto",
+    "salinidad": "normal"
+   },
+   "valores": {
+    "ph": "6,26 ± 0,58",
+    "materia_organica_pct": "3,18 ± 0,99",
+    "p_mg_kg": "30,55",
+    "k_cmol_kg": "0,60",
+    "ce_ds_m": "0,25"
+   },
+   "rango_ph": [
+    5.7,
+    6.8
+   ],
+   "explicacion": "Promedio de fincas de Córdoba (incluye Montería y Cereté). El Valle del Sinú tiene suelos aluviales arcillosos que se encharcan en lluvias.",
+   "fuentes": [
+    "contreras2021",
+    "unicordoba_sinu"
+   ],
+   "confianza": "media",
+   "en": {
+    "explicacion": "Average of farms in Córdoba (includes Montería and Cereté). The Sinú Valley has clayey alluvial soils that waterlog in the rains.",
+    "valores": {
+     "ph": "6.26 ± 0.58",
+     "materia_organica_pct": "3.18 ± 0.99",
+     "p_mg_kg": "30.55",
+     "k_cmol_kg": "0.60",
+     "ce_ds_m": "0.25"
+    }
+   }
+  },
+  "valledupar": {
+   "suelo": {
+    "ph": 6.3,
+    "textura": "franco",
+    "n": "bajo",
+    "p": "medio",
+    "k": "medio",
+    "salinidad": "normal"
+   },
+   "valores": {
+    "ph": "6,30 ± 0,84",
+    "materia_organica_pct": "1,68 ± 0,69",
+    "p_mg_kg": "37,21",
+    "k_cmol_kg": "0,21",
+    "ce_ds_m": "0,18"
+   },
+   "rango_ph": [
+    5.5,
+    7.1
+   ],
+   "explicacion": "Promedio de fincas del Cesar (incluye Valledupar, Codazzi, La Paz y San Diego). Poca materia orgánica y potasio en el límite bajo.",
+   "fuentes": [
+    "contreras2021"
+   ],
+   "confianza": "media",
+   "en": {
+    "explicacion": "Average of farms in Cesar (includes Valledupar, Codazzi, La Paz and San Diego). Little organic matter and potassium at the low end.",
+    "valores": {
+     "ph": "6.30 ± 0.84",
+     "materia_organica_pct": "1.68 ± 0.69",
+     "p_mg_kg": "37.21",
+     "k_cmol_kg": "0.21",
+     "ce_ds_m": "0.18"
+    }
+   }
+  },
+  "zona_bananera": {
+   "suelo": {
+    "ph": 6.1,
+    "textura": "franco",
+    "n": "medio",
+    "p": "alto",
+    "k": "medio",
+    "salinidad": "normal"
+   },
+   "valores": {
+    "ph": "4,64 a 8,03 (promedio del Magdalena 6,12)",
+    "materia_organica_pct": "40% de las muestras alto, 24% medio y 36% bajo",
+    "p_mg_kg": "96% de las muestras alto o muy alto",
+    "k_cmol_kg": "50% medio, 42% alto"
+   },
+   "rango_ph": [
+    4.6,
+    8.0
+   ],
+   "explicacion": "Estudio de 25 puntos en la Zona Bananera: suelos francos, fósforo alto y nitrógeno mayormente medio. Ojo: hay suelos afectados por sales, más en el occidente del municipio.",
+   "alerta": "Revisa la salinidad: un estudio de la FAO encontró suelos con sales en el occidente de la Zona Bananera.",
+   "fuentes": [
+    "aguirre2021",
+    "fao_bananera",
+    "contreras2021"
+   ],
+   "confianza": "media",
+   "en": {
+    "explicacion": "Study of 25 points in Zona Bananera: loamy soils, high phosphorus and mostly medium nitrogen. Careful: some soils are salt-affected, more in the west of the municipality.",
+    "alerta": "Check salinity: a FAO study found salt-affected soils in the west of Zona Bananera.",
+    "valores": {
+     "ph": "4.64 to 8.03 (Magdalena average 6.12)",
+     "materia_organica_pct": "40% of samples high, 24% medium, 36% low",
+     "p_mg_kg": "96% of samples high or very high",
+     "k_cmol_kg": "50% medium, 42% high"
+    }
+   }
+  },
+  "san_jacinto": {
+   "suelo": {
+    "ph": 6.5,
+    "textura": "franco",
+    "n": "medio",
+    "p": "alto",
+    "k": "alto",
+    "salinidad": "normal"
+   },
+   "valores": {
+    "ph": "6,54 ± 0,49",
+    "materia_organica_pct": "3,10 ± 1,55",
+    "p_mg_kg": "49,99",
+    "k_cmol_kg": "0,49",
+    "ce_ds_m": "0,29"
+   },
+   "rango_ph": [
+    6.1,
+    7.0
+   ],
+   "explicacion": "Promedio de fincas de Bolívar (incluye El Carmen de Bolívar y San Juan Nepomuceno, en los Montes de María).",
+   "fuentes": [
+    "contreras2021"
+   ],
+   "confianza": "media",
+   "en": {
+    "explicacion": "Average of farms in Bolívar (includes El Carmen de Bolívar and San Juan Nepomuceno, in the Montes de María).",
+    "valores": {
+     "ph": "6.54 ± 0.49",
+     "materia_organica_pct": "3.10 ± 1.55",
+     "p_mg_kg": "49.99",
+     "k_cmol_kg": "0.49",
+     "ce_ds_m": "0.29"
+    }
+   }
+  },
+  "repelon": {
+   "suelo": {
+    "ph": 6.3,
+    "textura": "franco",
+    "n": "medio",
+    "p": "medio",
+    "k": "alto",
+    "salinidad": "normal"
+   },
+   "valores": {
+    "ph": "6,34 ± 0,62",
+    "materia_organica_pct": "4,71 (lluvias) a 6,16 (seca) en el distrito de riego",
+    "n_total_pct": "0,154 a 0,203",
+    "p_mg_kg": "29,98",
+    "k_cmol_kg": "0,55",
+    "na_cmol_kg": "1,37",
+    "ce_ds_m": "0,39"
+   },
+   "rango_ph": [
+    5.7,
+    7.0
+   ],
+   "explicacion": "pH, fósforo y potasio del promedio de fincas del Atlántico (incluye Repelón). Materia orgánica y nitrógeno del estudio del distrito de riego de Repelón.",
+   "alerta": "El sodio del Atlántico salió más alto que en otros departamentos: vigila que el agua de riego no salinice el suelo.",
+   "fuentes": [
+    "contreras2021",
+    "cuc_repelon"
+   ],
+   "confianza": "media",
+   "en": {
+    "explicacion": "pH, phosphorus and potassium from the average of farms in Atlántico (includes Repelón). Organic matter and nitrogen from the study of the Repelón irrigation district.",
+    "alerta": "Sodium in Atlántico was higher than in other departments: make sure irrigation water does not salinize the soil.",
+    "valores": {
+     "ph": "6.34 ± 0.62",
+     "materia_organica_pct": "4.71 (rainy) to 6.16 (dry) in the irrigation district",
+     "n_total_pct": "0.154 to 0.203",
+     "p_mg_kg": "29.98",
+     "k_cmol_kg": "0.55",
+     "na_cmol_kg": "1.37",
+     "ce_ds_m": "0.39"
+    }
+   }
+  },
+  "mompox": {
+   "suelo": {
+    "ph": 6.5,
+    "textura": "arcilloso",
+    "n": "medio",
+    "p": "alto",
+    "k": "alto",
+    "salinidad": "normal"
+   },
+   "valores": {
+    "ph": "6,54 ± 0,49",
+    "materia_organica_pct": "3,10 ± 1,55",
+    "p_mg_kg": "49,99",
+    "k_cmol_kg": "0,49"
+   },
+   "rango_ph": [
+    6.1,
+    7.0
+   ],
+   "explicacion": "Promedio de fincas de Bolívar (incluye Magangué). La Depresión Momposina es una planicie inundable con texturas moderadamente finas; no encontré un estudio de suelos propio de Mompox.",
+   "fuentes": [
+    "contreras2021",
+    "mojana"
+   ],
+   "confianza": "baja",
+   "en": {
+    "explicacion": "Average of farms in Bolívar (includes Magangué). The Momposina Depression is a floodplain with moderately fine textures; I found no soil study specific to Mompox.",
+    "valores": {
+     "ph": "6.54 ± 0.49",
+     "materia_organica_pct": "3.10 ± 1.55",
+     "p_mg_kg": "49.99",
+     "k_cmol_kg": "0.49"
+    }
+   }
+  },
+  "sincelejo": {
+   "suelo": {
+    "ph": 6.2,
+    "textura": "franco",
+    "n": "medio",
+    "p": "medio",
+    "k": "alto",
+    "salinidad": "normal"
+   },
+   "valores": {
+    "ph": "6,16 ± 0,53",
+    "materia_organica_pct": "2,66 ± 0,87",
+    "p_mg_kg": "33,98",
+    "k_cmol_kg": "0,58",
+    "ce_ds_m": "0,20"
+   },
+   "rango_ph": [
+    5.6,
+    6.7
+   ],
+   "explicacion": "Promedio de fincas de Sucre (incluye Sincelejo, Corozal y Sampués).",
+   "fuentes": [
+    "contreras2021"
+   ],
+   "confianza": "media",
+   "en": {
+    "explicacion": "Average of farms in Sucre (includes Sincelejo, Corozal and Sampués).",
+    "valores": {
+     "ph": "6.16 ± 0.53",
+     "materia_organica_pct": "2.66 ± 0.87",
+     "p_mg_kg": "33.98",
+     "k_cmol_kg": "0.58",
+     "ce_ds_m": "0.20"
+    }
+   }
+  },
+  "riohacha": {
+   "suelo": {
+    "ph": 6.9,
+    "textura": "arenoso",
+    "n": "bajo",
+    "p": "medio",
+    "k": "medio",
+    "salinidad": "normal"
+   },
+   "valores": {
+    "ph": "5,92 a 7,95 (el 6,9 es el centro del rango, no un promedio medido)",
+    "textura": "franco arenosa a arenosa"
+   },
+   "rango_ph": [
+    5.9,
+    8.0
+   ],
+   "explicacion": "No encontré análisis publicados de suelos agrícolas de Riohacha. Uso 5 análisis del IGAC en Uribia (Alta Guajira): suelos arenosos y de baja fertilidad. Fósforo y potasio no tienen dato y quedan en medio.",
+   "alerta": "La Guajira es el departamento con más territorio con algún grado de salinización: mide la conductividad antes de sembrar.",
+   "fuentes": [
+    "igac_guajira2019",
+    "salinizacion_caribe"
+   ],
+   "confianza": "baja",
+   "en": {
+    "explicacion": "I found no published analyses of farm soils in Riohacha. I use 5 IGAC analyses in Uribia (Alta Guajira): sandy, low-fertility soils. Phosphorus and potassium have no data and stay at medium.",
+    "alerta": "La Guajira is the department with the most land with some degree of salinization: measure conductivity before sowing.",
+    "valores": {
+     "ph": "5.92 to 7.95 (6.9 is the middle of the range, not a measured average)",
+     "textura": "sandy loam to sand"
+    }
+   }
+  }
+ }
+}

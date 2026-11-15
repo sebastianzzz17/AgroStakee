@@ -3,7 +3,11 @@
   python importar.py zonas     datos.csv    (id,nombre,lat,lon,suelo,riego + fuente opcional)
   python importar.py clima     datos.json   ({"zona_id": {...mismos campos que data/clima_ejemplo.json...}})
   python importar.py perfiles  datos.json   (lista como data/perfiles_suelo.json)
-  python importar.py nasa      [años]       (descarga el clima real de cada zona desde NASA POWER; por defecto 20 años)"""
+  python importar.py nasa      [años]       (descarga el clima real de cada zona desde NASA POWER; por defecto 20 años)
+  python importar.py ideam                  (actualiza el catálogo de estaciones del IDEAM desde datos.gov.co)
+  python importar.py piloto    [años]       (las dos anteriores: clima NASA de las 8 zonas y estaciones IDEAM)
+  python importar.py cds       [años]       (humedad y temperatura del suelo de ERA5-Land, Copernicus CDS; pide cuenta)
+  python importar.py usda                   (características de los cultivos desde USDA PLANTS)"""
 import csv, json, sys
 import db
 
@@ -17,6 +21,19 @@ def main(tabla, ruta):
             r = {k: (float(v) if k in NUM else v) for k, v in r.items()}
             if tabla == "zonas": r["riego"] = 1 if str(r["riego"]).lower() in ("1", "true", "si", "sí") else 0
             db.guardar(tabla, r, 1, f)
+    elif tabla == "ideam":
+        from services import ideam
+        print("Estaciones activas del IDEAM guardadas:", ideam.descargar())
+    elif tabla == "cds":
+        from services import copernicus
+        zonas = [dict(r) for r in db.consultar("SELECT id, lat, lon FROM zonas")]
+        copernicus.importar(zonas, int(ruta) if ruta else 10)
+    elif tabla == "usda":
+        from services import usda
+        usda.importar(db)
+    elif tabla == "piloto":
+        main("ideam", None)
+        return main("nasa", ruta)
     elif tabla == "nasa":
         from services import nasa
         ejemplo = db._leer("clima_ejemplo.json")

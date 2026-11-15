@@ -121,8 +121,8 @@ def _evaluar(c, lluvia, ctx):
         return False, tr("no tolera la salinidad medida", "it does not tolerate the measured salinity"), 0
     r = _ratio(c, lluvia, ctx)
     if r < (.25 if c["tol_sequia"] >= 3 else .4):
-        return False, tr(f"pide unos {_dem(c, ctx):.0f} mm de agua (con la evaporación de la zona) y solo se esperan unos {lluvia * RETENCION[ctx['textura']]:.0f} mm",
-                         f"it needs about {_dem(c, ctx):.0f} mm of water (with local evaporation) and only about {lluvia * RETENCION[ctx['textura']]:.0f} mm are expected"), r
+        return False, tr(f"pide unos {_dem(c, ctx):.0f} mm de agua (según lo que se seca la tierra en la zona) y solo se esperan unos {lluvia * RETENCION[ctx['textura']]:.0f} mm",
+                         f"it needs about {_dem(c, ctx):.0f} mm of water (given how fast the soil dries here) and only about {lluvia * RETENCION[ctx['textura']]:.0f} mm are expected"), r
     return True, "", r
 
 def _prios(prios):
@@ -239,9 +239,9 @@ def panel(zona_id, suelo, textura, riego, hoy=None):
                              tr(f"En los últimos 3 meses llovió {dev}% más de lo normal ({a} mm frente a {n} mm).",
                                 f"In the last 3 months it rained {dev}% more than normal ({a} mm vs {n} mm).")))
     if ev2 and ll2 < .5 * ev2:
-        al.append(("alerta" if ll2 < .2 * ev2 else "atención", tr("Se evapora más de lo que llueve", "More water evaporates than falls"),
-                   tr(f"En los próximos 2 meses se esperan unos {ll2} mm de lluvia y se evaporarían unos {ev2} mm.",
-                      f"In the next 2 months about {ll2} mm of rain are expected and about {ev2} mm would evaporate.") +
+        al.append(("alerta" if ll2 < .2 * ev2 else "atención", tr("La tierra se secará más de lo que llueve", "The soil will dry more than it rains"),
+                   tr(f"En los próximos 2 meses se esperan unos {ll2} mm de lluvia y la tierra perdería unos {ev2} mm al secarse.",
+                      f"In the next 2 months about {ll2} mm of rain are expected and the soil would lose about {ev2} mm as it dries.") +
                    (tr(" Planea el riego.", " Plan your irrigation.") if riego else tr(" Sin riego, evita cultivos que pidan mucha agua.", " Without irrigation, avoid thirsty crops."))))
     if max(prox) > 250: al.append(("atención", tr("Lluvias fuertes esperadas", "Heavy rain expected"),
                                    tr(f"Un mes puede llegar a {max(prox)} mm; cuida el drenaje y las laderas.", f"One month may reach {max(prox)} mm; take care of drainage and slopes.")))
@@ -281,8 +281,8 @@ def panel(zona_id, suelo, textura, riego, hoy=None):
     NOMR = {"sequia": ("la sequía", "drought"), "exceso": ("el exceso de lluvia", "too much rain"), "calor": ("el calor", "heat"), "helada": ("las heladas", "frost")}
     agua = min(100, C["cubre_2m"])
     anillos = {"suelo": {"valor": sal["valor"], "texto": sal["texto"]},
-               "agua": {"valor": agua, "texto": tr(f"La lluvia de los próximos 2 meses cubre el {C['cubre_2m']}% del agua que se evapora.",
-                                                   f"Rain in the next 2 months covers {C['cubre_2m']}% of the water that evaporates.")
+               "agua": {"valor": agua, "texto": tr(f"La lluvia de los próximos 2 meses cubre el {C['cubre_2m']}% del agua que pierde la tierra al secarse.",
+                                                   f"Rain in the next 2 months covers {C['cubre_2m']}% of the water the soil loses as it dries.")
                         + (tr(" Con riego puedes cubrir el resto.", " With irrigation you can cover the rest.") if riego and agua < 100 else "")},
                "clima": {"valor": 100 - riesgos[peor], "texto": tr(f"El mayor riesgo ahora es {NOMR[peor][0]}.", f"The biggest risk now is {NOMR[peor][1]}.")
                          if riesgos[peor] >= 30 else tr("El clima está favorable.", "Weather is favorable.")}}
@@ -488,9 +488,9 @@ def _explicaciones(bl, ind, n_fin, cob, eros, s, cl, ctx, fs, calor, largo):
         agua.append(tr(f"{tn}: se esperan unos {b['ll'] * RETENCION[ctx['textura']]:.0f} mm y {nom(b)} pide unos {_dem(b['c'], ctx):.0f} mm; queda cubierto el {round(b['r'] * 100)}%.",
                        f"{tn}: about {b['ll'] * RETENCION[ctx['textura']]:.0f} mm expected and {nom(b)} needs about {_dem(b['c'], ctx):.0f} mm; {round(b['r'] * 100)}% covered."))
     fe = ctx["f_evap"]
-    agua.append(tr(f"En tu zona se evaporan unos {cl['evap_anual_mm']} mm al año frente a {cl['lluvia_anual_mm']} mm de lluvia. ",
-                   f"About {cl['evap_anual_mm']} mm evaporate per year in your area vs {cl['lluvia_anual_mm']} mm of rain. ") +
-                (tr("Esa evaporación es parecida a la de referencia, así que el agua que pide cada cultivo casi no cambia.",
+    agua.append(tr(f"En tu zona la tierra pierde al secarse unos {cl['evap_anual_mm']} mm al año frente a {cl['lluvia_anual_mm']} mm de lluvia. ",
+                   f"In your area the soil loses about {cl['evap_anual_mm']} mm per year as it dries, vs {cl['lluvia_anual_mm']} mm of rain. ") +
+                (tr("Ese secado es parecido al de referencia, así que el agua que pide cada cultivo casi no cambia.",
                     "That is close to the reference, so each crop's water need barely changes.") if abs(fe - 1) < .03 else
                  tr(f"Por eso el agua que pide cada cultivo {'sube' if fe > 1 else 'baja'} un {round(abs(fe - 1) * 100)}%.",
                     f"So each crop's water need goes {'up' if fe > 1 else 'down'} by {round(abs(fe - 1) * 100)}%.")))

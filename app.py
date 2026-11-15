@@ -11,8 +11,10 @@ from datetime import date, datetime, timedelta, timezone
 from functools import wraps
 from flask import Flask, Response, g, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
-from services import estacas, motor
+from services import estacas, historico, ideam, motor
 import db
+
+PILOTO = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "piloto.json"), encoding="utf-8"))
 
 app = Flask(__name__)
 
@@ -207,6 +209,37 @@ def datos_lote():
 @app.route("/")
 def index():
     return send_from_directory("templates", "index.html")
+
+# ------------------------------------------------------------------ Relleno histórico del suelo (sin estaca)
+@app.get("/api/suelo_historico")
+def suelo_historico():
+    zid = request.args.get("zona", "")
+    if zid not in PILOTO["zonas"]: return _error("Zona no válida.", "Invalid area.")
+    try: mes = int(request.args.get("mes") or datetime.now().month)
+    except ValueError: mes = 0
+    if not 1 <= mes <= 12: return _error("Mes no válido.", "Invalid month.")
+    return jsonify(historico.suelo(zid, mes))
+
+# ------------------------------------------------------------------ Datos de referencia del piloto (sin estaca)
+@app.get("/api/referencia")
+def referencia():
+    """Suelo publicado para la zona y estaciones del IDEAM más cercanas al punto. No usa internet:
+    las estaciones salen de la copia descargada o de la copia regional incluida (ver services/ideam.py)."""
+    zid = request.args.get("zona", "")
+    z = PILOTO["zonas"].get(zid)
+    try:
+        lat, lon = float(request.args["lat"]), float(request.args["lon"])
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180): raise ValueError
+    except (KeyError, ValueError):
+        return _error("Coordenadas no válidas.", "Invalid coordinates.")
+    clima, lluvia = ideam.cercanas(lat, lon, n=2, tipo="clima"), ideam.cercanas(lat, lon, n=3, tipo="lluvia")
+    vistos, est = set(), []
+    for e in clima["estaciones"] + lluvia["estaciones"]:
+        if e["codigo"] not in vistos: vistos.add(e["codigo"]); est.append(e)
+    return jsonify({"zona": zid, "suelo": z, "fuentes": {k: PILOTO["fuentes"][k] for k in (z or {}).get("fuentes", [])},
+                    "interpretacion": PILOTO["interpretacion"], "nota": PILOTO["nota"],
+                    "ideam": {"estaciones": sorted(est, key=lambda e: e["distancia_km"])[:4], "fuente": clima["fuente"],
+                              "fecha_copia": clima["fecha_copia"], "origen": clima["origen"], "datos": clima["datos"]}})
 
 @app.get("/api/zonas")
 def zonas():

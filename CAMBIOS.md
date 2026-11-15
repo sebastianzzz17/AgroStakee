@@ -1,5 +1,38 @@
 # Cambios
 
+## Versión 6 (relleno histórico, carga animada, avisos, recorrido hablado)
+
+- **Sin estaca, los datos se llenan con el historial de la zona** (`services/historico.py`, `GET /api/suelo_historico?zona=&mes=`):
+  - pH, nitrógeno, fósforo, potasio y sales: estudios de suelos publicados para cada zona (`data/piloto.json`).
+  - Humedad del suelo, en este orden: ERA5-Land de Copernicus (si se importó), NASA POWER (GWETTOP por la porosidad de la textura) o, sin ninguno, una estimación con la lluvia y el secado del mes entre el punto de marchitez y la capacidad de campo (valores aproximados de FAO-56).
+  - Temperatura del suelo: ERA5-Land, NASA POWER (TS) o la temperatura media del mes + 1,5 °C.
+  - La línea de estado de "Mi lote" dice de dónde salió cada dato.
+- **Se quitó la tarjeta "Datos de referencia de tu zona"** y volvió la de "Suelo según mapas globales" con su botón "Usar estos datos".
+- **Botón "Guardar datos"** al final de "Mi lote": pantalla de carga con una planta que crece y "Cargando recomendaciones…" (unos 3 segundos) y luego pasa a Rotación. "Ver proyección" muestra "Guardando información…" y abre la proyección.
+- **Proyección:** cambiar hectáreas o años ya no recalcula solo; los resultados se ven atenuados hasta tocar "Realizar proyección", que muestra la carga y vuelve a animar.
+- **Notificaciones** (campana con contador en la cabecera): regar o no según la humedad del suelo, días que faltan para sembrar y cosechar según el plan, alertas del clima y estaca sin datos o con batería baja. Se marcan como leídas al abrir la campana y se reinician cada día. Con permiso del navegador también salen como aviso del equipo, **solo mientras la app está abierta** (no hay servidor de avisos push).
+- **Recorrido guiado y hablado** la primera vez (y con el botón "Ayuda"/"¿Cómo funciona?"): resalta cada parte, la explica en voz alta, tiene "Callar", "Atrás", "Siguiente" y "Saltar", y termina señalando el asistente.
+- **Tutorial inicial:** dos pantallas nuevas con animación: primero se clava la estaca, después los datos llegan solos a la app.
+- **El asistente saluda en voz alta al abrirse** y la primera vez explica qué sabe hacer y termina con "Presiona el botón verde para hacerme una pregunta".
+- **Porcentajes en lugar de "de 100"** en Resumen, Rotación, Proyección, informe y asistente.
+- **Lectura en voz por tarjeta:** humedad dice el valor y su rango; lluvia dice "mes lluvioso", "mes seco", etc.; la gráfica de lluvia lee solo el mes tocado (o el enunciado, el mes actual y los 3 datos); "Últimos 6 meses" lee solo la barra o punto tocado; tipo de suelo, pH, temperatura, nutrientes (nivel elegido y su efecto) y sales leen solo lo seleccionado; "¿Qué es lo más importante para ti?" ya se puede escuchar.
+- **Textos:** "Evaporación" pasa a "Secado de la tierra" (también en las alertas y en el informe); pH "ideal para cultivo" / "no es ideal para cultivo"; nuevo subtítulo de nutrientes; se quitó "estás viendo datos de ejemplo" y la frase del anillo de riesgos; letra más grande en las tarjetas del clima.
+- **Iconos interactivos:** tubo de ensayo para el pH (cambia de color) y termómetro para la temperatura.
+- **Animaciones al volver a cada sección:** anillos que se llenan, barras que suben y líneas que se dibujan otra vez.
+- **Fuentes:** nota al pie en Mi lote y Clima, incluida la aclaración de que las gráficas y animaciones se generaron con inteligencia artificial.
+- **Integraciones nuevas:** `python importar.py cds [años]` (ERA5-Land de Copernicus CDS: humedad y temperatura del suelo; pide cuenta, licencia y `pip install cdsapi`) y `python importar.py usda` (características de cultivos de USDA PLANTS; actualiza el pH mínimo y máximo cuando PLANTS los tiene). NASA POWER ahora también trae GWETTOP y TS.
+- El mapa y las capas de la NASA no se tocaron.
+
+## Versión 5 (prueba piloto sin estaca, inicio en Mi lote y animaciones)
+
+- **Datos de referencia para las 8 zonas** (`data/piloto.json`, detalle en `docs/PILOTO.md`): pH, textura, nitrógeno, fósforo, potasio y sales tomados de estudios de suelos publicados, con su fuente y nivel de confianza. Sin estaca, "Mi lote" los aplica solo; si el agricultor ajusta algo a mano se respeta, y puede volver a ellos con "Usar estos valores".
+- **Estaciones del IDEAM más cercanas** a cada lote (`services/ideam.py`), con el catálogo oficial `hp9r-jxuu` cuando hay internet y una copia regional de 2022 incluida en la app cuando no.
+- **SoilGrids:** ISRIC pausó su API REST. Si falla, ahora se intenta SoilGrids en Google Earth Engine; el mensaje de error lo explica en vez de mostrar "—". La tarjeta también muestra la lluvia y las temperaturas de NASA POWER.
+- `python importar.py ideam` y `python importar.py piloto` (estaciones del IDEAM + clima NASA POWER de las 8 zonas). Nuevo endpoint `GET /api/referencia?zona=&lat=&lon=`.
+- **La app abre en "Mi lote"** al entrar y al escoger la zona.
+- **Animaciones:** transición lateral entre pestañas, indicador que se desliza en la barra, números que suben desde cero, planta que crece según la salud del suelo (más sana, más alta, más hojas y flor), nivel de agua con olas en la humedad, iconos de cultivos que brotan y se mecen, tarjetas que se levantan al pasar el cursor, selecciones con rebote y tarjetas "esqueleto" mientras cargan. Se apagan si el equipo pide reducir el movimiento.
+- El asistente responde de dónde salen los datos y cuál es la estación del IDEAM más cercana.
+
 ## Versión 4 (cuentas, inglés, asistente por voz y estacas)
 
 ### Cómo correrla

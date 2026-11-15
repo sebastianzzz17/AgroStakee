@@ -2,13 +2,16 @@
 
 Fuentes (cada una es opcional; si falla o no está configurada, las demás siguen):
   1. NASA POWER        clima diario reciente (no pide cuenta)
-  2. ISRIC SoilGrids   suelo 0 a 30 cm: pH, carbono orgánico, arcilla, arena, CIC (no pide cuenta; uso moderado)
+  2. ISRIC SoilGrids   suelo 0 a 30 cm: pH, carbono orgánico, arcilla, arena, CIC. Primero la API REST; ISRIC la tiene
+                       pausada (aviso en docs.isric.org, dic. 2025), así que si falla se intenta la copia de SoilGrids
+                       que ISRIC publica en Google Earth Engine (projects/soilgrids-isric/...). Sin Earth Engine no hay dato.
   3. Google Earth Engine  pendiente (SRTM) y NDVI/NDWI (Landsat 9). Pide: pip install earthengine-api,
                        autenticación y GEE_PROJECT
   4. NASA AppEEARS     temperatura de superficie a 70 m (ECOSTRESS) y humedad del suelo (SMAP L4).
                        Pide EARTHDATA_USER y EARTHDATA_PASS. Es ASÍNCRONO: la tarea tarda de minutos a horas,
                        por eso aquí solo se envía y se consulta su estado; no bloquea la app.
   5. Precios (Socrata, datos.gov.co)  pide SOCRATA_DATASET con el ID del conjunto de datos.
+  6. IDEAM             estaciones activas más cercanas (services/ideam.py), con copia local si no hay internet.
 
 Cambios frente al código original:
   - ECO2LSTE.001 fue retirado el 21 de mayo de 2025 y SPL4SMGP.007 salió de AppEEARS en junio de 2025:
@@ -27,6 +30,7 @@ import math, os, re, time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 import requests
+from services import ideam
 
 TIMEOUT = 30
 APPEEARS = "https://appeears.earthdatacloud.nasa.gov/api"
@@ -51,8 +55,44 @@ def nasa_power(lat, lon, inicio, fin):
             "dias_lluvia_extrema": sum(1 for v in ll if v >= 50), "dias_con_datos": len(ll)}
 
 # ------------------------------------------------------------------ 2. ISRIC SoilGrids
+PROPS = ("phh2o", "soc", "clay", "sand", "cec")
+
+def _resumen_suelo(out, fuente):
+    arc, are = out.get("clay"), out.get("sand")                           # en %
+    textura = None
+    if arc is not None and are is not None:   # aproximación a grupos gruesos de textura
+        textura = "arcilloso" if arc >= 35 else "arenoso" if are >= 60 and arc < 15 else "franco"
+    soc = out.get("soc")                                                  # g/kg
+    return {"ph": out.get("phh2o"), "arcilla_pct": arc, "arena_pct": are, "cic_cmol_kg": out.get("cec"),
+            "carbono_organico_g_kg": soc, "materia_organica_pct": round(soc / 10 * 1.724, 2) if soc is not None else None,
+            "textura": textura, "fuente": fuente,
+            "nota": "Estimaciones de mapas globales a unos 250 m; confírmalas con un análisis de laboratorio."}
+
+def soilgrids_gee(lat, lon, radio_m=250):
+    """SoilGrids 2.0 en Earth Engine. Cada imagen trae 6 bandas (una por profundidad); se usan las 3 primeras
+    (0-5, 5-15 y 15-30 cm) pesadas por su grosor. Todas las propiedades usadas se dividen entre 10."""
+    ee = _ee()
+    img = ee.Image.cat(*[ee.Image(f"projects/soilgrids-isric/{p}_mean").select([0, 1, 2], [f"{p}_a", f"{p}_b", f"{p}_c"]) for p in PROPS])
+    v = img.reduceRegion(ee.Reducer.mean(), ee.Geometry.Point([lon, lat]).buffer(radio_m), 250).getInfo()
+    out = {}
+    for p in PROPS:
+        a, b, c = v.get(f"{p}_a"), v.get(f"{p}_b"), v.get(f"{p}_c")
+        out[p] = round((a * 5 + b * 10 + c * 15) / 30 / 10, 2) if None not in (a, b, c) else None
+    if all(x is None for x in out.values()): raise RuntimeError("SoilGrids en Earth Engine no tiene datos en este punto (agua o zona urbana)")
+    return _resumen_suelo(out, "SoilGrids 2.0 en Google Earth Engine")
+
 def soilgrids(lat, lon):
-    params = [("lon", lon), ("lat", lat)] + [("property", x) for x in ("phh2o", "soc", "clay", "sand", "cec")] + \
+    try:
+        return soilgrids_rest(lat, lon)
+    except Exception as e_rest:
+        try:
+            return soilgrids_gee(lat, lon)
+        except Exception as e_gee:
+            raise RuntimeError(f"La API de SoilGrids no respondió ({str(e_rest)[:80]}); ISRIC anunció que la pausó. "
+                               f"Earth Engine tampoco: {str(e_gee)[:120]}")
+
+def soilgrids_rest(lat, lon):
+    params = [("lon", lon), ("lat", lat)] + [("property", x) for x in PROPS] + \
              [("depth", d) for d in ("0-5cm", "5-15cm", "15-30cm")] + [("value", "mean")]
     r = requests.get("https://rest.isric.org/soilgrids/v2.0/properties/query", params=params, timeout=TIMEOUT)
     r.raise_for_status()
@@ -68,14 +108,8 @@ def soilgrids(lat, lon):
             else: a_, b_ = re.findall(r"\d+", d.get("label", "0-1cm"))[:2]; g = int(b_) - int(a_)
             suma += v / factor * g; peso += g
         out[capa["name"]] = round(suma / peso, 2) if peso else None
-    arc, are = out.get("clay"), out.get("sand")                           # en %
-    textura = None
-    if arc is not None and are is not None:   # aproximación a grupos gruesos de textura
-        textura = "arcilloso" if arc >= 35 else "arenoso" if are >= 60 and arc < 15 else "franco"
-    soc = out.get("soc")                                                  # g/kg
-    return {"ph": out.get("phh2o"), "arcilla_pct": arc, "arena_pct": are, "cic_cmol_kg": out.get("cec"),
-            "carbono_organico_g_kg": soc, "materia_organica_pct": round(soc / 10 * 1.724, 2) if soc is not None else None,
-            "textura": textura, "nota": "Estimaciones de mapas globales a unos 250 m; confírmalas con un análisis de laboratorio."}
+    if all(x is None for x in out.values()): raise RuntimeError("SoilGrids no tiene datos en este punto (agua o zona urbana)")
+    return _resumen_suelo(out, "API REST de SoilGrids 2.0")
 
 # ------------------------------------------------------------------ 3. Google Earth Engine
 _ee_listo = False
@@ -175,7 +209,8 @@ def perfil_lote(lat, lon, dias=365, ciudad="BARRANQUILLA"):
     tareas = {"nasa_power": lambda: nasa_power(lat, lon, ini.strftime("%Y%m%d"), fin.strftime("%Y%m%d")),
               "soilgrids": lambda: soilgrids(lat, lon),
               "gee": lambda: gee(lat, lon, ini.isoformat(), fin.isoformat()),
-              "precios": lambda: precios(ciudad)}
+              "precios": lambda: precios(ciudad),
+              "ideam": lambda: ideam.cercanas(lat, lon, n=3, red=True)}
     res = {}
     with ThreadPoolExecutor(max_workers=len(tareas)) as ex:
         fut = {k: ex.submit(f) for k, f in tareas.items()}
@@ -186,4 +221,4 @@ def perfil_lote(lat, lon, dias=365, ciudad="BARRANQUILLA"):
     return {"punto": {"lat": round(lat, 4), "lon": round(lon, 4)}, "periodo": {"inicio": ini.isoformat(), "fin": fin.isoformat()},
             "suelo": dato("soilgrids"), "terreno": {"pendiente_pct": dato("gee").get("pendiente_pct")},
             "vegetacion": {k: dato("gee").get(k) for k in ("ndvi", "ndwi")}, "clima_reciente": dato("nasa_power"),
-            "mercado": dato("precios"), "fuentes": {k: v["estado"] if v["estado"] == "ok" else v["detalle"] for k, v in res.items()}}
+            "mercado": dato("precios"), "ideam": dato("ideam"), "fuentes": {k: v["estado"] if v["estado"] == "ok" else v["detalle"] for k, v in res.items()}}

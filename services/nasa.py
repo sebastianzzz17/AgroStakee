@@ -1,6 +1,7 @@
 """Clima real de una zona desde NASA POWER (API diaria, comunidad AG), con caché en disco.
 
-Variables de POWER: T2M, T2M_MAX, T2M_MIN, PRECTOTCORR y GWETROOT.
+Variables de POWER: T2M, T2M_MAX, T2M_MIN, PRECTOTCORR, GWETROOT, GWETTOP (humedad relativa de la capa superficial
+del suelo, 0 a 1) y TS (temperatura de la superficie de la tierra, "skin temperature").
 Con ellas se calculan todos los campos que usa el motor: lluvia y temperatura por mes, evaporación (Hargreaves,
 FAO-56), días de estrés térmico (> 35 °C), heladas (<= 0 °C), lluvias extremas (>= 50 mm en un día), veranillo,
 humedad del suelo, año seco y tendencias de largo plazo.
@@ -16,7 +17,7 @@ import requests
 from services.motor import et0, MC, UMBRAL_CALOR, UMBRAL_FRIO
 
 URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
-VARS = ("T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR", "GWETROOT")
+VARS = ("T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR", "GWETROOT", "GWETTOP", "TS")
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "cache")
 FALTA = -999
 
@@ -53,7 +54,8 @@ def calcular(p, lat, ini, fin):
     for k in sorted(p["PRECTOTCORR"]):
         t, tx, tn, pr = (p[v].get(k) for v in ("T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR"))
         if all(_ok(x) for x in (t, tx, tn, pr)):
-            dias.append({"a": int(k[:4]), "m": int(k[4:6]), "t": t, "tx": tx, "tn": tn, "pr": pr, "gw": p["GWETROOT"].get(k)})
+            dias.append({"a": int(k[:4]), "m": int(k[4:6]), "t": t, "tx": tx, "tn": tn, "pr": pr, "gw": p["GWETROOT"].get(k),
+                         "gt": p.get("GWETTOP", {}).get(k), "ts": p.get("TS", {}).get(k)})
     if not dias: raise ValueError("NASA POWER no devolvió datos válidos para este punto")
     anios = sorted({d["a"] for d in dias}); na = len(anios)
     por_mes, anios_mes = defaultdict(list), defaultdict(set)
@@ -91,6 +93,8 @@ def calcular(p, lat, ini, fin):
     tend_ll = _pendiente(anios, totales) * (na - 1) / media_ll * 100 if na > 2 else 0
     tend_t = _pendiente(anios, [med(temp_anio[a]) for a in anios]) * (na - 1) if na > 2 else 0
     gw = [d["gw"] for d in dias if _ok(d["gw"])]
+    sup = [round(med(x) * 100) if x else None for x in ([d["gt"] for d in por_mes[m] if _ok(d["gt"])] for m in range(1, 13))]
+    tsu = [round(med(x), 1) if x else None for x in ([d["ts"] for d in por_mes[m] if _ok(d["ts"])] for m in range(1, 13))]
     return {"lluvia_mensual_mm": ll, "dias_lluvia_mensual": dl, "dias_calor_mensual": dc, "dias_frio_mensual": df, "temp_mensual": tm, "tmax_mensual": tx, "tmin_mensual": tn, "evap_mensual_mm": ev,
             "temp_media": round(med([d["t"] for d in dias]), 1), "tmax_media": round(med([d["tx"] for d in dias]), 1),
             "tmin_media": round(med([d["tn"] for d in dias]), 1), "tmin_absoluta": round(min(d["tn"] for d in dias), 1),
@@ -99,6 +103,8 @@ def calcular(p, lat, ini, fin):
             "dias_lluvia_extrema": round(sum(1 for d in dias if d["pr"] >= 50) / na, 1),
             "lluvia_max_dia_mm": round(max(d["pr"] for d in dias)),
             "humedad_suelo_pct": round(med(gw) * 100) if gw else None,
+            "humedad_sup_mensual": sup if any(v is not None for v in sup) else None,     # % de saturación, capa superficial
+            "temp_suelo_mensual": tsu if any(v is not None for v in tsu) else None,      # °C, superficie de la tierra
             "inicio_lluvias_mes": inicio, "dias_veranillo": veranillo,
             "riesgo_veranillo": "bajo" if veranillo < 15 else "medio" if veranillo < 30 else "alto",
             "tendencia_lluvia_pct": round(tend_ll), "tendencia_temp_c": round(tend_t, 1),
