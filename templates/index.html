@@ -369,7 +369,7 @@ details ol,details ul{color:var(--txt3);font-size:16px;padding-left:20px;margin:
 @keyframes av-onda{0%,100%{opacity:.25}50%{opacity:1}}
 @keyframes av-mece{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
 @keyframes av-sol{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.08);opacity:.7}}
-@media (prefers-reduced-motion:reduce){.av-slide,.av-slide.on{transition:none}.av-escena *,.av-fondo *,.acc-cabeza *{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.av-slide,.av-slide.on{transform:none;transition:opacity .4s ease,visibility 0s .4s}.av-slide.on{transition:opacity .4s ease,visibility 0s}.av-escena *,.av-fondo *,.acc-cabeza *{animation:none!important}}
 .av-fondo,.av-c,.av-m,.av-top-der,.av-botones,.acc-cabeza,.acc-hola,.acc-cambio{display:none}
 .av-top{display:flex;align-items:center;justify-content:space-between}
 .idi-mini{display:inline-flex;background:#00000059;border-radius:999px;padding:3px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
@@ -1126,7 +1126,7 @@ function renderVision(){
     <div class="av-escena">${escenaVision("p")}</div>`;
   marcarFrase();
   if (!carrusel.reloj) carrusel.reloj = setInterval(() => {      // avanza solo mientras se ve la pantalla de entrada
-    if ($("#acceso").hidden || !$("#acc-vision").getClientRects().length || document.hidden || carrusel.encima || carrusel.pausa || sinMov()) return;
+    if ($("#acceso").hidden || !$("#acc-vision").getClientRects().length || document.hidden || carrusel.encima || carrusel.pausa) return;
     carrusel.t += 100;
     const b = $("#acc-vision .av-dot.on i"); if (b) b.style.width = Math.min(100, carrusel.t / DUR_FRASE * 100) + "%";
     if (carrusel.t >= DUR_FRASE) irFrase(carrusel.i + 1);
@@ -1148,9 +1148,8 @@ function irFrase(i){ const n = VISION().length; carrusel.i = (i + n) % n; carrus
     const d = e.target.closest("[data-ir-frase]"); if (d) { irFrase(+d.dataset.irFrase); return; }
     if (e.target.closest("[data-pausa-frases]")) { carrusel.pausa = !carrusel.pausa; marcarFrase(); }
   });
-  // se detiene mientras el mouse está encima o se navega con teclado (en el celular un toque no la deja pausada)
-  v.addEventListener("mouseenter", () => { if (matchMedia("(hover: hover)").matches) carrusel.encima = true; });
-  v.addEventListener("mouseleave", () => carrusel.encima = false);
+  // solo se detiene con el botón de pausa o mientras se recorre con el teclado (el mouse encima ya no la detiene:
+  // en el computador el panel ocupa media pantalla y quedaba quieta)
   v.addEventListener("focusin", e => { if (e.target.matches(":focus-visible")) carrusel.encima = true; });
   v.addEventListener("focusout", () => carrusel.encima = false);
   v.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, {passive:true});

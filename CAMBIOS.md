@@ -1,5 +1,14 @@
 # Cambios
 
+## Versión 15 (frases de la entrada en el computador)
+
+- Las frases de la pantalla de entrada no cambiaban en el computador por dos razones:
+  - se detenían con el mouse encima del panel, que en el computador ocupa media pantalla;
+  - con la opción de Windows "Efectos de animación" apagada (el navegador lo lee como "reducir movimiento") no
+    avanzaban solas.
+- Ahora solo se detienen con el botón de pausa o mientras se recorre el panel con el teclado. Con "reducir
+  movimiento" siguen cambiando, pero se funden sin deslizarse.
+
 ## Versión 14 (entrada en el celular, plan sin emojis)
 
 - **Entrada en el celular**, con el modelo que mandó el equipo:
