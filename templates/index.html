@@ -163,6 +163,25 @@ button{cursor:pointer;background:none;border:0;padding:0;text-align:inherit}
 .leaflet-tooltip{background:var(--card2);color:var(--txt);border:0;border-radius:8px;box-shadow:none}.leaflet-tooltip-top:before{border-top-color:var(--card2)}
 .pin{width:22px;height:22px;border-radius:50%;background:var(--acento);border:4px solid var(--bg);box-shadow:0 0 0 2px var(--lima)}
 .pin.on{background:var(--txt);box-shadow:0 0 0 3px var(--lima),0 0 18px var(--lima)}
+.buscar-lugar{position:relative;margin:0 0 12px;z-index:700}
+.mun-lista{display:grid;gap:9px}
+.mun-fila{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;gap:10px;align-items:center;font-size:16px}
+.mun-nom{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mun-barra{height:12px;background:var(--campo);border-radius:6px;overflow:hidden}.mun-barra i{display:block;height:100%;border-radius:6px}
+.mun-ha{color:var(--sec);font-size:15px;min-width:70px;text-align:right}
+.mun-sub{font-size:16px;margin:16px 0 8px;color:var(--txt3)}
+.chips-rend{display:flex;flex-wrap:wrap;gap:8px}.chip-rend{background:var(--campo);border-radius:999px;padding:8px 12px;font-size:15px}.chip-rend b{margin-left:4px}
+.cosecha{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.cosecha > div{display:flex;flex-direction:column;gap:2px}.cosecha .e{font-size:26px}
+.sug-lugar{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border-radius:14px;box-shadow:0 10px 30px #0006;padding:6px;max-height:min(60vh,380px);overflow:auto}
+.sug-lugar button{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left;padding:11px 12px;border-radius:10px}
+.sug-lugar button b{font-size:17px}.sug-lugar button small{color:var(--sec);font-size:14.5px}
+.sug-lugar button[aria-selected=true],.sug-lugar button:hover{background:var(--campo)}
+.sug-lugar .sub{padding:10px 12px}
+#confirmar-mapa{position:absolute;z-index:600;left:10px;right:10px;bottom:26px;background:var(--card);color:var(--txt);border-radius:18px;padding:14px;box-shadow:0 10px 30px #0007;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#confirmar-mapa[hidden]{display:none}
+.cm-info{flex:1 1 220px;min-width:0}.cm-info b{display:block;font-size:18px;overflow-wrap:anywhere}.cm-info small{display:block;color:var(--sec);font-size:15px;margin-top:2px}
+.cm-btns{display:flex;gap:8px;flex:1 1 260px}.cm-btns .btn{flex:1;padding:13px 14px}.cm-btns .btn2{flex:none}
 #banner-mapa{position:absolute;z-index:500;top:12px;left:50%;transform:translateX(-50%);background:#000c;backdrop-filter:blur(10px);color:#fff;padding:8px 16px;border-radius:999px;font-weight:600;font-size:16px;pointer-events:none;white-space:nowrap}
 .capas{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .capas button,.chip{background:var(--card2);border-radius:999px;padding:9px 15px;font-size:16px;font-weight:600}
@@ -372,6 +391,19 @@ details ol,details ul{color:var(--txt3);font-size:16px;padding-left:20px;margin:
 @media (prefers-reduced-motion:reduce){.av-slide,.av-slide.on{transform:none;transition:opacity .4s ease,visibility 0s .4s}.av-slide.on{transition:opacity .4s ease,visibility 0s}.av-escena *,.av-fondo *,.acc-cabeza *{animation:none!important}}
 .av-fondo,.av-c,.av-m,.av-top-der,.av-botones,.acc-cabeza,.acc-hola,.acc-cambio{display:none}
 .av-top{display:flex;align-items:center;justify-content:space-between}
+/* Códigos de verificación y recuperar la contraseña (versión 16) */
+.in-codigo{font-size:30px!important;font-weight:700;letter-spacing:.35em;text-align:center;font-variant-numeric:tabular-nums;padding:14px 8px!important}
+.in-codigo::placeholder{letter-spacing:.35em;color:var(--sec);opacity:.5}
+.cod-ayuda{font-size:15px;margin:-4px 2px 12px}
+.clave-caja{position:relative}.clave-caja input{padding-right:84px}
+.ver-clave{position:absolute;right:6px;top:50%;transform:translateY(-50%);padding:8px 12px;border-radius:9px;font-size:15px;font-weight:700;color:var(--verde)}
+.enlace{color:var(--verde);font-weight:700;font-size:16px;padding:6px 2px}
+.enlace:disabled{color:var(--sec);font-weight:600;cursor:default}
+.acc-olvido{text-align:right;margin:-6px 0 8px}
+.acc-reenvio{text-align:center;margin:12px 0 0}
+.acceso .acc-volver,.acceso .acc-reenvio{text-align:center}.acc-volver{margin:16px 0 0}
+.acceso .via-tog{margin-bottom:14px}
+.acc-paso-tit h2{margin:6px 0 6px;font-size:23px}.acc-paso-tit p{margin:0 0 16px;color:var(--sec);font-size:16px}
 .idi-mini{display:inline-flex;background:#00000059;border-radius:999px;padding:3px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .idi-mini button{color:#fff;font-size:13px;font-weight:800;padding:6px 11px;border-radius:999px;opacity:.8}
 .idi-mini button[aria-pressed=true]{background:#fff;color:#0b1f14;opacity:1}
@@ -419,6 +451,7 @@ details ol,details ul{color:var(--txt3);font-size:16px;padding-left:20px;margin:
   .acc-hola p{margin:0 auto;color:var(--sec);font-size:15.5px;max-width:30ch}
   .acceso .card{background:transparent;padding:0;margin:0;box-shadow:none;border:0}
   .acc-cambio{display:block;text-align:center;margin:20px 0 0;font-size:15.5px;color:var(--sec)}
+  .acc-paso-tit{display:none}
   .acc-cambio button{color:var(--verde);font-weight:700}
 }
 @media (min-width:900px){
@@ -551,6 +584,15 @@ dialog::backdrop{background:#000a}
 #tour .globo p{margin:0 0 12px;font-size:17px;line-height:1.45}
 #tour .paso-n{font-size:13px;color:var(--sec);font-weight:700;text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
 #tour .acciones{margin-top:4px;justify-content:space-between}
+#tour.guia{pointer-events:none}#tour.guia .globo{pointer-events:auto}
+#tour.esperando .foco,#tour.esperando .globo,#tour.oculto .foco,#tour.oculto .globo{opacity:0;visibility:hidden}
+#tour.guia .foco{outline-width:4px;animation:guia-late 1.6s ease-in-out infinite}
+@keyframes guia-late{0%,100%{outline-offset:0}50%{outline-offset:5px}}
+#tour .foco.pulso{animation:guia-pulso .5s ease 2}#tour .globo.pulso{animation:guia-mueve .4s ease}
+@keyframes guia-pulso{50%{outline-color:#fff;outline-offset:8px}}@keyframes guia-mueve{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.guia-espera{font-size:15px;font-weight:700;color:var(--acento);align-self:center}
+.guia-hoja{background:#c6f432;color:#0b1f14;border-radius:14px;padding:12px 14px;font-size:16.5px;font-weight:600;margin:6px 0 14px;line-height:1.4}
+@media (prefers-reduced-motion:reduce){#tour.guia .foco,#tour .foco.pulso,#tour .globo.pulso{animation:none}}
 .callar{background:var(--card2);border-radius:999px;padding:7px 12px;font-size:14px;font-weight:600;color:var(--txt);text-transform:none;letter-spacing:0}
 .ilus{width:min(300px,80vw);display:block;margin:0 auto}
 .estaca-baja{animation:clava 3.2s cubic-bezier(.5,0,.3,1) infinite}
@@ -663,9 +705,10 @@ html,body{max-width:100%;overflow-x:clip}
     <p class="fecha" id="fecha-mapa"></p>
     <div class="top"><h1 id="mapa-titulo"></h1></div>
     <p class="intro-tab" id="mapa-sub"></p>
+    <div class="buscar-lugar" id="buscar-lugar"></div>
     <div class="card mapa-slot grande" id="mapa-slot">
       <div id="mapa-caja">
-        <div style="position:relative"><div id="map" role="application" aria-label="Mapa"></div><div id="banner-mapa" hidden></div></div>
+        <div style="position:relative"><div id="map" role="application" aria-label="Mapa"></div><div id="banner-mapa" hidden></div><div id="confirmar-mapa" hidden></div></div>
         <div class="capas" id="capas"></div><p class="capa-txt" id="capa-txt"></p><div class="capa-ley" id="capa-ley" hidden></div>
       </div>
     </div>
@@ -851,7 +894,10 @@ function pintarFijos(){
   $("#carga-txt").textContent = L("Datos de la NASA para decidir qué sembrar", "NASA data to decide what to plant");
   $("#fecha-mapa").textContent = fecha();
   $("#mapa-titulo").textContent = L("¿Dónde está tu lote?", "Where is your plot?");
-  $("#mapa-sub").textContent = L("Toca tu zona en el mapa o en la lista. Si tocas otro punto, buscamos los datos de la NASA para ese lugar.", "Tap your area on the map or in the list. If you tap another point, we look up NASA data for that place.");
+  $("#mapa-sub").textContent = L("Escribe tu municipio o toca en el mapa dónde queda tu lote. Antes de seguir, te preguntamos si es ahí.", "Type your town or tap on the map where your plot is. Before moving on, we ask you to confirm it.");
+  $("#buscar-lugar").innerHTML = `<div class="buscar">${ICO.lupa}<input type="search" id="in-lugar" placeholder="${L("Escribe tu municipio. Ej: Sahagún","Type your town. E.g. Sahagún")}" aria-label="${L("Buscar municipio","Search town")}" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="sug-lugar" enterkeyhint="search"></div>
+    <div class="sug-lugar" id="sug-lugar" role="listbox" hidden></div>`;
+  if (S.preZona) pintarConfirmar();
   const nom = [["Resumen","Summary"],["Clima","Weather"],["Mi lote","My plot"],["Rotación","Rotation"],["Proyección","Outlook"]];
   $("#tabbar").innerHTML = `<span class="indicador" aria-hidden="true"></span><div class="marca">${anillos([{v:80, c:COL.suelo}, {v:60, c:COL.agua}, {v:90, c:COL.clima}], 40, 5, 1)} AgroStake</div>` +
     nom.map(([e, i], k) => `<button type="button" data-t="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICO.tabs[k]}</svg><span>${L(e, i)}</span></button>`).join("") +
@@ -1039,11 +1085,13 @@ async function arrancar(){
   prog(20);
   try {
     const [z, c, e] = await Promise.all([api("/api/zonas").then(x => (prog(55), x)), api("/api/cultivos").then(x => (prog(80), x)), api("/api/estado")]);
+    api("/api/municipios").then(m => { S.municipios = m.municipios || []; if (mapa) ponerMunicipios(); }).catch(() => {});
     [S.zonas, S.cultivos, S.estado] = [z, c, e]; prog(100);
   } catch (err) { $("#carga-txt").textContent = L("No se pudo conectar con el servidor. Revisa que la app esté corriendo.", "Could not reach the server. Check that the app is running."); return; }
   await new Promise(r => setTimeout(r, Math.max(600, 900 - (Date.now() - t0))));   // la barra alcanza a llenarse (transición de 0,5 s), sin hacer esperar de más
   try { const r = await api("/api/yo"); await entrar(r.usuario); }
   catch (e) { mostrar("acceso"); renderAcceso(); }
+  cargarAccCfg();
 }
 
 /* ================= Inicio de sesión y registro ================= */
@@ -1156,48 +1204,170 @@ function irFrase(i){ const n = VISION().length; carrusel.i = (i + n) % n; carrus
   v.addEventListener("touchend", e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
     if (Math.abs(dx) > 45) irFrase(carrusel.i + (dx < 0 ? 1 : -1)); }, {passive:true});
 })();
+/* Pasos dentro del formulario de entrada (S.accVista):
+   null: entrar o crear cuenta · "codigo": código del correo para crear la cuenta · "cel": código del SMS para confirmar el celular
+   "olvido": cómo recuperar (correo o SMS) · "olvido-codigo": el código que llegó · "olvido-clave": la contraseña nueva */
+S.accCfg = {verificar_correo:false, sms:false};
+async function cargarAccCfg(){ try { S.accCfg = await api("/api/acceso/config"); if (!$("#acceso").hidden) renderAcceso(); } catch (e) {} }
+let otpEspera = null;
+function esperarSMS(){                     // Android (Chrome): toma el código del SMS apenas llega y lo pone solo
+  if (otpEspera) otpEspera.abort(); otpEspera = null;
+  if (!("OTPCredential" in window)) return;   // en iPhone el teclado ofrece el código encima (autocomplete="one-time-code")
+  otpEspera = new AbortController();
+  navigator.credentials.get({otp:{transport:["sms"]}, signal:otpEspera.signal}).then(c => {
+    const i = $$(".in-codigo").find(x => x.getClientRects().length); if (!c || !i) return;
+    i.value = c.code; i.dispatchEvent(new Event("input", {bubbles:true}));
+  }).catch(() => {});
+}
+function dejarDeEsperarSMS(){ if (otpEspera) otpEspera.abort(); otpEspera = null; }
+const campoCodigo = sms => `<label class="campo campo-codigo"><span>${L("Escribe el código de 6 números","Enter the 6-digit code")}</span>
+  <input name="codigo" class="in-codigo" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*" maxlength="14" required aria-describedby="cod-ayuda" placeholder="······"></label>
+  <p class="sub cod-ayuda" id="cod-ayuda">${sms ? L("Cuando llegue el mensaje, el código se pone solo. Si no, cópialo del mensaje.","When the message arrives the code fills in by itself. If not, copy it from the message.")
+                                     : L("Búscalo en tu correo. Si no está, revisa la carpeta de correo no deseado (spam).","Look for it in your email. If it is not there, check the spam folder.")}</p>`;
+const campoClave = (nombre, auto, txt) => `<label class="campo"><span>${txt}</span><div class="clave-caja"><input name="${nombre}" type="password" autocomplete="${auto}" required maxlength="128">
+  <button type="button" class="ver-clave" data-ver-clave aria-pressed="false">${L("Ver","Show")}</button></div></label>`;
+const btnReenviar = () => `<button type="button" class="enlace" data-reenviar ${Date.now() < (S.accEspera || 0) ? "disabled" : ""}>${reenviarTxt()}</button>`;
+function reenviarTxt(){ const s = Math.ceil(((S.accEspera || 0) - Date.now()) / 1000);
+  return s > 0 ? L(`Pedir otro código en ${s} s`, `Request another code in ${s} s`) : L("No me llegó: enviar otro código","Didn't get it: send another code"); }
+setInterval(() => { const b = $("#acceso [data-reenviar]"); if (!b || $("#acceso").hidden) return;
+  b.textContent = reenviarTxt(); b.disabled = Date.now() < (S.accEspera || 0); }, 1000);
+
+function vistaAcceso(err){
+  const v = S.accVista, er = err ? `<p class="error" role="alert">${esc(err)}</p>` : "", sms = S.accVia === "sms";
+  const atras = (a, t) => `<p class="acc-volver"><button type="button" class="enlace" data-acc-vista="${a}">${t}</button></p>`;
+  if (v === "codigo") return { h: L("Revisa tu correo","Check your email"),
+    p: L(`Te mandamos un código a ${S.accDestino}. Escríbelo aquí para crear tu cuenta.`, `We sent a code to ${S.accDestino}. Enter it here to create your account.`),
+    f: `<form class="card" id="f-codigo" novalidate>${campoCodigo(false)}${er}<button class="btn" type="submit" style="width:100%">${L("Crear mi cuenta","Create my account")}</button><p class="acc-reenvio">${btnReenviar()}</p></form>
+        ${atras("", L("Me equivoqué de correo","I used the wrong email"))}` };
+  if (v === "cel") return { h: L("Confirma tu celular","Confirm your mobile"),
+    p: L(`Te mandamos un mensaje de texto a ${S.accDestino}. Así, si olvidas la contraseña, la recuperas con tu celular.`, `We sent a text message to ${S.accDestino}. This way, if you forget your password, you can recover it with your phone.`),
+    f: `<form class="card" id="f-cel" novalidate>${campoCodigo(true)}${er}<button class="btn" type="submit" style="width:100%">${L("Confirmar celular","Confirm mobile")}</button><p class="acc-reenvio">${btnReenviar()}</p></form>
+        <p class="acc-volver"><button type="button" class="enlace" data-cel-luego>${L("Hacerlo después","Do it later")}</button></p>` };
+  if (v === "olvido") {
+    const vias = [S.accCfg.verificar_correo && "correo", S.accCfg.sms && "sms"].filter(Boolean);
+    if (!vias.includes(S.accVia)) S.accVia = vias[0] || "correo";
+    if (!vias.length) return { h: L("Recuperar tu cuenta","Recover your account"),
+      p: L("La recuperación de la contraseña todavía no está activa en este servidor. Pídele ayuda a quien administra la app.","Password recovery is not active on this server yet. Ask the app administrator for help."),
+      f: atras("", L("Volver a iniciar sesión","Back to sign in")) };
+    const sm = S.accVia === "sms";
+    return { h: L("¿Olvidaste tu contraseña?","Forgot your password?"),
+      p: L("Te mandamos un código para que pongas una contraseña nueva.","We will send you a code so you can set a new password."),
+      f: `<form class="card" id="f-olvido" novalidate>
+        ${vias.length > 1 ? `<div class="tog via-tog" role="group" aria-label="${L("Cómo recibir el código","How to get the code")}"><button type="button" data-via="correo" aria-pressed="${!sm}">${L("Por correo","By email")}</button><button type="button" data-via="sms" aria-pressed="${sm}">${L("Por mensaje de texto","By text message")}</button></div>` : ""}
+        ${sm ? `<label class="campo"><span>${L("Tu número de celular","Your mobile number")}</span><input name="destino" type="tel" autocomplete="tel" inputmode="tel" required maxlength="20" placeholder="300 123 4567" value="${esc(S.accDestinoReal && S.accVia === "sms" ? S.accDestinoReal : "")}"></label>
+               <p class="sub" style="margin:-4px 2px 12px">${L("Debe ser el celular que confirmaste en tu cuenta.","It must be the mobile number you confirmed in your account.")}</p>`
+             : `<label class="campo"><span>${L("Tu correo","Your email")}</span><input name="destino" type="email" autocomplete="email" inputmode="email" required maxlength="120" value="${esc(S.accDestinoReal && S.accVia === "correo" ? S.accDestinoReal : "")}"></label>`}
+        ${er}<button class="btn" type="submit" style="width:100%">${L("Enviarme el código","Send me the code")}</button></form>
+        ${atras("", L("Volver a iniciar sesión","Back to sign in"))}` };
+  }
+  if (v === "olvido-codigo") return { h: sms ? L("Revisa tus mensajes","Check your messages") : L("Revisa tu correo","Check your email"),
+    p: L(`Si hay una cuenta con ${S.accDestino}, te llegó un código. Escríbelo aquí.`, `If there is an account with ${S.accDestino}, a code was sent. Enter it here.`),
+    f: `<form class="card" id="f-olvido-codigo" novalidate>${campoCodigo(sms)}${er}<button class="btn" type="submit" style="width:100%">${L("Seguir","Continue")}</button><p class="acc-reenvio">${btnReenviar()}</p></form>
+        ${atras("olvido", sms ? L("Cambiar el número","Change the number") : L("Cambiar el correo","Change the email"))}` };
+  if (v === "olvido-clave") return { h: L("Escribe tu contraseña nueva","Enter your new password"),
+    p: L("Usa al menos 8 caracteres. Toca «Ver» para revisar lo que escribiste.","Use at least 8 characters. Tap “Show” to check what you typed."),
+    f: `<form class="card" id="f-olvido-clave" novalidate>${campoClave("clave", "new-password", L("Contraseña nueva","New password"))}${er}<button class="btn" type="submit" style="width:100%">${L("Guardar y entrar","Save and sign in")}</button></form>` };
+  return null;
+}
 function renderAcceso(err = ""){
   renderVision();
-  const reg = S.modoAcceso === "registro";
+  const reg = S.modoAcceso === "registro", vista = vistaAcceso(err);
+  if (!vista) dejarDeEsperarSMS();
   $("#acceso").dataset.paso = S.accPaso || "bienvenida";      // celular: bienvenida a pantalla completa y luego el formulario
-  $("#acceso-in").innerHTML = `<div class="acc-cabeza"><button type="button" class="acc-atras" data-acc-paso="bienvenida" aria-label="${L("Volver","Back")}"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>${idiomaMini()}${escenaVision("c")}</div>
+  $("#acceso").classList.toggle("acc-paso-extra", !!vista);
+  $("#acceso-in").innerHTML = `<div class="acc-cabeza"><button type="button" class="acc-atras" ${vista ? `data-acc-vista=""` : `data-acc-paso="bienvenida"`} aria-label="${L("Volver","Back")}"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>${idiomaMini()}${escenaVision("c")}</div>
    <div class="acc-hoja"><div class="idioma-top"><div class="tog" role="group" aria-label="Idioma / Language"><button type="button" data-idi="es" aria-pressed="${S.idioma === "es"}">Español</button><button type="button" data-idi="en" aria-pressed="${S.idioma === "en"}">English</button></div></div>
    <div class="logo dibuja">${anillos([{v:80, c:COL.suelo}, {v:60, c:COL.agua}, {v:90, c:COL.clima}], 110, 11, 2)}</div>
    <h1>AgroStake</h1><p class="tag">${L("Datos de la NASA y de tu estaca para decidir qué sembrar", "NASA and stake data to decide what to plant")}</p>
+   ${vista ? `<div class="acc-paso-tit"><h2>${vista.h}</h2><p>${vista.p}</p></div>` : ""}
    <div class="acc-hola"><div class="acc-logo">${anillos([{v:80, c:COL.suelo}, {v:60, c:COL.agua}, {v:90, c:COL.clima}], 48, 6, 2)}<span>AgroStake</span></div>
-     <h2>${reg ? L("Crea tu cuenta","Create your account") : L("¡Hola de nuevo!","Welcome back!")}</h2>
-     <p>${reg ? L("Es gratis. Guarda tu lote y conecta tu estaca cuando la tengas.","It's free. Save your plot and connect your stake when you have one.") : L("Entra para ver tu lote, tus rotaciones y el clima de la NASA de tu zona.","Sign in to see your plot, your rotations and NASA weather for your area.")}</p></div>
-   <div class="tog modo-acc" role="group"><button type="button" data-modo-acc="entrar" aria-pressed="${!reg}">${L("Iniciar sesión","Sign in")}</button><button type="button" data-modo-acc="registro" aria-pressed="${reg}">${L("Crear cuenta","Create account")}</button></div>
+     <h2>${vista ? vista.h : reg ? L("Crea tu cuenta","Create your account") : L("¡Hola de nuevo!","Welcome back!")}</h2>
+     <p>${vista ? vista.p : reg ? L("Es gratis. Guarda tu lote y conecta tu estaca cuando la tengas.","It's free. Save your plot and connect your stake when you have one.") : L("Entra para ver tu lote, tus rotaciones y el clima de la NASA de tu zona.","Sign in to see your plot, your rotations and NASA weather for your area.")}</p></div>
+   ${vista ? vista.f : `<div class="tog modo-acc" role="group"><button type="button" data-modo-acc="entrar" aria-pressed="${!reg}">${L("Iniciar sesión","Sign in")}</button><button type="button" data-modo-acc="registro" aria-pressed="${reg}">${L("Crear cuenta","Create account")}</button></div>
    <form class="card" id="f-acceso" novalidate>
      ${reg ? `<label class="campo"><span>${L("Nombre","First name")}</span><input name="nombre" autocomplete="given-name" required maxlength="60"></label>
               <label class="campo"><span>${L("Apellido","Last name")}</span><input name="apellido" autocomplete="family-name" required maxlength="60"></label>` : ""}
      <label class="campo"><span>${L("Correo","Email")}</span><input name="correo" type="email" autocomplete="email" required maxlength="120" inputmode="email"></label>
-     <label class="campo"><span>${L("Contraseña","Password")}${reg ? L(" (mínimo 8 caracteres)"," (at least 8 characters)") : ""}</span><input name="clave" type="password" autocomplete="${reg ? "new-password" : "current-password"}" required minlength="${reg ? 8 : 1}" maxlength="128"></label>
-     ${reg ? `<label class="marcar"><input type="checkbox" name="acepta_datos"><span>${L("Autorizo el tratamiento de mis datos personales (nombre, correo y datos de mis lotes y estacas) para usar la app, según la Ley 1581 de 2012.", "I authorize the processing of my personal data (name, email and data from my plots and stakes) to use the app, under Colombian Law 1581 of 2012.")}</span></label>` : ""}
+     ${campoClave("clave", reg ? "new-password" : "current-password", L("Contraseña","Password") + (reg ? L(" (mínimo 8 caracteres)"," (at least 8 characters)") : ""))}
+     ${reg && S.accCfg.sms ? `<label class="campo"><span>${L("Celular (opcional)","Mobile (optional)")}</span><input name="celular" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="300 123 4567"></label>
+              <p class="sub" style="margin:-4px 2px 12px">${L("Si olvidas la contraseña, te mandamos un mensaje de texto para recuperarla.","If you forget your password, we send you a text message to recover it.")}</p>` : ""}
+     ${!reg ? `<p class="acc-olvido"><button type="button" class="enlace" data-acc-vista="olvido">${L("¿Olvidaste tu contraseña?","Forgot your password?")}</button></p>` : ""}
+     ${reg ? `<label class="marcar"><input type="checkbox" name="acepta_datos"><span>${L("Autorizo el tratamiento de mis datos personales (nombre, correo, celular y datos de mis lotes y estacas) para usar la app, según la Ley 1581 de 2012.", "I authorize the processing of my personal data (name, email, mobile number and data from my plots and stakes) to use the app, under Colombian Law 1581 of 2012.")}</span></label>` : ""}
      ${err ? `<p class="error" role="alert">${esc(err)}</p>` : ""}
      <button class="btn" type="submit" style="width:100%">${reg ? L("Crear cuenta","Create account") : L("Entrar","Sign in")}</button>
    </form>
    <p class="acc-cambio">${reg ? `${L("¿Ya tienes cuenta?","Already have an account?")} <button type="button" data-modo-acc="entrar">${L("Inicia sesión","Sign in")}</button>`
-                               : `${L("¿No tienes cuenta?","No account yet?")} <button type="button" data-modo-acc="registro">${L("Regístrate aquí","Sign up here")}</button>`}</p></div>`;
+                               : `${L("¿No tienes cuenta?","No account yet?")} <button type="button" data-modo-acc="registro">${L("Regístrate aquí","Sign up here")}</button>`}</p>`}</div>`;
+  if (vista) setTimeout(() => { const i = $("#acceso-in form input:not([type=hidden])"); if (i && matchMedia("(pointer:fine)").matches) i.focus(); }, 30);
 }
-$("#acceso").addEventListener("click", e => {
+function irVistaAcc(v, extra = {}){ Object.assign(S, extra); S.accVista = v || null; S.accPaso = "form"; renderAcceso(); scrollTo(0, 0); }
+$("#acceso").addEventListener("click", async e => {
   const i = e.target.closest("[data-idi]"); if (i) { aplicarIdioma(i.dataset.idi); return; }
-  const m = e.target.closest("[data-modo-acc]"); if (m) { S.modoAcceso = m.dataset.modoAcc; S.accPaso = "form"; renderAcceso(); scrollTo(0, 0); return; }
-  const pa = e.target.closest("[data-acc-paso]"); if (pa) { S.accPaso = pa.dataset.accPaso; renderAcceso(); scrollTo(0, 0); }
+  const m = e.target.closest("[data-modo-acc]"); if (m) { S.modoAcceso = m.dataset.modoAcc; S.accVista = null; S.accPaso = "form"; renderAcceso(); scrollTo(0, 0); return; }
+  const va = e.target.closest("[data-acc-vista]"); if (va) { if (va.dataset.accVista === "olvido") S.accError = ""; irVistaAcc(va.dataset.accVista); return; }
+  const pa = e.target.closest("[data-acc-paso]"); if (pa) { S.accPaso = pa.dataset.accPaso; renderAcceso(); scrollTo(0, 0); return; }
+  const vk = e.target.closest("[data-ver-clave]");
+  if (vk) { const inp = vk.parentElement.querySelector("input"), ver = inp.type === "password"; inp.type = ver ? "text" : "password";
+    vk.setAttribute("aria-pressed", ver); vk.textContent = ver ? L("Ocultar","Hide") : L("Ver","Show"); return; }
+  const via = e.target.closest("[data-via]"); if (via) { S.accVia = via.dataset.via; renderAcceso(); return; }
+  if (e.target.closest("[data-cel-luego]")) { dejarDeEsperarSMS(); S.accVista = null; await entrar(S.accUsuario); return; }
+  const re = e.target.closest("[data-reenviar]");
+  if (re && !re.disabled) {
+    re.disabled = true;
+    try {
+      if (S.accVista === "codigo") await post("/api/registro/reenviar", {correo:S.accCorreo});
+      else if (S.accVista === "cel") { const r = await post("/api/celular", {celular:S.accCelular}); if (!r.verificar) throw new Error(L("No pudimos mandar el mensaje. Intenta más tarde.","We could not send the message. Try later.")); esperarSMS(); }
+      else { await post("/api/clave/olvido", {via:S.accVia, destino:S.accDestinoReal}); if (S.accVia === "sms") esperarSMS(); }
+      S.accEspera = Date.now() + 60000; avisar(L("Te mandamos otro código.","We sent you another code."), "✉️"); renderAcceso();
+    } catch (err) { renderAcceso(err.message); }
+  }
+});
+$("#acceso").addEventListener("input", e => {          // el código: solo números; con 6 se envía solo
+  if (!e.target.classList.contains("in-codigo")) return;
+  const d = e.target.value.replace(/\D/g, "").slice(0, 6);
+  if (e.target.value !== d) e.target.value = d;
+  if (d.length === 6 && !e.target.form.dataset.enviando) e.target.form.requestSubmit();
 });
 $("#acceso").addEventListener("submit", async e => {
   e.preventDefault();
-  const f = new FormData(e.target), d = Object.fromEntries(f.entries()), reg = S.modoAcceso === "registro";
-  d.acepta_datos = f.get("acepta_datos") === "on";
-  const b = e.target.querySelector("button[type=submit]"); b.disabled = true;
-  try { const r = await post(reg ? "/api/registro" : "/api/login", d); await entrar(r.usuario); }
-  catch (err) {
-    b.disabled = false;
-    let p = e.target.querySelector(".error");
+  const fm = e.target, f = new FormData(fm), d = Object.fromEntries(f.entries()), b = fm.querySelector("button[type=submit]");
+  if (fm.dataset.enviando) return;
+  fm.dataset.enviando = "1"; b.disabled = true;
+  try {
+    if (fm.id === "f-acceso") {
+      const reg = S.modoAcceso === "registro"; d.acepta_datos = f.get("acepta_datos") === "on";
+      const r = await post(reg ? "/api/registro" : "/api/login", d);
+      if (r.verificar) { irVistaAcc("codigo", {accCorreo:r.correo, accDestino:r.destino, accCelular:d.celular || "", accEspera:Date.now() + 60000}); return; }
+      await despuesDeCuenta(r, d.celular);
+    } else if (fm.id === "f-codigo") {
+      await despuesDeCuenta(await post("/api/registro/verificar", {correo:S.accCorreo, codigo:d.codigo}), S.accCelular);
+    } else if (fm.id === "f-cel") {
+      const r = await post("/api/celular/verificar", {codigo:d.codigo}); dejarDeEsperarSMS(); S.accVista = null;
+      avisar(L("Listo: tu celular quedó confirmado.","Done: your mobile number is confirmed."), "✅"); await entrar(r.usuario);
+    } else if (fm.id === "f-olvido") {
+      const r = await post("/api/clave/olvido", {via:S.accVia, destino:d.destino});
+      irVistaAcc("olvido-codigo", {accDestinoReal:d.destino, accDestino:r.destino, accEspera:Date.now() + 60000});
+      if (S.accVia === "sms") esperarSMS();
+    } else if (fm.id === "f-olvido-codigo") {
+      await post("/api/clave/verificar", {via:S.accVia, destino:S.accDestinoReal, codigo:d.codigo});
+      dejarDeEsperarSMS(); irVistaAcc("olvido-clave", {accCodigo:d.codigo});
+    } else if (fm.id === "f-olvido-clave") {
+      const r = await post("/api/clave/restablecer", {via:S.accVia, destino:S.accDestinoReal, codigo:S.accCodigo, clave:d.clave});
+      S.accVista = null; avisar(L("Listo: cambiaste tu contraseña.","Done: your password was changed."), "🔑"); await entrar(r.usuario);
+    }
+  } catch (err) {
+    delete fm.dataset.enviando; b.disabled = false;
+    let p = fm.querySelector(".error");
     if (!p) { p = document.createElement("p"); p.className = "error"; p.setAttribute("role", "alert"); b.before(p); }
     p.textContent = err.message;
+    const c = fm.querySelector(".in-codigo"); if (c) { c.value = ""; c.focus(); }
+    if (/venció|expired|ya no sirve|no longer valid|Pide uno nuevo|Request a new one/.test(err.message)) S.accEspera = 0;
   }
 });
+async function despuesDeCuenta(r, celular){            // cuenta creada o sesión iniciada; si dio celular, se confirma ya
+  if (r.verificar_celular) { S.accUsuario = r.usuario; irVistaAcc("cel", {accDestino:r.destino_celular, accCelular:celular, accEspera:Date.now() + 60000}); esperarSMS(); return; }
+  S.accVista = null; await entrar(r.usuario);
+}
 async function entrar(u){
   S.usuario = u; S.compartir = u.compartir_datos;
   const p = u.perfil;
@@ -1297,7 +1467,7 @@ function renderConfig(){
   $("#config-in").innerHTML = `<p class="fecha">${fecha()}</p><div class="top"><h1>${L("Configuración de lote","Plot settings")}</h1>${u ? `<button class="avatar" type="button" aria-label="${L("Tu cuenta","Your account")}">${iniciales()}</button>` : ""}</div>
    <p class="intro-tab">${ini ? L("Antes de empezar, cuéntanos de tu lote. Puedes cambiarlo cuando quieras desde la barra.","Before starting, tell us about your plot. You can change it anytime from the bar.") : L("Cambia tu ubicación, los datos de tu lote y tus estacas.","Change your location, plot data and stakes.")}</p>
    <div class="grid sin-anim">
-    ${S.zona ? `<section class="card c2 sin-voz"><h2>${L("Ubicación","Location")}</h2><div class="fila"><div><b>📍 ${S.zona.nombre}</b><small>${S.punto ? L(`Punto marcado a ${S.punto.km} km de la zona`, `Point marked ${S.punto.km} km from the area`) : L("Zona elegida en el mapa","Area chosen on the map")}</small></div><button type="button" class="btn2" data-cfg="ubicacion">${L("Cambiar","Change")}</button></div></section>` : ""}
+    ${S.zona ? `<section class="card c2 sin-voz"><h2>${L("Ubicación","Location")}</h2><div class="fila"><div><b>📍 ${S.zona.nombre}</b><small>${S.zona.punto ? L(`Punto elegido en el mapa · a ${S.zona.km} km de la zona de ${S.zona.cercanaNombre}`, `Point chosen on the map · ${S.zona.km} km from the ${S.zona.cercanaNombre} area`) : L("Zona piloto elegida en el mapa","Pilot area chosen on the map")}</small></div><button type="button" class="btn2" data-cfg="ubicacion">${L("Cambiar","Change")}</button></div></section>` : ""}
     <section class="card c2 sin-voz"><h2>${L("Tu lote","Your plot")}</h2>
       ${sw("riego", S.riego, L("Tengo riego en mi lote","I have irrigation"), L("Si no, solo contamos con la lluvia.","If not, we only count on rain."))}
       <div class="fila"><div><b>${L("Número de lotes","Number of plots")}</b><small>${L("Cada lote puede tener su estaca.","Each plot can have its own stake.")}</small></div><div class="stepper"><button type="button" data-l="-1" aria-label="${L("Menos lotes","Fewer plots")}">−</button><output class="n">${S.lotes}</output><button type="button" data-l="1" aria-label="${L("Más lotes","More plots")}">+</button></div></div>
@@ -1313,10 +1483,21 @@ function renderConfig(){
       ${sw("luna", S.luna, L("Ver fase lunar","Show moon phase"), L("Muestra la luna de hoy en el resumen.","Shows today's moon in the summary."))}
       ${sw("sol", S.sol, L("Ver salida del sol","Show sunrise"), L("A qué hora sale y se oculta el sol en tu zona.","When the sun rises and sets in your area."))}</section>
     <section class="card c2 sin-voz" id="cfg-estacas"></section>
-    ${u ? `<section class="card c2 sin-voz"><h2>${L("Tu cuenta","Your account")}</h2><div class="fila cuenta-fila"><div><b>${esc(u.nombre)} ${esc(u.apellido)}</b><small>${esc(u.correo)}</small></div><button type="button" class="btn2" data-cfg="salir">${L("Cerrar sesión","Sign out")}</button></div></section>` : ""}
+    ${u ? `<section class="card c2 sin-voz" id="cfg-cuenta"></section>` : ""}
    </div>
    <p style="margin:18px 4px"><button type="button" class="btn" data-cfg="listo">${ini ? L("Continuar","Continue") : L("Listo","Done")}</button></p>`;
-  renderEstacasCfg();
+  renderEstacasCfg(); renderCuentaCfg();
+}
+function renderCuentaCfg(err = ""){
+  const el = $("#cfg-cuenta"), u = S.usuario; if (!el || !u) return;
+  const er = err ? `<p class="error" role="alert">${esc(err)}</p>` : "";
+  let cel = "";
+  if (S.celCfg) cel = `<form id="f-cel-cfg" novalidate style="margin-top:12px"><p class="sub" style="margin:0 2px 10px">${L(`Te mandamos un mensaje de texto a ${S.celCfg.destino}.`, `We sent a text message to ${S.celCfg.destino}.`)}</p>
+      ${campoCodigo(true)}${er}<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="submit">${L("Confirmar celular","Confirm mobile")}</button><button type="button" class="btn2" data-cel-cancelar>${L("Cancelar","Cancel")}</button></div></form>`;
+  else if (u.celular && u.celular_ok && !S.celCambiar) cel = `<div class="fila"><div><b>${L("Celular para recuperar tu cuenta","Mobile to recover your account")}</b><small>${esc(u.celular)} · ${L("confirmado","confirmed")} ✓</small></div><button type="button" class="btn2" data-cel-cambiar>${L("Cambiar","Change")}</button></div>`;
+  else if (S.accCfg.sms) cel = `<form id="f-celular" novalidate style="margin-top:12px"><label class="campo"><span>${L("Celular para recuperar tu cuenta","Mobile to recover your account")}</span><input name="celular" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="300 123 4567" value="${esc(u.celular || "")}"></label>
+      <p class="sub" style="margin:-4px 2px 10px">${L("Si olvidas la contraseña, te mandamos un código por mensaje de texto.","If you forget your password, we send you a code by text message.")}</p>${er}<button class="btn" type="submit">${L("Confirmar por mensaje de texto","Confirm by text message")}</button></form>`;
+  el.innerHTML = `<h2>${L("Tu cuenta","Your account")}</h2><div class="fila cuenta-fila"><div><b>${esc(u.nombre)} ${esc(u.apellido)}</b><small>${esc(u.correo)}</small></div><button type="button" class="btn2" data-cfg="salir">${L("Cerrar sesión","Sign out")}</button></div>${cel}`;
 }
 function renderEstacasCfg(){
   const el = $("#cfg-estacas"); if (!el) return;
@@ -1333,12 +1514,33 @@ function renderEstacasCfg(){
     <div class="fila" style="border-top:1px solid var(--sep);margin-top:14px;padding-top:14px"><div><b>${L("Compartir mis datos para la ciencia","Share my data for science")}</b><small>${L("Lecturas de tus estacas sin tu nombre ni correo y con la ubicación aproximada, para la NASA, universidades y otras entidades. Puedes quitarlo cuando quieras.","Your stake readings without your name or email and with an approximate location, for NASA, universities and other organizations. You can turn it off anytime.")}</small></div><button type="button" class="sw" role="switch" data-compartir aria-checked="${S.compartir}" aria-label="${L("Compartir mis datos","Share my data")}"></button></div>`;
 }
 $("#config-in").addEventListener("input", e => {
+  if (e.target.classList.contains("in-codigo")) {
+    const d = e.target.value.replace(/\D/g, "").slice(0, 6); if (e.target.value !== d) e.target.value = d;
+    if (d.length === 6 && !e.target.form.dataset.enviando) e.target.form.requestSubmit();
+    return;
+  }
   if (e.target.id !== "buscar") return;
   S.buscar = e.target.value; const q = norm(S.buscar); let hay = false;
   $$("#cfg-ultimo .chip").forEach(b => { const ok = !q || b.dataset.nom.includes(q); b.hidden = !ok; hay = hay || ok; });
   $("#sin-res").hidden = hay;
 });
 $("#config-in").addEventListener("submit", async e => {
+  if (e.target.id === "f-celular" || e.target.id === "f-cel-cfg") {
+    e.preventDefault(); const fm = e.target; if (fm.dataset.enviando) return; fm.dataset.enviando = "1";
+    const d = Object.fromEntries(new FormData(fm).entries());
+    try {
+      if (fm.id === "f-celular") {
+        const r = await post("/api/celular", {celular:d.celular}); S.usuario = r.usuario;
+        if (r.verificar) { S.celCfg = {destino:r.destino}; esperarSMS(); }
+        else renderCuentaCfg(L("Guardamos tu celular, pero no pudimos mandar el mensaje. Intenta más tarde.","We saved your number but could not send the message. Try later."));
+      } else {
+        const r = await post("/api/celular/verificar", {codigo:d.codigo}); S.usuario = r.usuario; S.celCfg = null; S.celCambiar = false; dejarDeEsperarSMS();
+        avisar(L("Listo: tu celular quedó confirmado.","Done: your mobile number is confirmed."), "✅");
+      }
+      if (S.celCfg || !fm.isConnected || fm.id === "f-cel-cfg") renderCuentaCfg();
+    } catch (err) { renderCuentaCfg(err.message); }
+    return;
+  }
   if (e.target.id !== "f-estaca") return;
   e.preventDefault();
   const f = Object.fromEntries(new FormData(e.target).entries()), [lat, lon] = S.zona ? lugar() : [null, null];
@@ -1347,6 +1549,8 @@ $("#config-in").addEventListener("submit", async e => {
 });
 function alertaCfg(t){ const el = $("#cfg-estacas"); if (el) el.insertAdjacentHTML("beforeend", `<p class="error" role="alert">${esc(t)}</p>`); }
 $("#config-in").addEventListener("click", async e => {
+  if (e.target.closest("[data-cel-cambiar]")) { S.celCambiar = true; renderCuentaCfg(); return; }
+  if (e.target.closest("[data-cel-cancelar]")) { S.celCfg = null; S.celCambiar = false; dejarDeEsperarSMS(); renderCuentaCfg(); return; }
   const s = e.target.closest("[data-sw]");
   if (s) { const k = s.dataset.sw; S[k] = !S[k]; s.setAttribute("aria-checked", S[k]); if (k !== "riego") guardarPref(); guardarPerfil(); return; }
   const cp = e.target.closest("[data-compartir]");
@@ -1448,23 +1652,109 @@ function armarMapa(){
   L_.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:12, className:"tiles-osc", attribution:"© OpenStreetMap"}).addTo(mapa);
   S.zonas.forEach(z => {
     const m = L_.marker([z.lat, z.lon], {title:z.nombre, icon:L_.divIcon({className:"", html:'<div class="pin"></div>', iconSize:[22, 22], iconAnchor:[11, 11]})}).addTo(mapa);
-    m.bindTooltip(corto(z), {direction:"top", offset:[0, -10]}); m.on("click", ev => { L_.DomEvent.stopPropagation(ev); elegirZona(z); }); S.pins[z.id] = m;
+    m.bindTooltip(corto(z), {direction:"top", offset:[0, -10]}); m.on("click", ev => { L_.DomEvent.stopPropagation(ev); preElegir(z); }); S.pins[z.id] = m;
   });
   mapa.on("click", e => {
     if (S.volando || S.pantalla !== "pant-mapa") return;
-    elegirZona(zonaDePunto(e.latlng.lat, e.latlng.lng), {lat:e.latlng.lat, lon:e.latlng.lng, libre:true});
+    preElegir(zonaDePunto(e.latlng.lat, e.latlng.lng), {lat:e.latlng.lat, lon:e.latlng.lng, libre:true}, false);
   });
-  $("#zonas").onclick = e => { const b = e.target.closest("button"); if (b) elegirZona(S.zonas.find(z => z.id === b.dataset.z)); };
-  armarListaZonas();
+  $("#zonas").onclick = e => { const b = e.target.closest("button"); if (b) preElegir(S.zonas.find(z => z.id === b.dataset.z)); };
+  armarListaZonas(); ponerMunicipios();
 }
+/* Los 194 municipios del Caribe (EVA): puntos pequeños en el mapa y la lista del buscador. Las 8 zonas piloto
+   conservan su pin grande y sus propios datos. */
+let capaMun = null;
+function ponerMunicipios(){
+  if (!mapa || !S.municipios?.length || capaMun) return;
+  const r = L_.canvas({padding:.5, tolerance:10});        // tolerancia: con el dedo es fácil tocar un punto pequeño
+  capaMun = L_.layerGroup(S.municipios.filter(m => !m.zona).map(m => L_.circleMarker([m.lat, m.lon], {renderer:r, radius:5, weight:1.5, color:"#ffffff", fillColor:"#3cc6a8", fillOpacity:.95, bubblingMouseEvents:false})
+    .bindTooltip(`${m.n} · ${m.d}`, {direction:"top", offset:[0, -6]}).on("click", () => elegirMunicipio(m)))).addTo(mapa);
+}
+function elegirMunicipio(m, volar = true){
+  if (m.zona) { const z = S.zonas.find(x => x.id === m.zona); if (z) return preElegir(z, null, volar); }
+  preElegir(zonaDePunto(m.lat, m.lon), {lat:m.lat, lon:m.lon, libre:true}, volar);
+}
+/* Elegir no arranca enseguida: se marca el sitio y se pregunta "¿Es aquí?" con «Confirmar mi ubicación». */
+function preElegir(z, pt, volar = true){
+  if (!z || S.volando) return;
+  S.preZona = {z, pt: pt || null};
+  Object.entries(S.pins).forEach(([id, m]) => m.getElement()?.firstChild.classList.toggle("on", !pt && id === z.id));
+  if (punto) { mapa.removeLayer(punto); punto = null; }
+  const c = pt ? [pt.lat, pt.lon] : [z.lat, z.lon];
+  if (pt) punto = L_.circleMarker(c, {radius:10, color:"#000", weight:3, fillColor:"#fff", fillOpacity:1, bubblingMouseEvents:false}).addTo(mapa);
+  const rm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (volar) rm ? mapa.setView(c, Math.max(mapa.getZoom(), 9)) : mapa.flyTo(c, Math.max(mapa.getZoom(), 9), {duration:1});
+  else mapa.panTo(c, {animate:!rm});
+  pintarConfirmar();
+  $("#mapa-slot").scrollIntoView({block:"nearest", behavior:rm ? "auto" : "smooth"});
+}
+function pintarConfirmar(){
+  const el = $("#confirmar-mapa"), p = S.preZona; if (!p) { el.hidden = true; return; }
+  const z = p.z, nom = z.punto ? z.nombre : z.nombre;
+  el.innerHTML = `<div class="cm-info"><b>📍 ${esc(nom)}</b><small>${z.punto ? L("¿Tu lote queda aquí? Si no, toca otro sitio del mapa.","Is your plot here? If not, tap another place on the map.") : L("Zona piloto con estudios de suelo. ¿Tu lote queda aquí?","Pilot area with soil studies. Is your plot here?")}</small></div>
+    <div class="cm-btns"><button type="button" class="btn" data-confirmar-ubic>${L("Confirmar mi ubicación","Confirm my location")}</button><button type="button" class="btn2" data-otra-ubic>${L("Elegir otro","Choose another")}</button></div>`;
+  el.hidden = false;
+}
+$("#confirmar-mapa").addEventListener("click", e => {
+  L_.DomEvent.stopPropagation(e);
+  if (e.target.closest("[data-confirmar-ubic]")) { const p = S.preZona; S.preZona = null; $("#confirmar-mapa").hidden = true; elegirZona(p.z, p.pt, true); return; }
+  if (e.target.closest("[data-otra-ubic]")) {
+    S.preZona = null; $("#confirmar-mapa").hidden = true;
+    if (punto) { mapa.removeLayer(punto); punto = null; }
+    Object.values(S.pins).forEach(m => m.getElement()?.firstChild.classList.remove("on"));
+    const i = $("#in-lugar"); if (i) { i.value = ""; i.focus(); }
+  }
+});
+["mousedown", "dblclick", "touchstart", "wheel"].forEach(t => $("#confirmar-mapa").addEventListener(t, e => e.stopPropagation(), {passive:true}));
+/* Buscador de municipio (sin tildes ni mayúsculas; también por departamento) */
+function buscarLugar(q){
+  q = norm(q.trim()); if (!q) return [];
+  const todos = (S.municipios || []).length ? S.municipios : S.zonas.map(z => ({n:corto(z), d:z.nombre.match(/\((.*)\)/)?.[1] || "", lat:z.lat, lon:z.lon, zona:z.id}));
+  const puntaje = m => { const n = norm(m.n), d = norm(m.d);
+    return n === q ? 0 : n.startsWith(q) ? 1 : n.split(/[\s-]+/).some(w => w.startsWith(q)) ? 2 : n.includes(q) ? 3 : d.startsWith(q) || `${n} ${d}`.includes(q) ? 4 : 9; };
+  return todos.map(m => [puntaje(m), m]).filter(x => x[0] < 9).sort((a, b) => a[0] - b[0] || a[1].n.localeCompare(b[1].n, "es")).slice(0, 8).map(x => x[1]);
+}
+function pintarSugerencias(){
+  const i = $("#in-lugar"), box = $("#sug-lugar"), r = buscarLugar(i.value);
+  S.sugLugar = r; S.sugSel = r.length ? 0 : -1;
+  if (!i.value.trim()) { box.hidden = true; i.setAttribute("aria-expanded", "false"); return; }
+  box.innerHTML = r.length ? r.map((m, k) => `<button type="button" role="option" id="sug-${k}" data-sug="${k}" aria-selected="${k === 0}"><b>${esc(m.n)}</b><small>${esc(m.d)}${m.zona ? " · " + L("zona piloto","pilot area") : ""}</small></button>`).join("")
+    : `<p class="sub">${L("No encontramos ese municipio en el Caribe. Toca en el mapa dónde queda tu lote.","We could not find that town in the Caribbean region. Tap on the map where your plot is.")}</p>`;
+  box.hidden = false; i.setAttribute("aria-expanded", "true");
+}
+function usarSugerencia(k){
+  const m = S.sugLugar?.[k]; if (!m) return;
+  $("#in-lugar").value = m.n; $("#sug-lugar").hidden = true; $("#in-lugar").setAttribute("aria-expanded", "false"); $("#in-lugar").blur();
+  elegirMunicipio(m);
+}
+$("#buscar-lugar").addEventListener("input", e => { if (e.target.id === "in-lugar") pintarSugerencias(); });
+$("#buscar-lugar").addEventListener("keydown", e => {
+  if (e.target.id !== "in-lugar" || $("#sug-lugar").hidden) return;
+  const n = S.sugLugar?.length || 0;
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (!n) return; S.sugSel = (S.sugSel + (e.key === "ArrowDown" ? 1 : n - 1)) % n;
+    $$("#sug-lugar [data-sug]").forEach((b, k) => b.setAttribute("aria-selected", k === S.sugSel)); e.target.setAttribute("aria-activedescendant", "sug-" + S.sugSel); }
+  else if (e.key === "Enter") { e.preventDefault(); usarSugerencia(Math.max(0, S.sugSel)); }
+  else if (e.key === "Escape") { $("#sug-lugar").hidden = true; }
+});
+$("#buscar-lugar").addEventListener("click", e => { const b = e.target.closest("[data-sug]"); if (b) usarSugerencia(+b.dataset.sug); });
 /* Un punto libre del mapa es una "zona" propia: el servidor descarga el clima de la NASA para ESA latitud y longitud.
    Mientras llega (o si no hay internet), usa el clima y los estudios de suelo de la zona guardada más cercana. */
 /* El servidor escribe los puntos a su manera ("p:9.62,-75.1", "p:11.0,-72.9"); se comparan por número */
 const coordsPunto = id => { const m = /^p:(-?[\d.]+),(-?[\d.]+)$/.exec(id || ""); return m ? [+m[1], +m[2]] : null; };
 const mismoPunto = (a, b) => { const x = coordsPunto(a), y = coordsPunto(b); return !!(x && y && Math.abs(x[0] - y[0]) < 5e-4 && Math.abs(x[1] - y[1]) < 5e-4); };
+function municipioCercano(lat, lon){
+  let b = null, d = 1e9; (S.municipios || []).forEach(m => { const k = hav(lat, lon, m.lat, m.lon); if (k < d) { d = k; b = m; } });
+  return [b, d];
+}
+function nombrePunto(lat, lon){        // igual que en el servidor (motor.nombre_punto)
+  const [m, d] = municipioCercano(lat, lon);
+  if (m && d <= 1.5) return `${m.n} (${m.d})`;
+  if (m && d <= 40) return L(`Cerca de ${m.n} (${m.d})`, `Near ${m.n} (${m.d})`);
+  return L(`Tu lote (${N(+lat, 3)}, ${N(+lon, 3)})`, `Your plot (${N(+lat, 3)}, ${N(+lon, 3)})`);
+}
 function zonaDePunto(lat, lon){
   let b = null, d = 1e9; S.zonas.forEach(z => { const k = hav(lat, lon, z.lat, z.lon); if (k < d) { d = k; b = z; } });
-  return {id:`p:${(+lat).toFixed(3)},${(+lon).toFixed(3)}`, nombre:`${L("Mi punto","My point")} (${N(+lat, 3)}, ${N(+lon, 3)})`, lat:+(+lat).toFixed(3), lon:+(+lon).toFixed(3),
+  return {id:`p:${(+lat).toFixed(3)},${(+lon).toFixed(3)}`, nombre:nombrePunto(+lat, +lon), lat:+(+lat).toFixed(3), lon:+(+lon).toFixed(3),
           suelo:b.suelo, riego:b.riego, punto:true, cercana:b.id, cercanaNombre:corto(b), km:Math.round(d)};
 }
 async function descargarPunto(z){
@@ -1487,18 +1777,18 @@ function avisar(t, ico = "🛰️"){
   a.innerHTML = `<span class="ico">${ico}</span><div><p>${esc(t)}</p></div>`; a.hidden = false;
   clearTimeout(avisar.t); avisar.t = setTimeout(() => a.hidden = true, 6000);
 }
-function elegirZona(z, pt){
-  if (S.volando) return; S.volando = true;
+function elegirZona(z, pt, confirmado = false){
+  if (S.volando) return; S.volando = true; S.preZona = null; $("#confirmar-mapa").hidden = true;
   Object.assign(S, {zona:z, punto:pt || null, textura:S.fuente ? S.textura : z.suelo, res:null, panel:null, sim:null, climaZona:null, indAbierto:null, externos:null});
   Object.entries(S.pins).forEach(([id, m]) => m.getElement()?.firstChild.classList.toggle("on", id === z.id));
   if (punto) mapa.removeLayer(punto);
   const c = pt ? [pt.lat, pt.lon] : [z.lat, z.lon];
   if (pt) punto = L_.circleMarker(c, {radius:9, color:"#000", weight:3, fillColor:"#fff", fillOpacity:1}).addTo(mapa);
   const b = $("#banner-mapa"); b.hidden = false; b.textContent = "📍 " + (z.punto ? z.nombre : corto(z));
-  const rm = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  mapa.panTo(c, {animate:!rm, duration:.7});
-  setTimeout(() => rm ? mapa.setView(c, 10) : mapa.flyTo(c, 10, {duration:2}), rm ? 0 : 750);
-  setTimeout(() => { $("#banner-mapa").hidden = true; mostrar("app"); ir(2); S.volando = false; tourSiToca(); }, rm ? 300 : 3100);
+  const rm = matchMedia("(prefers-reduced-motion: reduce)").matches, espera = rm || confirmado ? 700 : 3100;
+  if (!confirmado) { mapa.panTo(c, {animate:!rm, duration:.7}); setTimeout(() => rm ? mapa.setView(c, 10) : mapa.flyTo(c, 10, {duration:2}), rm ? 0 : 750); }
+  else rm ? mapa.setView(c, 10) : mapa.flyTo(c, 10, {duration:.6});
+  setTimeout(() => { $("#banner-mapa").hidden = true; mostrar("app"); ir(2); S.volando = false; tourSiToca(); }, espera);
   actualizar(true); guardarPerfil(); cargarReferencia();
   if (z.punto) descargarPunto(z); else S.puntoEstado = null;
 }
@@ -1509,6 +1799,7 @@ function cambiarZona(){
   mostrar("pant-mapa"); mapa.invalidateSize(); mapa.flyTo([9.9, -74.6], 7, {duration:1});
   if (punto) { mapa.removeLayer(punto); punto = null; }
   Object.values(S.pins).forEach(m => m.getElement()?.firstChild.classList.remove("on"));
+  S.preZona = null; $("#confirmar-mapa").hidden = true; const i = $("#in-lugar"); if (i) i.value = "";
 }
 
 /* ================= Pestañas ================= */
@@ -1615,7 +1906,7 @@ const interpSecado = (ev, m) => { const d = ev / DIAS_MES[m]; return d < 4 ? L("
 const estadoHum = h => h < 20 ? L("seca","dry") : h <= 35 ? L("bien","good") : L("encharcada","waterlogged");
 const lista = xs => xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + L(" y "," and ") + xs[xs.length - 1];
 /* Pie de fuentes: el mismo al final de Resumen, Mi lote, Rotación y Proyección */
-const pieFuentes = () => `<p class="fuentes-pie">${L("Fuentes de datos: NASA POWER, NASA MODIS (ORNL DAAC), SRTM, ISRIC SoilGrids, IDEAM, NASA AppEEARS, Google Earth Engine, Copernicus CDS y USDA PLANTS (estas cuatro cuando hay cuenta o conexión). Con la estaca no conectada, los valores se llenan con datos históricos de tu zona. Gráficas y animaciones generadas con inteligencia artificial.","Data sources: NASA POWER, NASA MODIS (ORNL DAAC), SRTM, ISRIC SoilGrids, IDEAM, NASA AppEEARS, Google Earth Engine, Copernicus CDS and USDA PLANTS (the last four when an account or connection is available). With the stake not connected, values are filled with your area's historical data. Charts and animations generated with artificial intelligence.")}</p>`;
+const pieFuentes = () => `<p class="fuentes-pie">${L("Fuentes de datos: NASA POWER, NASA MODIS (ORNL DAAC), SRTM, ISRIC SoilGrids, IDEAM, Evaluaciones Agropecuarias Municipales (UPRA), NASA AppEEARS, Google Earth Engine, Copernicus CDS y USDA PLANTS (estas cuatro cuando hay cuenta o conexión). Con la estaca no conectada, los valores se llenan con datos históricos de tu zona. Gráficas y animaciones generadas con inteligencia artificial.","Data sources: NASA POWER, NASA MODIS (ORNL DAAC), SRTM, ISRIC SoilGrids, IDEAM, Municipal Agricultural Surveys (UPRA), NASA AppEEARS, Google Earth Engine, Copernicus CDS and USDA PLANTS (the last four when an account or connection is available). With the stake not connected, values are filled with your area's historical data. Charts and animations generated with artificial intelligence.")}</p>`;
 function renderResumen(){
   const el = $("#v0"), p = S.panel;
   if (!p) { el.innerHTML = cabecera(L("Resumen","Summary")) + esqueleto([300, "c2"], [190], [190], [190], [190], [240, "c2"]); return; }
@@ -1657,7 +1948,8 @@ function renderResumen(){
        return `<div>${anillo(r[k].valor, SEMC[NIVC[nv]], "", 76, 8, e)}<b>${t}</b><span class="${NIVC[nv]}">${NIVT(nv)}</span></div>`; }).join("")}</div></section>
    ${extra === 2 ? luna + sol : ""}
   </div>
-  ${S.punto ? `<p class="pie">${L(`Marcaste un punto a ${S.punto.km} km de ${corto(S.zona)}. Usamos el clima y el suelo de esa zona.`, `You marked a point ${S.punto.km} km from ${corto(S.zona)}. We use that area's weather and soil.`)}</p>` : ""}${pieFuentes()}`;
+  ${S.zona?.punto ? `<p class="pie">${L(`Tu lote está a ${S.zona.km} km de la zona de ${S.zona.cercanaNombre}: el suelo de referencia es el de esa zona. ${S.puntoEstado === "listo" ? "El clima es el de la NASA para tu punto." : "Mientras llega el clima de la NASA para tu punto, usamos el de esa zona."}`,
+      `Your plot is ${S.zona.km} km from the ${S.zona.cercanaNombre} area: the reference soil is that area's. ${S.puntoEstado === "listo" ? "The weather is NASA's for your point." : "Until NASA weather for your point arrives, we use that area's."}`)}</p>` : ""}${pieFuentes()}`;
   ponerAltavoces(el);
 }
 function textoVoz(k){
@@ -2036,12 +2328,35 @@ const LECTORES = {
 };
 
 /* ================= 3. Rotación ================= */
+/* «Qué se siembra en tu municipio» (EVA 2019-2024): área sembrada al año y cuánto se cosecha por hectárea */
+function tarjetaMunicipio(m){
+  if (!m || !m.top?.length) return "";
+  const mx = Math.max(...m.top.map(t => t.ha)), a = m.anios || [];
+  const filas = m.top.map(t => `<div class="mun-fila"><span class="mun-nom">${esc(t.nombre)}</span>
+      <span class="mun-barra" aria-hidden="true"><i style="width:${Math.max(3, t.ha / mx * 100).toFixed(1)}%;background:${t.nuestro ? COL.clima : COL.gris}"></i></span>
+      <span class="mun-ha n">${N(t.ha)} ha</span></div>`).join("");
+  const rend = m.nuestros.filter(x => x.rend).slice(0, 6).map(x => `<span class="chip-rend">${x.icono} ${esc(x.nombre)} <b>${N(x.rend, 1)} t/ha</b></span>`).join("");
+  return `<section class="card c4 mun-card"><h2>${L(`Qué se siembra en ${esc(m.nombre)}`, `What is planted in ${esc(m.nombre)}`)}</h2>
+    <p class="sub" style="margin:-4px 0 12px">${L(`Hectáreas sembradas en un año promedio (${a[0]}-${a[1]}), según los reportes oficiales del municipio. En verde, los cultivos que AgroStake puede recomendar.`,
+      `Hectares planted in an average year (${a[0]}-${a[1]}), from the town's official reports. In green, crops AgroStake can recommend.`)}${m.km ? L(` Tu lote está a ${N(m.km, 1)} km de la cabecera.`, ` Your plot is ${N(m.km, 1)} km from the town center.`) : ""}</p>
+    <div class="mun-lista">${filas}</div>
+    ${rend ? `<h3 class="mun-sub">${L("Cosecha promedio por hectárea en cada siembra","Average harvest per hectare per planting")}</h3><div class="chips-rend">${rend}</div>` : ""}
+    <p class="pie" style="margin-top:12px">${L("Lo que más se siembra suele tener compradores cerca; por eso lo usamos para calcular el mercado de cada rotación. Fuente: ","What is planted most usually has buyers nearby, so we use it to score each rotation's market. Source: ")}${esc(m.fuente || "EVA")}. ${L("Los dos últimos años pueden cambiar. «Frijol» junta todas las clases de fríjol.","The last two years may change. “Beans” groups all bean types.")}</p></section>`;
+}
+function tarjetaCosecha(s){
+  const c = s.cosecha; if (!c || !c.cultivos.length) return "";
+  return `<section class="card c4"><h2>${L(`Cosecha típica en ${esc(c.municipio)}`, `Typical harvest in ${esc(c.municipio)}`)}</h2>
+    <div class="cosecha">${c.cultivos.map(x => `<div><span class="e">${x.icono}</span><b>${esc(x.nombre)}</b><span class="big n" style="color:${COL.clima}">${N(x.t_total, 1)}<small> t</small></span>
+      <span class="sub">${L(`${N(x.t_ha, 1)} t por hectárea en ${N(s.ha, 1)} ha`, `${N(x.t_ha, 1)} t per hectare on ${N(s.ha, 1)} ha`)}${x.de === "departamento" ? L(` (promedio de ${esc(c.departamento)})`, ` (${esc(c.departamento)} average)`) : ""}${x.cultivo === "frijol" ? L(". Dato de todo el fríjol, no solo del caupí", ". Data for all beans, not only cowpea") : ""}</span></div>`).join("")}</div>
+    <p class="pie" style="margin-top:10px">${esc(c.aviso)} ${L("Fuente: ","Source: ")}${esc(c.fuente)}.</p></section>`;
+}
 function renderRot(){
   const r = S.res, el = $("#v3");
   const prios = `<section class="card c4" data-lee="prios"><h2>${L("¿Qué es lo más importante para ti?","What matters most to you?")}</h2><p class="sub" style="margin-bottom:12px">${L("Elige hasta 3. Las recomendaciones se ordenan según lo que elijas.","Pick up to 3. Recommendations are ranked by what you choose.")}</p>
     <div class="prios">${PRI().map(([v, e, t, d]) => `<button type="button" class="opt" data-pri="${v}" aria-pressed="${S.prios.includes(v)}"><span class="e">${e}</span><b>${t}</b><small>${d}</small></button>`).join("")}</div></section>`;
   if (!r) { el.innerHTML = cabecera(L("Rotación","Rotation")) + `<div class="grid">${prios}</div><div style="height:12px"></div>` + esqueleto([420, "c4"], [420, "c4"]); ponerAltavoces(el); return; }
   let h = r.notas.map(n => `<div class="card c4 nota-box">${n}</div>`).join("") + r.planes.map((p, i) => tarjetaPlan(p, i, r)).join("");
+  h += tarjetaMunicipio(r.municipio);
   if (r.descartados.length) h += `<section class="card c4"><h2>${L("Cultivos que quedaron por fuera","Crops left out")}</h2><div>${r.descartados.map(d => `<div class="alerta"><span style="font-size:24px">${d.icono}</span><div><b>${d.cultivo}</b><p>${cap(d.razon)}.</p></div></div>`).join("")}</div></section>`;
   el.innerHTML = cabecera(L("Rotación","Rotation")) + `<div class="${clsGrid()}">${prios}${h}</div>${pieFuentes()}`;
   ponerAltavoces(el);
@@ -2134,8 +2449,8 @@ async function renderImp(){
   el.innerHTML = cabecera(L("Proyección","Outlook"), L("Qué pasaría en tu lote con la rotación, frente a seguir sembrando lo mismo.","What would happen in your plot with the rotation, compared with planting the same thing.")) + `<div class="grid"><section class="card c4 sin-voz" id="imp-ctl"></section></div><div id="imp-res"></div>${pieFuentes()}`;
   $("#imp-ctl").innerHTML = `<h2>${L("Rotación a evaluar","Rotation to evaluate")}</h2><div class="tog grande tres" id="tog-sim">${r.planes.map((_, i) => `<button type="button" data-p="${i}" aria-pressed="${i === S.planSim}"><span class="t-largo">${L("Recomendación","Recommendation")}</span><span class="t-corto">${L("Opción","Option")}</span><b class="n">${i + 1}</b></button>`).join("")}</div>
     <div class="evaluar">${p.secuencia.map(x => `<div style="grid-column:span ${x.ocupa}"><span class="e">${x.icono}</span><b>${x.nombre}</b><small>${x.temporada}</small></div>`).join("")}</div>
-    <div class="fila" style="border-top:1px solid var(--sep);padding-top:12px;margin-top:10px"><div><b>${L("Hectáreas","Hectares")}</b></div><div class="stepper"><button type="button" data-ha="-0.5" aria-label="${L("Menos hectáreas","Fewer hectares")}">−</button><input class="n ha-in" id="i-ha" type="text" inputmode="decimal" value="${N(S.ha, 1)}" aria-label="${L("Hectáreas","Hectares")}"><button type="button" data-ha="0.5" aria-label="${L("Más hectáreas","More hectares")}">+</button></div></div>
-    <div class="fila" style="display:block"><div style="display:flex;justify-content:space-between"><b>${L("Años a proyectar","Years to project")}</b><b class="n" id="o-anios">${S.anios}</b></div><input class="rng" type="range" id="i-anios" min="1" max="10" value="${S.anios}" aria-label="${L("Años a proyectar","Years to project")}" style="--track:linear-gradient(90deg,${COL.lima} ${(S.anios - 1) / 9 * 100}%,${COL.pista} ${(S.anios - 1) / 9 * 100}%)"></div>
+    <div class="imp-param"><div class="fila" style="border-top:1px solid var(--sep);padding-top:12px;margin-top:10px"><div><b>${L("Hectáreas","Hectares")}</b></div><div class="stepper"><button type="button" data-ha="-0.5" aria-label="${L("Menos hectáreas","Fewer hectares")}">−</button><input class="n ha-in" id="i-ha" type="text" inputmode="decimal" value="${N(S.ha, 1)}" aria-label="${L("Hectáreas","Hectares")}"><button type="button" data-ha="0.5" aria-label="${L("Más hectáreas","More hectares")}">+</button></div></div>
+    <div class="fila" style="display:block"><div style="display:flex;justify-content:space-between"><b>${L("Años a proyectar","Years to project")}</b><b class="n" id="o-anios">${S.anios}</b></div><input class="rng" type="range" id="i-anios" min="1" max="10" value="${S.anios}" aria-label="${L("Años a proyectar","Years to project")}" style="--track:linear-gradient(90deg,${COL.lima} ${(S.anios - 1) / 9 * 100}%,${COL.pista} ${(S.anios - 1) / 9 * 100}%)"></div></div>
     <div class="guardar-fila" style="margin-top:6px"><button type="button" class="btn grande" data-proyectar>${L("Realizar proyección","Run projection")}</button></div>`;
   if (S.sim && S.simPedida && S.simFirma === firmaSim()) { pintarImp(S.sim, anim); return; }
   $("#imp-res").innerHTML = `<div class="grid" style="margin-top:12px"><section class="card c4 imp-vacio"><span class="ico">📈</span>
@@ -2169,7 +2484,7 @@ function pintarImp(s, anim){
    <section class="card"><h2>${L("Déficit de agua","Water deficit")}</h2><span class="lbl">${L("Lo que la lluvia no cubre","What rain does not cover")}</span><span class="mid n" style="margin-top:4px">${s.base.deficit_mm} → <span style="color:${COL.lluvia}">${s.plan.deficit_mm}</span><small>mm</small></span>
      <span class="sub">${a.pct_deficit === null ? `+${N(-a.deficit_mm)} mm ${L("frente a sin rotar","vs not rotating")}` : a.pct_deficit ? (a.pct_deficit > 0 ? "−" : "+") + Math.abs(a.pct_deficit) + L("% frente a sin rotar","% vs not rotating") : L("Igual que sin rotar","Same as not rotating")}</span></section>
    <section class="card"><h2>${L("Suelo cubierto","Covered soil")}</h2><span class="lbl">${L("Parte del año","Share of the year")}</span><span class="mid n" style="margin-top:4px">${s.base.cobertura_pct}% → <span style="color:${COL.clima}">${s.plan.cobertura_pct}%</span></span><span class="sub">${L("Menos erosión y más materia orgánica","Less erosion and more organic matter")}</span></section>
-   <section class="card c2"><h2>${L("Agua ahorrada acumulada","Cumulative water saved")}</h2><p class="sub">${L("Metros cúbicos, año por año. Pon el cursor o toca una barra para ver el número.","Cubic meters, year by year. Hover or tap a bar to see the number.")}</p>${barrasAgua(s, anim)}</section></div>`;
+   <section class="card c2"><h2>${L("Agua ahorrada acumulada","Cumulative water saved")}</h2><p class="sub">${L("Metros cúbicos, año por año. Pon el cursor o toca una barra para ver el número.","Cubic meters, year by year. Hover or tap a bar to see the number.")}</p>${barrasAgua(s, anim)}</section>${tarjetaCosecha(s)}</div>`;
   S.animar = prev;
   ponerAltavoces($("#imp-res"));
   if (anim) contar($("#imp-res"));
@@ -2266,7 +2581,7 @@ const PASOS_TOUR = () => [
   {tab:4, sel:"#imp-ctl", t:L("En Proyección ves cuánta agua ahorras y cómo mejora tu suelo con los años.","In Outlook you see how much water you save and how your soil improves over the years.")},
   {tab:4, sel:"#v4 .campana", t:L("En la campana te aviso cuándo regar, sembrar o cosechar.","The bell tells you when to water, sow or harvest.")},
   {sel:"#tabbar [data-t='5']", t:L("En Ajustes cambias tu lote, el idioma y tus estacas.","In Settings you change your plot, language and stakes.")},
-  {sel:() => innerWidth >= 900 ? "#tabbar .asis-lat" : "#fab", t:L("Con AgroStake tienes datos de la NASA, recomendaciones claras y todo con voz. Estoy listo para servirte: solo tienes que oprimir aquí para hablar conmigo.","With AgroStake you get NASA data, clear recommendations and everything by voice. I am ready to help: just press here to talk to me.")}
+  {sel:() => innerWidth >= 900 ? "#tabbar .asis-lat" : "#fab", t:L("Con AgroStake tienes datos de la NASA, recomendaciones claras y todo con voz. Estoy listo para servirte: solo tienes que oprimir aquí para hablar conmigo. Ahora toca «Empezar» y te guío paso a paso.","With AgroStake you get NASA data, clear recommendations and everything by voice. I am ready to help: just press here to talk to me. Now tap “Start” and I will guide you step by step.")}
 ];
 function iniciarTour(){
   if (S.pantalla !== "app" || !S.zona) return;
@@ -2285,7 +2600,7 @@ async function pasoTour(i){
   const g = $("#tour .globo"), f = $("#tour .foco");
   g.innerHTML = `<div class="paso-n"><span>${L("Paso","Step")} ${i + 1} ${L("de","of")} ${P.length}</span><button type="button" class="callar" data-callar>${S.tourMudo ? "🔇 " + L("Activar voz","Voice on") : "🔊 " + L("Callar","Mute")}</button></div>
     <p>${st.t}</p><div class="acciones"><button type="button" class="btn2" data-tour="saltar">${L("Saltar","Skip")}</button>
-    <span style="display:flex;gap:8px">${i ? `<button type="button" class="btn2" data-tour="atras">${L("Atrás","Back")}</button>` : ""}<button type="button" class="btn" data-tour="sig">${i === P.length - 1 ? L("¡Listo!","Done!") : L("Siguiente","Next")}</button></span></div>`;
+    <span style="display:flex;gap:8px">${i ? `<button type="button" class="btn2" data-tour="atras">${L("Atrás","Back")}</button>` : ""}<button type="button" class="btn" data-tour="sig">${i === P.length - 1 ? L("Empezar","Start") : L("Siguiente","Next")}</button></span></div>`;
   ubicarTour(el);
   if (VOZ && !S.tourMudo) hablar(st.t);
 }
@@ -2303,10 +2618,96 @@ $("#tour").addEventListener("click", e => {
   if (e.target.closest("[data-callar]")) { S.tourMudo = !S.tourMudo; if (S.tourMudo && VOZ) speechSynthesis.cancel(); e.target.closest("[data-callar]").innerHTML = S.tourMudo ? "🔇 " + L("Activar voz","Voice on") : "🔊 " + L("Callar","Mute"); return; }
   if (!b) return;
   const P = PASOS_TOUR(), a = b.dataset.tour;
-  if (a === "saltar" || (a === "sig" && S.tourPaso === P.length - 1)) { cerrarTour(); return; }
+  if (a === "sig" && S.tourPaso === P.length - 1) { iniciarGuia(); return; }
+  if (a === "saltar") { cerrarTour(); return; }
   pasoTour(S.tourPaso + (a === "sig" ? 1 : -1));
 });
-addEventListener("resize", () => { if (!$("#tour").hidden) { const st = PASOS_TOUR()[S.tourPaso], sel = typeof st.sel === "function" ? st.sel() : st.sel; ubicarTour($(sel)); } });
+addEventListener("resize", () => { if (!$("#tour").hidden && S.guia == null) { const st = PASOS_TOUR()[S.tourPaso], sel = typeof st.sel === "function" ? st.sel() : st.sel; ubicarTour($(sel)); } });
+/* Guía paso a paso (versión 16): después del recorrido, «Empezar» lleva al agricultor por el proceso completo y
+   espera a que toque cada botón. Solo se puede tocar lo resaltado (y lo que está dentro de esa parte). */
+const PASOS_GUIA = () => [
+  {foco:"#tabbar [data-t='2']", clic:"#tabbar [data-t='2']",
+   t:L("Vamos paso a paso. Primero toca «Mi lote».","Let's go step by step. First tap “My plot”.")},
+  {foco:"#btn-guardar", permitir:"#v2", clic:"#btn-guardar",
+   t:L("Estos son los datos de tu suelo. Si un valor no es el de tu lote, cámbialo con los botones − y +. Cuando estén bien, toca «Guardar datos».","These are your soil data. If a value is not your plot's, change it with the − and + buttons. When they are right, tap “Save data”.")},
+  {foco:'#v3 [data-inf="0"]', clic:'#v3 [data-inf="0"]',
+   t:L("Estas son tus rotaciones. La primera es la que más te conviene. Toca «Ver detalle» para ver por qué y qué hacer cada mes.","These are your rotations. The first one suits you best. Tap “See details” to see why and what to do each month.")},
+  {dialogo:"#hoja-d",
+   t:L("Aquí ves qué hacer cada mes, desde hoy. Baja para leer todo y, cuando termines, toca la ✕ de arriba para cerrar.","Here you see what to do each month, from today. Scroll down to read everything and, when you finish, tap the ✕ at the top to close.")},
+  {foco:'#v3 [data-sim="0"]', clic:'#v3 [data-sim="0"]',
+   t:L("Ahora mira qué ganas con esta rotación: toca «Ver proyección».","Now see what you gain with this rotation: tap “See outlook”.")},
+  {foco:"#imp-ctl .imp-param", permitir:"#imp-ctl .imp-param", seguir:true,
+   t:L("¿Cuántas hectáreas tiene tu lote? Cámbialo con − y +. Mueve la barra para elegir cuántos años quieres ver. Cuando esté listo, toca «Seguir».","How many hectares does your plot have? Change it with − and +. Move the bar to choose how many years to see. When ready, tap “Continue”.")},
+  {foco:"#imp-ctl [data-proyectar]", clic:"[data-proyectar]",
+   t:L("Ahora toca «Realizar proyección».","Now tap “Run projection”.")},
+  {foco:"#imp-res .card", fin:true,
+   t:L("¡Muy bien! Aquí ves el agua que ahorras y cómo mejora tu suelo. Ya sabes usar AgroStake. Si tienes una duda, toca el botón verde y pregúntame.","Well done! Here you see the water you save and how your soil improves. You now know how to use AgroStake. If you have a question, tap the green button and ask me.")}
+];
+let guiaReloj = null;
+const visible = el => !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== "hidden");
+function iniciarGuia(){
+  S.tourHecho = true; guardarPerfil(); if (VOZ) speechSynthesis.cancel();
+  const t = $("#tour"); t.hidden = false; t.classList.add("guia");
+  clearInterval(guiaReloj); guiaReloj = setInterval(seguirGuia, 250);
+  pasoGuia(0);
+}
+function cerrarGuia(){
+  S.guia = null; clearInterval(guiaReloj); guiaReloj = null;
+  const t = $("#tour"); t.hidden = true; t.classList.remove("guia", "esperando", "oculto");
+  $("#hoja .guia-hoja")?.remove(); if (VOZ) speechSynthesis.cancel();
+  setTimeout(actualizarNotifs, 900);
+}
+function pasoGuia(i){
+  const P = PASOS_GUIA(), st = P[i]; if (!st) { cerrarGuia(); return; }
+  S.guia = i; S.guiaVista = false; S.guiaDialogo = false;
+  $("#tour .globo").innerHTML = `<div class="paso-n"><span>${L("Guía","Guide")} · ${L("paso","step")} ${i + 1} ${L("de","of")} ${P.length}</span><button type="button" class="callar" data-callar>${S.tourMudo ? "🔇 " + L("Activar voz","Voice on") : "🔊 " + L("Callar","Mute")}</button></div>
+    <p>${st.t}</p><div class="acciones">${st.fin ? `<span></span><button type="button" class="btn" data-guia="fin">${L("Terminar","Finish")}</button>`
+      : st.seguir ? `<button type="button" class="btn2" data-guia="salir">${L("Salir de la guía","Exit guide")}</button><button type="button" class="btn" data-guia="seguir">${L("Seguir","Continue")}</button>`
+      : `<button type="button" class="btn2" data-guia="salir">${L("Salir de la guía","Exit guide")}</button><span class="guia-espera">👆 ${L("Te espero","I'll wait")}</span>`}</div>`;
+  $("#tour").classList.add("esperando");            // se muestra cuando aparezca lo que hay que tocar
+  seguirGuia();
+}
+function seguirGuia(){
+  if (S.guia == null) return;
+  const st = PASOS_GUIA()[S.guia], t = $("#tour");
+  if (st.dialogo) {                                  // el detalle se abre encima de todo: la indicación va dentro
+    const d = $(st.dialogo);
+    if (d.open) {
+      t.classList.add("oculto"); S.guiaDialogo = true;
+      if (!$("#hoja .guia-hoja")) { $("#hoja .agarre")?.insertAdjacentHTML("afterend", `<p class="guia-hoja" role="status">👆 ${st.t}</p>`); if (!S.guiaVista && VOZ && !S.tourMudo) hablar(st.t); S.guiaVista = true; }
+    } else if (S.guiaDialogo) { t.classList.remove("oculto"); $("#hoja .guia-hoja")?.remove(); pasoGuia(S.guia + 1); }
+    return;
+  }
+  t.classList.remove("oculto");
+  const el = $(st.foco);
+  if (!visible(el) || !$("#cargador").hidden || $("#hoja-d").open) { t.classList.add("esperando"); return; }
+  if (!S.guiaVista) {
+    S.guiaVista = true; t.classList.remove("esperando");
+    el.scrollIntoView({block:"center", behavior:sinMov() ? "auto" : "smooth"});
+    if (VOZ && !S.tourMudo) hablar(st.t);
+  }
+  ubicarTour(el);
+}
+document.addEventListener("click", e => {            // solo pasa el toque en lo resaltado
+  if (S.guia == null) return;
+  const st = PASOS_GUIA()[S.guia];
+  if (e.target.closest("#tour .globo") || e.target.closest("dialog[open]")) return;
+  const zona = st.foco && $(st.permitir || st.foco);
+  if (zona && zona.contains(e.target) && !$("#tour").classList.contains("esperando")) {
+    if (st.clic && e.target.closest(st.clic)) setTimeout(() => pasoGuia(S.guia + 1), 0);
+    return;
+  }
+  e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+  const f = $("#tour .foco"), g = $("#tour .globo");
+  f.classList.remove("pulso"); g.classList.remove("pulso"); void f.offsetWidth; f.classList.add("pulso"); g.classList.add("pulso");
+}, true);
+$("#tour").addEventListener("click", e => {
+  const b = e.target.closest("[data-guia]"); if (!b) return;
+  if (b.dataset.guia === "seguir") { pasoGuia(S.guia + 1); return; }
+  cerrarGuia();
+  if (b.dataset.guia === "fin") avisar(L("¡Listo! Si quieres repetir el recorrido, toca «¿Cómo funciona?» arriba.","Done! To repeat the tour, tap “How does it work?” at the top."), "✅");
+});
+
 
 /* ================= Asistente por voz ================= */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;

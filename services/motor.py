@@ -10,6 +10,7 @@ import calendar, contextvars, json, math, random, re
 from datetime import date
 from itertools import product
 import db
+from services import municipios
 
 IDIOMA = contextvars.ContextVar("idioma", default="es")
 def _en(): return IDIOMA.get() == "en"
@@ -130,6 +131,13 @@ def canon(zona_id):
     """Forma única del id de un punto ("p:9.810,-75.123" y "p:9.81,-75.123" son el mismo)."""
     return id_punto(*punto_coords(zona_id)) if es_punto(zona_id) else zona_id
 
+def nombre_punto(lat, lon):
+    """Nombre del municipio en vez de coordenadas: en la cabecera, "Sahagún (Córdoba)"; más lejos, "Cerca de ..."."""
+    m, d = municipios.cercano(lat, lon)
+    if m and d <= municipios.EXACTO_KM: return f"{m['n']} ({m['d']})"
+    if m and d <= municipios.CERCA_KM: return tr(f"Cerca de {m['n']} ({m['d']})", f"Near {m['n']} ({m['d']})")
+    return tr(f"Tu lote ({_num(lat, 3)}, {_num(lon, 3)})", f"Your plot ({lat}, {lon})")
+
 def zona(zona_id):
     """Fila de la zona. Un punto libre ("p:lat,lon") hereda textura y riego típicos de la zona guardada más cercana."""
     if es_punto(zona_id):
@@ -137,7 +145,7 @@ def zona(zona_id):
         lat, lon = punto_coords(zona_id)
         zc, d = zona_cercana(lat, lon)
         nom = zc["nombre"].split(" (")[0]
-        return {"id": zona_id, "nombre": tr(f"Mi punto ({_num(lat, 3)}, {_num(lon, 3)})", f"My point ({lat}, {lon})"), "lat": lat, "lon": lon,
+        return {"id": zona_id, "nombre": nombre_punto(lat, lon), "lat": lat, "lon": lon,
                 "suelo": zc["suelo"], "riego": zc["riego"], "punto": True, "cercana": zc["id"], "cercana_nombre": nom, "km_cercana": d}
     f = db.consultar("SELECT * FROM zonas WHERE id=?", (zona_id,))
     if not f: raise KeyError(zona_id)
@@ -406,6 +414,8 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
     ctx = _ctx(z, cl, suelo, textura, riego)
     s = ctx["suelo"]
     cult = {c["cultivo"]: c for c in db.consultar("SELECT * FROM cultivos")}
+    mun, mun_km = municipios.de_zona(z)
+    cult = _mercado_local(cult, mun)
     ults = [cult[u] for u in _lista_ultimos(ultimos) if u in cult]
     nbajo, ladera = s["n"] == "bajo", cl["pendiente_pct"] > 15
     notas, desc = [], {}
@@ -512,6 +522,8 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
                           "cosecha": _mes(m0 + off + dur) if c["ciclo_dias"] else None, "off": off, "dur": dur,
                           "por_que": _porque(c, bloques[i - 1]["c"] if i else (ults[0] if ults else None), i, nbajo, ladera, largo, prios)})
         expl = _explicaciones(bloques, ind, n_fin, cob, eros, s, cl, ctx, fs, calor, largo)
+        if mun: expl["mercado"].insert(1, tr(f"La mitad de ese valor sale de cuánto se siembra cada cultivo en {mun['n']} según la EVA {municipios.fuente_anios()}: lo que más se siembra suele tener compradores cerca.",
+                                             f"Half of that value comes from how much of each crop is planted in {mun['n']} according to the EVA {municipios.fuente_anios()}: what is planted most usually has buyers nearby."))
         crono = _cronograma(items, m0)
         planes.append({"puntaje": round(puntaje), "semaforo": _sem(puntaje), "secuencia": items,
                        "indicadores": {k: {"valor": round(v), "semaforo": _sem(v), "explicacion": expl[k]} for k, v in ind.items()},
@@ -525,7 +537,27 @@ def recomendar(zona_id, suelo, prioridades=("nitrogeno", "agua"), ultimos=None, 
     fuera = [{"cultivo": _nom(cult[k]), "icono": cult[k]["icono"], "razon": d["razones"][0]} for k, d in desc.items() if not d["ok"] and d["razones"]]
     ejemplo = (not cl_ok) or not all(c["verificado"] for c in db.consultar("SELECT verificado FROM cultivos"))
     return {"zona": z["nombre"], "prioridades": prios, "pesos": w, "riego": ctx["riego"], "textura": ctx["textura"], "planes": planes,
-            "descartados": fuera, "notas": notas, "datos_de_ejemplo": ejemplo}
+            "descartados": fuera, "notas": notas, "datos_de_ejemplo": ejemplo, "municipio": _municipio_app(mun, mun_km, cult)}
+
+def _mercado_local(cult, mun):
+    """Mercado = mitad catálogo y mitad presencia del cultivo en el municipio (EVA). Pasto, abono verde y rastrojo no
+    están en la EVA de cultivos y conservan el valor del catálogo."""
+    if not mun: return cult
+    out = {}
+    for k, c in cult.items():
+        p = municipios.presencia(mun, k) if k in municipios.eva() and c["mercado"] > 0 else None
+        out[k] = dict(c, mercado=round(.5 * c["mercado"] + .5 * p, 2), mercado_catalogo=c["mercado"]) if p is not None else c
+    return out
+
+def _municipio_app(mun, d, cult):
+    r = municipios.resumen(mun, d)
+    if not r: return None
+    # Se muestran los nombres de la EVA (allí "Frijol" junta todas las clases de fríjol, no solo el caupí del catálogo).
+    eva, nombres = municipios.eva(), {nom: k for k, nom in municipios.eva().items()}
+    r["top"] = [{"cultivo": c, "ha": ha, "nuestro": nombres.get(c), "nombre": municipios.nombre(c, _en())} for c, ha in r["top"]]
+    r["nuestros"] = [{"cultivo": k, "nombre": municipios.nombre(eva[k], _en()), "icono": cult[k]["icono"], **v}
+                     for k, v in sorted(r["nuestros"].items(), key=lambda x: -x[1]["ha"]) if k in cult]
+    return r
 
 def _beneficio(ind, prios):
     k = max(prios, key=lambda p: ind[p])
@@ -704,7 +736,17 @@ def simular(zona_id, suelo, textura, riego, secuencia, ultimos, ha, anios):
                     "para rotar de verdad, alterna con una leguminosa como frijol o guandul al año siguiente.",
                     f"This recommendation is a single all-year crop ({_nom(cs[0]).lower()}). The outlook assumes you repeat it every year; "
                     "to truly rotate, alternate with a legume such as beans or pigeon pea the next year.") if largo and cs else None
+    mun, _ = municipios.de_zona(z)
+    cosecha = []
+    for c in (plan[:1] if largo else plan):
+        if not _productivo(c) or any(x["cultivo"] == c["cultivo"] for x in cosecha): continue
+        r, de = municipios.rendimiento(mun, c["cultivo"])
+        if r: cosecha.append({"cultivo": c["cultivo"], "nombre": _nom(c), "icono": c["icono"], "t_ha": r, "t_total": round(r * ha, 1), "de": de,
+                              "nombre_eva": municipios.nombre(municipios.eva()[c["cultivo"]], _en())})
     return {"base": dict(B, cultivo=nb, descripcion=base_txt), "plan": P, "nota_agua": nota, "nota_largo": nota_largo,
+            "cosecha": {"municipio": mun["n"], "departamento": mun["d"], "cultivos": cosecha, "fuente": municipios.fuente().get("cultivos"),
+                        "aviso": tr("Es lo que se cosecha en promedio por hectárea en cada siembra, según los reportes oficiales. Tu cosecha depende del manejo, la semilla y el año.",
+                                    "This is the average harvest per hectare per planting, from official reports. Your harvest depends on management, seed and the year.")} if mun and cosecha else None,
             "ahorro": {"demanda_mm": B["demanda_mm"] - P["demanda_mm"], "deficit_mm": ah_def, "m3_ha": round(m3ha), "m3_total": round(m3), "pct_deficit": pct},
             "proyeccion": {"anios": list(range(anios + 1)), "agua_acum_m3": [round(m3 * a) for a in range(anios + 1)], "n_plan": P["n_serie"], "n_base": B["n_serie"]},
             "ha": ha, "anios": anios, "ejemplo": not ok, "riego": ctx["riego"]}

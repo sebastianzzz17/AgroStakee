@@ -1,5 +1,45 @@
 # Cambios
 
+## Versión 16 (municipios, códigos de verificación y guía paso a paso)
+
+- **Municipios del Caribe:** el mapa ahora tiene los 194 municipios de los 7 departamentos del Caribe (puntos
+  verdes pequeños) además de las 8 zonas piloto.
+  - Para cada municipio, la app sabe qué se siembra y cuánto se cosecha, con la base oficial de Evaluaciones
+    Agropecuarias Municipales (EVA 2019-2024, UPRA). Archivo de 78 KB; se carga una vez y no pesa en el servidor.
+  - **Rotación:** nueva tarjeta "Qué se siembra en [municipio]" con las hectáreas de los cultivos más sembrados y
+    la cosecha promedio por hectárea.
+  - **Mercado:** la mitad del puntaje de mercado de cada cultivo sale ahora de cuánto se siembra en el municipio
+    (lo que más se siembra suele tener compradores cerca). Pasto, abono verde y rastrojo conservan su valor.
+  - **Proyección:** nueva tarjeta "Cosecha típica en [municipio]": toneladas por hectárea de cada cultivo de la
+    rotación, multiplicadas por tus hectáreas (si el municipio no tiene el dato, se usa el del departamento).
+  - Cuidado con los datos: los dos últimos años de la EVA pueden cambiar, la forma de medir los cultivos
+    transitorios cambió desde 2022, y "Frijol" en la EVA junta todas las clases de fríjol (no solo el caupí).
+    Si el rendimiento de un municipio es más de 3 veces mayor o menor que el del departamento, se usa el del
+    departamento (12 casos).
+  - Coordenadas provisionales de SIVeL; ver README para cambiarlas por las del DANE.
+- **Elegir la ubicación:** tocar un sitio ya no arranca enseguida. Se marca el sitio y sale una tarjeta con su
+  nombre y el botón **"Confirmar mi ubicación"** (o "Elegir otro"). Vale para el mapa, los municipios, la lista de
+  zonas y el buscador.
+- **Buscador** arriba del mapa: se escribe el municipio, sin importar tildes ni mayúsculas (también sirve el
+  departamento). Solo busca municipios del Caribe; para una vereda, se toca el sitio en el mapa.
+- **Nombre del lote:** en vez de "Mi punto (9,62, -75,1)" dice el municipio: "Sahagún (Córdoba)" si es la cabecera, o
+  "Cerca de Sahagún (Córdoba)" si es otro sitio a menos de 40 km. Se corrigieron dos textos que mostraban
+  "a undefined km".
+- **Crear cuenta con código:** al crear la cuenta llega un código de 6 números al correo; la cuenta se crea al
+  escribirlo. El campo acepta solo números, se envía solo al completar los 6 y tiene "No me llegó: enviar otro
+  código" (cada 60 s).
+- **¿Olvidaste tu contraseña?:** con el correo o con el celular (mensaje de texto). Llega un código, luego se escribe
+  la contraseña nueva (con botón "Ver" para revisarla) y se entra de una vez.
+- **Celular:** opcional al crear la cuenta y también en Ajustes → Tu cuenta. Se confirma con un código por SMS; en
+  Android el código se escribe solo al llegar el mensaje y en el iPhone el teclado lo ofrece.
+- Correo por Brevo o Resend (Render gratis bloquea SMTP) y SMS por Twilio, con variables de entorno. Sin ellas,
+  todo funciona como antes. Detalles y medidas de seguridad en el README.
+- **Guía paso a paso:** el recorrido termina con **"Empezar"**. Desde ahí la app guía el proceso completo y espera
+  a que la persona toque cada botón: Mi lote → Guardar datos → Ver detalle → cerrar el plan → Ver proyección →
+  hectáreas y años → Realizar proyección. Solo responde lo resaltado (lo demás se sacude para indicar dónde tocar)
+  y siempre se puede salir de la guía.
+- Fuentes de datos: se agregó "Evaluaciones Agropecuarias Municipales (UPRA)" al pie.
+
 ## Versión 15 (frases de la entrada en el computador)
 
 - Las frases de la pantalla de entrada no cambiaban en el computador por dos razones:

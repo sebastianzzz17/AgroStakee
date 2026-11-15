@@ -14,3 +14,14 @@ services:
         generateValue: true
       - key: DATABASE_URL           # base Postgres para las cuentas (Neon, Supabase o Render); Render la pide al crear
         sync: false
+      # Códigos por correo y SMS (versión 16). Opcionales: sin ellas la cuenta se crea sin código.
+      - key: BREVO_API_KEY          # correo por la API de Brevo (Render gratis bloquea SMTP)
+        sync: false
+      - key: CORREO_REMITENTE       # el correo que verificaste como remitente en Brevo
+        sync: false
+      - key: TWILIO_ACCOUNT_SID     # SMS para recuperar la cuenta (cada mensaje tiene costo)
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM            # número de Twilio que envía, con +
+        sync: false

@@ -45,6 +45,45 @@ igual que antes, con SQLite.
 
 Para comprobarlo: `/api/estado_datos` debe decir `"cuentas": "postgres"`.
 
+### Códigos por correo y por mensaje de texto (versión 16)
+
+Al crear la cuenta se manda un código de 6 números al correo, y la contraseña se recupera con un código por correo
+o por mensaje de texto (SMS) al celular que la persona confirmó. **Mientras no pongas estas variables, todo sigue
+como antes:** la cuenta se crea sin código y la pantalla dice que la recuperación no está activa.
+
+Render gratis **bloquea el correo por SMTP** (puertos 25, 465 y 587), por eso el correo sale por una API web:
+
+| Para | Variables (Render → tu servicio → Environment) | Notas |
+|---|---|---|
+| Correo con **Brevo** (recomendado) | `BREVO_API_KEY`, `CORREO_REMITENTE` | Plan gratis de 300 correos al día. En Brevo, verifica el correo remitente ("Senders") y crea la clave en "SMTP & API" → "API Keys". |
+| Correo con **Resend** | `RESEND_API_KEY`, `CORREO_REMITENTE` | Exige un dominio propio verificado. |
+| Correo por SMTP (solo en tu computador o en un plan pago) | `SMTP_HOST`, `SMTP_PUERTO`, `SMTP_USUARIO`, `SMTP_CLAVE`, `CORREO_REMITENTE` | |
+| SMS con **Twilio** | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y `TWILIO_FROM` (o `TWILIO_MESSAGING_SID`) | Cada SMS cuesta. Con la cuenta de prueba de Twilio solo llegan a números que verifiques en Twilio. |
+| Nombre que ve quien recibe | `CORREO_NOMBRE` | Por defecto "AgroStake". |
+
+- **El código se pone solo:** el SMS termina en `@tu-dominio #123456`. Chrome en Android lo lee apenas llega y lo
+  escribe (WebOTP); en el iPhone el teclado lo ofrece encima. En los demás casos se copia del mensaje.
+- **Seguridad:** se guarda solo un HMAC del código (nunca el código), vence a los 10 minutos, admite 5 intentos,
+  hay que esperar 60 s para pedir otro, máximo 5 por hora a un mismo correo o celular y 20 por hora desde una
+  misma conexión (`AGROSTAKE_CODIGOS_POR_IP`; no es más bajo porque en una universidad mucha gente comparte la
+  misma IP). En Render la IP del visitante se toma de `CF-Connecting-IP`, que pone Cloudflare. "¿Olvidaste tu contraseña?" responde igual exista o no la cuenta.
+- Para probar sin enviar nada: `AGROSTAKE_MENSAJES_CONSOLA=1` escribe los mensajes en la consola del servidor.
+
+### Municipios del Caribe (versión 16)
+
+El mapa muestra los 194 municipios de Atlántico, Bolívar, Cesar, Córdoba, La Guajira, Magdalena y Sucre, con un
+buscador. Para cada uno, la app sabe qué se siembra y cuánto se cosecha por hectárea (Evaluaciones Agropecuarias
+Municipales, EVA 2019-2024). El archivo `data/municipios_caribe.json` (78 KB) lo arma
+`herramientas/preparar_municipios.py` en tu computador (necesita `pandas` y `openpyxl`; el servidor no los usa):
+
+    python herramientas/preparar_municipios.py --eva 20250617_BaseAgricola20192024.xlsx --divipola DIVIPOLA.csv --sivel datos-geo-col.sql
+
+- **Coordenadas:** las de esta versión son las de SIVeL (dominio público, armadas con DIVIPOLA 2013, Divipolador
+  y OpenStreetMap). Tienen errores: la de Mompox queda a 16,9 km. Las 8 zonas piloto conservan las suyas.
+  Cuando tengas el CSV oficial del DANE "DIVIPOLA - Códigos municipios" (datos.gov.co), pásalo con `--divipola`:
+  se usa ese y se imprime cuánto difiere de SIVeL. No pude abrir datos.gov.co desde aquí, así que el lector busca
+  las columnas por nombre (código, latitud, longitud) y avisa si no las encuentra.
+
 ## Fuentes de datos
 
 | Dato | Fuente | ¿Pide cuenta? |
@@ -61,6 +100,8 @@ Para comprobarlo: `/api/estado_datos` debe decir `"cuentas": "postgres"`.
 | Humedad y temperatura del suelo ERA5-Land | Copernicus CDS | Sí |
 | Características de cultivos | USDA PLANTS | No |
 | Pasto (braquiaria) | Tropical Forages y ficha de semilla (ver `docs/PILOTO.md`) | No |
+| Qué se siembra y cuánto se cosecha en cada municipio | Evaluaciones Agropecuarias Municipales (EVA) 2019-2024, UPRA y MinAgricultura | No (archivo incluido) |
+| Ubicación de las cabeceras municipales | SIVeL (provisional); DIVIPOLA del DANE cuando se agregue | No |
 
 Las que piden cuenta se activan solas si están las variables de entorno (ver `app.py` y `services/orquestador.py`).
 Las credenciales nunca van en el código.

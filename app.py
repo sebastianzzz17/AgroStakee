@@ -15,7 +15,7 @@ from datetime import date, datetime, timedelta, timezone
 from functools import wraps
 from flask import Flask, Response, g, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
-from services import estacas, historico, ideam, motor, sincronizar
+from services import codigos, mensajeria, municipios, estacas, historico, ideam, motor, sincronizar
 import db
 
 PILOTO = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "piloto.json"), encoding="utf-8"))
@@ -65,12 +65,13 @@ _fallos = {}   # correo -> [marcas de tiempo de intentos fallidos]
 def _usuario_actual():
     uid = session.get("uid")
     if not uid: return None
-    f = db.consultar("SELECT id,nombre,apellido,correo,compartir_datos,perfil FROM usuarios WHERE id=?", (uid,))
+    f = db.consultar("SELECT id,nombre,apellido,correo,compartir_datos,perfil,celular,celular_ok FROM usuarios WHERE id=?", (uid,))
     return f[0] if f else None
 
 def _publico(u):
     return {"id": u["id"], "nombre": u["nombre"], "apellido": u["apellido"], "correo": u["correo"],
-            "compartir_datos": bool(u["compartir_datos"]), "perfil": json.loads(u["perfil"]) if u.get("perfil") else None}
+            "compartir_datos": bool(u["compartir_datos"]), "perfil": json.loads(u["perfil"]) if u.get("perfil") else None,
+            "celular": u.get("celular"), "celular_ok": bool(u.get("celular_ok"))}
 
 def requiere_login(fn):
     @wraps(fn)
@@ -80,6 +81,60 @@ def requiere_login(fn):
         return fn(*a, **k)
     return envuelta
 
+# Verificación por código: el correo sale por Brevo/Resend (Render gratis bloquea SMTP) y el SMS por Twilio.
+# Ver services/mensajeria.py (configuración) y services/codigos.py (seguridad de los códigos).
+def _host(): return (request.host or "").split(":")[0]
+
+# Límite por conexión: como máximo AGROSTAKE_CODIGOS_POR_IP envíos de código por hora (20 por defecto) desde una
+# misma dirección IP, para que nadie agote el cupo gratis de correos (Brevo: 300 al día) ni haga gastar SMS. No es
+# más bajo porque en una universidad o una feria mucha gente sale a internet con la misma IP.
+# En Render todo pasa por Cloudflare: la IP real viene en CF-Connecting-IP (la pone Cloudflare). En X-Forwarded-For
+# el último valor es de Cloudflare y los primeros los puede inventar el visitante, así que solo se usa de respaldo.
+_envios_ip = {}
+def _ip():
+    if os.environ.get("RENDER") or os.environ.get("AGROSTAKE_DETRAS_DE_PROXY") == "1":
+        for h in ("CF-Connecting-IP", "True-Client-IP"):
+            v = (request.headers.get(h) or "").strip()
+            if v: return v
+        xf = [x.strip() for x in (request.headers.get("X-Forwarded-For") or "").split(",") if x.strip()]
+        if xf: return xf[-2] if len(xf) >= 2 else xf[-1]
+    return request.remote_addr or "?"
+def _limite_ip():
+    ahora, ip, tope = time.time(), _ip(), int(os.environ.get("AGROSTAKE_CODIGOS_POR_IP") or 20)
+    marcas = [t for t in _envios_ip.get(ip, []) if ahora - t < 3600]
+    if len(marcas) >= tope:
+        return _error("Se pidieron demasiados códigos desde esta conexión. Espera una hora e intenta de nuevo.",
+                      "Too many codes were requested from this connection. Wait an hour and try again.", 429)
+    _envios_ip[ip] = marcas + [ahora]
+    if len(_envios_ip) > 5000: _envios_ip.clear()          # que la memoria no crezca sin fin
+    return None
+
+def _enviar_codigo(via, destino, codigo, motivo):
+    if via == "sms":
+        # La última línea "@dominio #código" deja que Android (WebOTP) y el iPhone llenen el código solos.
+        txt = _t(f"AgroStake: tu código es {codigo}. Vence en 10 minutos. No lo compartas con nadie.",
+                 f"AgroStake: your code is {codigo}. It expires in 10 minutes. Do not share it.")
+        mensajeria.enviar_sms(destino, f"{txt}\n\n@{_host()} #{codigo}")
+        return
+    para = {"registro": _t("para crear tu cuenta", "to create your account"), "clave": _t("para recuperar tu contraseña", "to reset your password")}[motivo]
+    asunto = _t(f"Tu código de AgroStake: {codigo}", f"Your AgroStake code: {codigo}")
+    intro = _t(f"Este es tu código {para}:", f"This is your code {para}:")
+    pie = _t("Vence en 10 minutos. Si no lo pediste, ignora este correo.", "It expires in 10 minutes. If you did not request it, ignore this email.")
+    html = f"""<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#111">
+      <h2 style="margin:0 0 12px">AgroStake</h2><p style="font-size:16px">{intro}</p>
+      <p style="font-size:34px;font-weight:700;letter-spacing:8px;background:#f2f2f7;border-radius:12px;padding:14px 0;text-align:center;margin:12px 0">{codigo}</p>
+      <p style="color:#555;font-size:14px">{pie}</p></div>"""
+    mensajeria.enviar_correo(destino, asunto, f"{intro} {codigo}\n\n{pie}", html)
+
+def _celular_de(texto):
+    texto = (texto or "").strip()
+    return mensajeria.normalizar_celular(texto) if texto else None
+
+@app.get("/api/acceso/config")
+def acceso_config():
+    """Qué puede hacer la pantalla de entrada en este servidor (según los servicios configurados)."""
+    return jsonify(verificar_correo=bool(mensajeria.proveedor_correo()), sms=bool(mensajeria.proveedor_sms()))
+
 @app.post("/api/registro")
 def registro():
     d = request.get_json(force=True)
@@ -88,14 +143,117 @@ def registro():
     if not nombre or not apellido: return _error("Escribe tu nombre y tu apellido.", "Please enter your first and last name.")
     if not CORREO.match(correo): return _error("El correo no parece válido.", "That email does not look valid.")
     if not 8 <= len(clave) <= 128: return _error("La contraseña debe tener al menos 8 caracteres.", "The password must have at least 8 characters.")
+    celular = _celular_de(d.get("celular"))
+    if (d.get("celular") or "").strip() and not celular:
+        return _error("Ese celular no parece válido. Escríbelo así: 300 123 4567.", "That mobile number does not look valid. Write it like 300 123 4567.")
     if not d.get("acepta_datos"): return _error("Debes aceptar el tratamiento de tus datos personales para crear la cuenta.",
                                                 "You must accept the processing of your personal data to create an account.")
     if db.consultar("SELECT 1 FROM usuarios WHERE correo=?", (correo,)):
         return _error("Ya existe una cuenta con ese correo. Inicia sesión.", "An account with that email already exists. Please sign in.", 409)
-    uid = db.ejecutar("INSERT INTO usuarios(nombre,apellido,correo,clave_hash,acepta_datos_en) VALUES(?,?,?,?,?)",
-                      (nombre, apellido, correo, generate_password_hash(clave), datetime.now(timezone.utc).isoformat()))
+    datos = {"nombre": nombre, "apellido": apellido, "clave_hash": generate_password_hash(clave),
+             "acepta_datos_en": datetime.now(timezone.utc).isoformat(), "celular": celular}
+    if not mensajeria.proveedor_correo():        # sin servicio de correo configurado: la cuenta se crea de una vez
+        return _crear_cuenta(correo, datos)
+    lim = _limite_ip()
+    if lim: return lim
+    codigo, err = codigos.crear(app.config["SECRET_KEY"], correo, "registro", datos)
+    if err: return _error(err[0], err[1], 429)
+    try: _enviar_codigo("correo", correo, codigo, "registro")
+    except Exception as e:
+        app.logger.error("No se pudo enviar el código de registro: %s", e)
+        return _error("No pudimos enviarte el correo. Revisa la dirección o intenta más tarde.", "We could not send you the email. Check the address or try later.", 502)
+    return jsonify(verificar=True, correo=correo, destino=mensajeria.tapar(correo)), 202
+
+def _crear_cuenta(correo, datos):
+    if db.consultar("SELECT 1 FROM usuarios WHERE correo=?", (correo,)):
+        return _error("Ya existe una cuenta con ese correo. Inicia sesión.", "An account with that email already exists. Please sign in.", 409)
+    uid = db.ejecutar("INSERT INTO usuarios(nombre,apellido,correo,clave_hash,acepta_datos_en,celular) VALUES(?,?,?,?,?,?)",
+                      (datos["nombre"], datos["apellido"], correo, datos["clave_hash"], datos["acepta_datos_en"], datos.get("celular")))
     session.clear(); session.permanent = True; session["uid"] = uid
-    return jsonify(usuario=_publico(_usuario_actual())), 201
+    res = {"usuario": _publico(_usuario_actual())}
+    if datos.get("celular") and mensajeria.proveedor_sms():          # de una vez se confirma el celular (el código llega por SMS)
+        res["verificar_celular"] = _codigo_celular(uid, datos["celular"])
+        if res["verificar_celular"]: res["destino_celular"] = mensajeria.tapar(datos["celular"])
+    return jsonify(res), 201
+
+def _codigo_celular(uid, celular):
+    if _limite_ip(): return False
+    codigo, err = codigos.crear(app.config["SECRET_KEY"], celular, "celular", {"uid": uid})
+    if err: return False
+    try: _enviar_codigo("sms", celular, codigo, "celular"); return True
+    except Exception as e:
+        app.logger.error("No se pudo enviar el SMS de confirmación: %s", e); return False
+
+@app.post("/api/registro/verificar")
+def registro_verificar():
+    d = request.get_json(force=True)
+    correo = (d.get("correo") or "").strip().lower()
+    ok, r = codigos.verificar(app.config["SECRET_KEY"], correo, "registro", d.get("codigo"))
+    if not ok: return _error(r[0], r[1])
+    return _crear_cuenta(correo, r)
+
+@app.post("/api/registro/reenviar")
+def registro_reenviar():
+    d = request.get_json(force=True)
+    correo = (d.get("correo") or "").strip().lower()
+    datos = codigos.pendiente(correo, "registro")
+    if datos is None: return _error("Tu registro venció. Vuelve a llenar el formulario.", "Your sign-up expired. Fill in the form again.", 410)
+    lim = _limite_ip()
+    if lim: return lim
+    codigo, err = codigos.crear(app.config["SECRET_KEY"], correo, "registro", datos)
+    if err: return _error(err[0], err[1], 429)
+    try: _enviar_codigo("correo", correo, codigo, "registro")
+    except Exception as e:
+        app.logger.error("No se pudo reenviar el código: %s", e)
+        return _error("No pudimos enviarte el correo. Intenta más tarde.", "We could not send you the email. Try later.", 502)
+    return jsonify(ok=True)
+
+def _destino_clave(d):
+    """(via, destino normalizado) para recuperar la contraseña; destino None si no es válido."""
+    via = "sms" if d.get("via") == "sms" else "correo"
+    if via == "sms": return via, _celular_de(d.get("destino"))
+    correo = (d.get("destino") or "").strip().lower()
+    return via, correo if CORREO.match(correo) else None
+
+@app.post("/api/clave/olvido")
+def clave_olvido():
+    d = request.get_json(force=True)
+    via, destino = _destino_clave(d)
+    if not (mensajeria.proveedor_sms() if via == "sms" else mensajeria.proveedor_correo()):
+        return _error("Esa forma de recuperar la cuenta no está activa en este servidor.", "That recovery method is not active on this server.", 503)
+    if not destino:
+        return _error("Ese celular no parece válido. Escríbelo así: 300 123 4567." if via == "sms" else "El correo no parece válido.",
+                      "That mobile number does not look valid." if via == "sms" else "That email does not look valid.")
+    lim = _limite_ip()                      # cuenta aunque no haya cuenta con ese dato (misma respuesta para todos)
+    if lim: return lim
+    f = db.consultar("SELECT id FROM usuarios WHERE celular=? AND celular_ok=1" if via == "sms" else "SELECT id FROM usuarios WHERE correo=?", (destino,))
+    if f:           # si no hay cuenta, la respuesta es la misma (así no se puede averiguar quién está registrado)
+        codigo, err = codigos.crear(app.config["SECRET_KEY"], destino, "clave", {"uid": f[0]["id"]})
+        if err: return _error(err[0], err[1], 429)
+        try: _enviar_codigo(via, destino, codigo, "clave")
+        except Exception as e:
+            app.logger.error("No se pudo enviar el código para recuperar la clave: %s", e)
+            return _error("No pudimos enviar el código. Intenta más tarde.", "We could not send the code. Try later.", 502)
+    return jsonify(ok=True, destino=mensajeria.tapar(destino))
+
+@app.post("/api/clave/verificar")
+def clave_verificar():
+    d = request.get_json(force=True)
+    via, destino = _destino_clave(d)
+    ok, r = codigos.verificar(app.config["SECRET_KEY"], destino or "", "clave", d.get("codigo"), consumir=False)
+    return jsonify(ok=True) if ok else _error(r[0], r[1])
+
+@app.post("/api/clave/restablecer")
+def clave_restablecer():
+    d = request.get_json(force=True)
+    clave = d.get("clave") or ""
+    if not 8 <= len(clave) <= 128: return _error("La contraseña debe tener al menos 8 caracteres.", "The password must have at least 8 characters.")
+    via, destino = _destino_clave(d)
+    ok, r = codigos.verificar(app.config["SECRET_KEY"], destino or "", "clave", d.get("codigo"))
+    if not ok: return _error(r[0], r[1])
+    db.ejecutar("UPDATE usuarios SET clave_hash=? WHERE id=?", (generate_password_hash(clave), r["uid"]))
+    session.clear(); session.permanent = True; session["uid"] = r["uid"]
+    return jsonify(usuario=_publico(_usuario_actual()))
 
 @app.post("/api/login")
 def login():
@@ -133,6 +291,30 @@ def perfil():
     if "compartir_datos" in d:
         db.ejecutar("UPDATE usuarios SET compartir_datos=? WHERE id=?", (1 if d["compartir_datos"] else 0, g.usuario["id"]))
     return jsonify(ok=True)
+
+@app.post("/api/celular")
+@requiere_login
+def celular_guardar():
+    """Guarda el celular para recuperar la cuenta y, si hay SMS, le manda un código para confirmarlo."""
+    d = request.get_json(force=True)
+    cel = _celular_de(d.get("celular"))
+    if not cel: return _error("Ese celular no parece válido. Escríbelo así: 300 123 4567.", "That mobile number does not look valid. Write it like 300 123 4567.")
+    if cel != g.usuario.get("celular"): db.ejecutar("UPDATE usuarios SET celular=?, celular_ok=0 WHERE id=?", (cel, g.usuario["id"]))
+    verificar = bool(mensajeria.proveedor_sms()) and _codigo_celular(g.usuario["id"], cel)
+    return jsonify(usuario=_publico(_usuario_actual()), verificar=verificar, destino=mensajeria.tapar(cel))
+
+@app.post("/api/celular/verificar")
+@requiere_login
+def celular_verificar():
+    d = request.get_json(force=True)
+    cel = g.usuario.get("celular")
+    if not cel: return _error("Primero escribe tu celular.", "Enter your mobile number first.")
+    ok, r = codigos.verificar(app.config["SECRET_KEY"], cel, "celular", d.get("codigo"))
+    if not ok: return _error(r[0], r[1])
+    if r.get("uid") != g.usuario["id"]: return _error("Ese código no es de tu cuenta.", "That code is not for your account.")
+    db.ejecutar("UPDATE usuarios SET celular_ok=0 WHERE celular=? AND id<>?", (cel, g.usuario["id"]))   # un celular, una cuenta
+    db.ejecutar("UPDATE usuarios SET celular_ok=1 WHERE id=?", (g.usuario["id"],))
+    return jsonify(usuario=_publico(_usuario_actual()))
 
 # ------------------------------------------------------------------ Estacas (ESP32-S3)
 @app.get("/api/estacas")
@@ -320,6 +502,13 @@ def zonas():
         z["riego"] = bool(z["riego"])
         out.append(z)
     return jsonify(out)
+
+@app.get("/api/municipios")
+def lista_municipios():
+    """Los 194 municipios del Caribe para el mapa y el buscador (cambia solo cuando se actualiza el archivo)."""
+    r = jsonify(municipios=municipios.lista(), fuente=municipios.fuente())
+    r.headers["Cache-Control"] = "public, max-age=86400"
+    return r
 
 @app.get("/api/perfiles")
 def perfiles():

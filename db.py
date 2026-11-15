@@ -52,10 +52,14 @@ CREATE TABLE IF NOT EXISTS lecturas(
 CREATE INDEX IF NOT EXISTS ix_lecturas_estaca_fecha ON lecturas(estaca_id, fecha);
 CREATE TABLE IF NOT EXISTS externos(
   clave TEXT PRIMARY KEY, datos TEXT NOT NULL, creado_en TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE IF NOT EXISTS codigos(       -- códigos de verificación (solo su HMAC; ver services/codigos.py)
+  destino TEXT NOT NULL, proposito TEXT NOT NULL, codigo_hash TEXT NOT NULL, expira REAL NOT NULL,
+  intentos INTEGER NOT NULL DEFAULT 0, enviado_en REAL NOT NULL, enviados INTEGER NOT NULL DEFAULT 1, ventana REAL NOT NULL,
+  datos TEXT, PRIMARY KEY(destino, proposito));
 """
 
 PG_URL = os.environ.get("DATABASE_URL", "").strip()
-_EN_PG = re.compile(r"\b(?:usuarios|estacas|lecturas)\b")
+_EN_PG = re.compile(r"\b(?:usuarios|estacas|lecturas|codigos)\b")
 _INSERTA_PG = re.compile(r"\s*INSERT\s+INTO\s+(?:usuarios|estacas|lecturas)\b", re.I)
 _AHORA_PG = "to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')"   # mismo formato que datetime('now') de SQLite
 SCHEMA_PG = [f"""CREATE TABLE IF NOT EXISTS usuarios(
@@ -73,7 +77,13 @@ SCHEMA_PG = [f"""CREATE TABLE IF NOT EXISTS usuarios(
   ph DOUBLE PRECISION, humedad_pct DOUBLE PRECISION, temp_suelo_c DOUBLE PRECISION, ce_us_cm DOUBLE PRECISION,
   n_mg_kg DOUBLE PRECISION, p_mg_kg DOUBLE PRECISION, k_mg_kg DOUBLE PRECISION,
   temp_aire_c DOUBLE PRECISION, humedad_aire_pct DOUBLE PRECISION, bateria_v DOUBLE PRECISION, rssi_dbm DOUBLE PRECISION)""",
- "CREATE INDEX IF NOT EXISTS ix_lecturas_estaca_fecha ON lecturas(estaca_id, fecha)"]
+ "CREATE INDEX IF NOT EXISTS ix_lecturas_estaca_fecha ON lecturas(estaca_id, fecha)",
+ """CREATE TABLE IF NOT EXISTS codigos(
+  destino TEXT NOT NULL, proposito TEXT NOT NULL, codigo_hash TEXT NOT NULL, expira DOUBLE PRECISION NOT NULL,
+  intentos INTEGER NOT NULL DEFAULT 0, enviado_en DOUBLE PRECISION NOT NULL, enviados INTEGER NOT NULL DEFAULT 1,
+  ventana DOUBLE PRECISION NOT NULL, datos TEXT, PRIMARY KEY(destino, proposito))""",
+ "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS celular TEXT",                    # versión 16: recuperar la cuenta por SMS
+ "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS celular_ok INTEGER NOT NULL DEFAULT 0"]
 _pg_local = threading.local()
 
 def modo_cuentas():
@@ -161,6 +171,9 @@ def init(forzar=False):
         if forzar or version != VERSION:
             for t in CATALOGO: c.execute(f"DROP TABLE IF EXISTS {t}")   # solo el catálogo de ejemplo
         c.executescript(SCHEMA_CATALOGO + SCHEMA_USUARIOS)
+        cols = {r[1] for r in c.execute("PRAGMA table_info(usuarios)")}      # versión 16: celular para recuperar la cuenta
+        if "celular" not in cols: c.execute("ALTER TABLE usuarios ADD COLUMN celular TEXT")
+        if "celular_ok" not in cols: c.execute("ALTER TABLE usuarios ADD COLUMN celular_ok INTEGER NOT NULL DEFAULT 0")
         c.execute(f"PRAGMA user_version={VERSION}")
         c.commit()
         sembrar = c.execute("SELECT COUNT(*) FROM cultivos").fetchone()[0] == 0
