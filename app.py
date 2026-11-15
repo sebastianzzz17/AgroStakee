@@ -624,6 +624,119 @@ def simular():
     return jsonify(motor.simular(d["zona_id"], _suelo(d["suelo"]), d.get("textura"), d.get("riego"), d["secuencia"], _ultimos(d),
                                  max(.1, float(d.get("ha", 5))), max(1, min(10, int(d.get("anios", 5))))))
 
+# ------------------------------------------------------------------ Estaca remota por MQTT (ESP32 en otra red Wi-Fi)
+# El ESP32 (esp32.ino) publica sus datos en un broker MQTT público (broker.emqx.io) y este servidor se suscribe con
+# receptor_agrostake.py. Como los dos solo hacen conexiones SALIENTES hacia el broker, no hace falta IP pública, túnel
+# ni abrir puertos: el ESP32 puede estar en cualquier red del mundo y los datos llegan igual.
+# Qué se agrega (nada de lo anterior cambia):
+#   GET /api/estaca/local            último dato recibido de cada grupo (lo que el ESP32 manda cada segundo)
+#   GET /api/estaca/local/historial  lo guardado (?grupo=suelo&minutos=60&limite=500)
+#   Tabla lecturas_remotas           una lectura por grupo cada AGROSTAKE_MQTT_CADA_SEG segundos (60 por defecto)
+# Variables de entorno (todas opcionales):
+#   AGROSTAKE_SIN_MQTT=1             apaga la recepción por MQTT
+#   AGROSTAKE_MQTT_CADA_SEG=60       cada cuántos segundos se guarda una lectura (mínimo 5)
+#   AGROSTAKE_MQTT_DIAS=30           días que se conserva lo guardado en lecturas_remotas
+#   AGROSTAKE_ESTACA_ID=<id>         además, copia las lecturas a la tabla lecturas de esa estaca (la que creaste en la app),
+#                                    así salen en sus gráficas y sobreviven en Postgres si usas DATABASE_URL
+#   AGROSTAKE_GUARDAR_ESTIMADOS=1    copia también a esa estaca los datos con origen "estimado" (simulados);
+#                                    por defecto solo se copian los de origen "sensor", para no mezclar datos inventados
+#                                    con los datos abiertos
+import threading
+try:
+    import receptor_agrostake as _receptor
+except ImportError:                      # falta paho-mqtt: el resto de la app sigue funcionando igual
+    _receptor = None
+
+_remoto = {"iniciado": False, "cliente": None, "marcas": {}, "guardadas": 0, "ultimo_guardado": None, "error": None}
+_remoto_lock = threading.Lock()
+
+def _remoto_num(v):
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or v != v: return None
+    return float(v)
+
+def _remoto_tabla():
+    db.ejecutar("CREATE TABLE IF NOT EXISTS lecturas_remotas(id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT NOT NULL, "
+                "grupo TEXT NOT NULL, origen TEXT, ph REAL, humedad_pct REAL, temp_suelo_c REAL, n_mg_kg REAL, "
+                "p_mg_kg REAL, k_mg_kg REAL, datos TEXT)")
+    db.ejecutar("CREATE INDEX IF NOT EXISTS ix_remotas_fecha ON lecturas_remotas(grupo, fecha)")
+
+def _remoto_guardar():
+    """Guarda lo último que llegó de cada grupo (una vez por mensaje nuevo)."""
+    ahora = datetime.now(timezone.utc)
+    fecha = ahora.strftime("%Y-%m-%dT%H:%M:%SZ")
+    for grupo, d in _receptor.obtener_datos()["grupos"].items():
+        if _remoto["marcas"].get(grupo) == d.get("recibido"): continue      # ya se guardó ese mensaje
+        _remoto["marcas"][grupo] = d.get("recibido")
+        v = {c: _remoto_num(d.get(k)) for c, k in (("ph", "ph"), ("humedad_pct", "humedad"), ("temp_suelo_c", "temp_suelo"),
+                                                    ("n_mg_kg", "n"), ("p_mg_kg", "p"), ("k_mg_kg", "k"))}
+        origen = str(d.get("origen") or "")[:20]
+        db.ejecutar("INSERT INTO lecturas_remotas(fecha, grupo, origen, ph, humedad_pct, temp_suelo_c, n_mg_kg, p_mg_kg, k_mg_kg, datos) "
+                    "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                    (fecha, str(grupo)[:40], origen, v["ph"], v["humedad_pct"], v["temp_suelo_c"], v["n_mg_kg"], v["p_mg_kg"],
+                     v["k_mg_kg"], json.dumps(d, ensure_ascii=False)[:2000]))
+        _remoto["guardadas"] += 1
+        _remoto["ultimo_guardado"] = fecha
+        eid = (os.environ.get("AGROSTAKE_ESTACA_ID") or "").strip()
+        if grupo == "suelo" and eid.isdigit() and (origen == "sensor" or os.environ.get("AGROSTAKE_GUARDAR_ESTIMADOS") == "1"):
+            if db.consultar("SELECT id FROM estacas WHERE id=?", (int(eid),)):
+                db.ejecutar("INSERT INTO lecturas(estaca_id, fecha, ph, humedad_pct, temp_suelo_c, n_mg_kg, p_mg_kg, k_mg_kg) "
+                            "VALUES(?,?,?,?,?,?,?,?)",
+                            (int(eid), fecha, v["ph"], v["humedad_pct"], v["temp_suelo_c"], v["n_mg_kg"], v["p_mg_kg"], v["k_mg_kg"]))
+                db.ejecutar("UPDATE estacas SET ultima_vez=? WHERE id=?", (fecha, int(eid)))
+    dias = int(os.environ.get("AGROSTAKE_MQTT_DIAS") or 30)
+    db.ejecutar("DELETE FROM lecturas_remotas WHERE fecha < ?", ((ahora - timedelta(days=dias)).strftime("%Y-%m-%dT%H:%M:%SZ"),))
+
+def _remoto_bucle():
+    cada = max(5, int(os.environ.get("AGROSTAKE_MQTT_CADA_SEG") or 60))
+    while True:
+        time.sleep(cada)
+        try:
+            _remoto_guardar()
+            _remoto["error"] = None
+        except Exception as ex:                         # un fallo al guardar no debe tumbar el hilo
+            _remoto["error"] = str(ex)[:200]
+
+@app.before_request
+def _remoto_iniciar():
+    """Conecta al broker una sola vez, en el proceso que atiende (igual que la descarga de la NASA)."""
+    if _receptor is None or _remoto["iniciado"] or os.environ.get("AGROSTAKE_SIN_MQTT") == "1": return
+    with _remoto_lock:
+        if _remoto["iniciado"]: return
+        _remoto["iniciado"] = True
+        try:
+            _remoto_tabla()
+            _remoto["cliente"] = _receptor.iniciar_receptor()
+            threading.Thread(target=_remoto_bucle, daemon=True, name="agrostake-mqtt-guardar").start()
+        except Exception as ex:
+            _remoto["error"] = str(ex)[:200]
+
+@app.get("/api/estaca/local")
+def estaca_local():
+    """Último dato que mandó el ESP32 remoto, por grupo. sin_datos=true si pasaron más de 5 s sin mensajes."""
+    if _receptor is None:
+        return jsonify(error="Falta instalar paho-mqtt (pip install paho-mqtt)", grupos={}, sin_datos=True), 503
+    c = _remoto["cliente"]
+    r = jsonify(dict(_receptor.obtener_datos(), mqtt_conectado=bool(c and c.is_connected()), guardadas=_remoto["guardadas"],
+                     ultimo_guardado=_remoto["ultimo_guardado"], error=_remoto["error"]))
+    r.headers["Cache-Control"] = "no-store"
+    return r
+
+@app.get("/api/estaca/local/historial")
+def estaca_local_historial():
+    """Lecturas guardadas de la estaca remota: ?grupo=suelo&minutos=60&limite=500 (las más recientes primero)."""
+    try:
+        minutos = max(1, min(60 * 24 * 30, int(request.args.get("minutos", 60))))
+        limite = max(1, min(5000, int(request.args.get("limite", 500))))
+    except ValueError: return jsonify(error="minutos y limite deben ser números"), 400
+    desde = (datetime.now(timezone.utc) - timedelta(minutes=minutos)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        filas = db.consultar("SELECT fecha, grupo, origen, ph, humedad_pct, temp_suelo_c, n_mg_kg, p_mg_kg, k_mg_kg FROM lecturas_remotas "
+                             "WHERE grupo=? AND fecha>=? ORDER BY fecha DESC LIMIT ?", (request.args.get("grupo", "suelo"), desde, limite))
+    except Exception: filas = []                        # la tabla aún no existe (todavía no ha llegado ningún dato)
+    r = jsonify(total=len(filas), lecturas=filas)
+    r.headers["Cache-Control"] = "no-store"
+    return r
+
 if __name__ == "__main__":
     sincronizar.iniciar()
     print("AgroStake: abre http://127.0.0.1:%s  (los datos de la NASA se descargan solos en segundo plano)" % os.environ.get("PORT", 5000))

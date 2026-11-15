@@ -8,3 +8,6 @@ psycopg[binary]
 # earthengine-api
 # Opcional, solo para Copernicus CDS (python importar.py cds):
 # cdsapi
+# Recepción de los datos del ESP32 por MQTT (receptor_agrostake.py)
+paho-mqtt>=2.0
+paho-mqtt>=2.0
