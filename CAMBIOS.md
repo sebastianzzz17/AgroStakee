@@ -1,5 +1,13 @@
 # Cambios
 
+## Versión 10 (barras de carga)
+
+- Una sola barra de progreso para todas las cargas: pantalla de inicio, "Consultar mi punto", "Cargando recomendaciones", "Guardando información" y "Realizando proyección".
+  - Avanza sola y frena si el servidor tarda.
+  - Cuando llegan los datos sube hasta el 100% y se queda llena un instante antes de cerrar.
+  - Antes, la de "Consultar mi punto" solo barría de lado a lado y nunca se llenaba, y las otras se cerraban justo al llegar al final.
+  - Comprobado cuadro por cuadro: todas llegan al 100% y nunca retroceden, aunque la página se redibuje durante la carga.
+
 ## Versión 9 (plan de acción, leyenda del mapa, estado de la estaca)
 
 - **Nutrientes:** la voz lee exactamente el nivel marcado en la pantalla y lo que causa, nunca los otros niveles de la escala. Al tocar un nivel lo dice enseguida, solo para ese nutriente.

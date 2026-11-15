@@ -507,12 +507,13 @@ html,body{max-width:100%;overflow-x:clip}
 @keyframes gira{to{transform:rotate(360deg)}}
 .consulta-txt{margin:0;font-size:15px;font-weight:600;color:var(--txt2);min-height:1.3em;text-align:center}
 .barra-ind{width:min(220px,70%);height:5px;border-radius:3px;background:var(--grid2);overflow:hidden}
-.barra-ind i{display:block;height:100%;width:40%;border-radius:3px;background:linear-gradient(90deg,var(--agua),var(--lima));animation:barrido 1.1s ease-in-out infinite}
+.barra-ind i{display:block;height:100%;width:0;border-radius:3px;background:linear-gradient(90deg,var(--agua),var(--lima))}
 @keyframes barrido{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
-@media (prefers-reduced-motion: reduce){.onda-r,.orbita,.barra-ind i{animation:none}.onda-r{opacity:.4}}
+@media (prefers-reduced-motion: reduce){.onda-r,.orbita{animation:none}.onda-r{opacity:.4}}
 .ha-in{width:64px;text-align:center;font-size:22px;font-weight:700;background:var(--campo,var(--card2));border:1px solid var(--sep);border-radius:10px;color:var(--txt);padding:6px 4px}
-.orbita,.onda-r,.barra-ind i{will-change:transform}
-#cargador #cargador-sub{margin:6px 0 0;font-size:15px;font-weight:500;color:var(--txt2);opacity:.85;min-height:1.3em}
+.orbita,.onda-r{will-change:transform}
+.prog,.barra-ind{height:7px}
+#cargador #cargador-sub{margin:6px 0 16px;font-size:15px;font-weight:500;color:var(--txt2);opacity:.85;min-height:1.3em}
 .estaca.off,.estaca.on{color:var(--txt)}
 .estaca.off{background:color-mix(in srgb,var(--rojo) 15%,transparent)} .estaca.off .estado-estaca{color:var(--rojo)}
 .estaca.on{background:color-mix(in srgb,var(--verde) 15%,transparent)} .estaca.on .estado-estaca{color:var(--verde)}
@@ -921,7 +922,7 @@ async function arrancar(){
     const [z, c, e] = await Promise.all([api("/api/zonas").then(x => (prog(55), x)), api("/api/cultivos").then(x => (prog(80), x)), api("/api/estado")]);
     [S.zonas, S.cultivos, S.estado] = [z, c, e]; prog(100);
   } catch (err) { $("#carga-txt").textContent = L("No se pudo conectar con el servidor. Revisa que la app esté corriendo.", "Could not reach the server. Check that the app is running."); return; }
-  await new Promise(r => setTimeout(r, Math.max(0, 1500 - (Date.now() - t0))));
+  await new Promise(r => setTimeout(r, Math.max(650, 1500 - (Date.now() - t0))));   // la barra alcanza a llenarse (transición de 0,5 s)
   try { const r = await api("/api/yo"); await entrar(r.usuario); }
   catch (e) { mostrar("acceso"); renderAcceso(); }
 }
@@ -1602,7 +1603,7 @@ function animConsulta(){
      <path d="M60 40c-9 0-16 7-16 16 0 12 16 28 16 28s16-16 16-28c0-9-7-16-16-16z" style="fill:var(--lima)"/><circle cx="60" cy="56" r="6" style="fill:var(--bg)"/>
      <g class="orbita" style="${fase(2600)}"><g transform="translate(60 10)"><rect x="-5" y="-5" width="10" height="10" rx="2" style="fill:var(--txt)"/>
        <rect x="-18" y="-3" width="11" height="6" rx="1" style="fill:var(--agua)"/><rect x="7" y="-3" width="11" height="6" rx="1" style="fill:var(--agua)"/></g></g></svg>
-   <p class="consulta-txt" id="consulta-txt">${paso}</p><div class="barra-ind"><i style="${fase(1100)}"></i></div></div>`;
+   <p class="consulta-txt" id="consulta-txt">${paso}</p><div class="barra-ind"><i id="consulta-barra" style="width:${(S.externos?.w || 0).toFixed(1)}%"></i></div></div>`;
 }
 const estacaConectada = () => !!(S.fuente && S.fuente.fecha && Date.now() - new Date(S.fuente.fecha) < 24 * 36e5);   // con lecturas de las últimas 24 horas
 function tarjetaGlobal(){
@@ -1653,6 +1654,25 @@ function ponerMedida(k, v){
   if (k === "temp_suelo_c") { const c = colorTemp(v); o.style.color = c; $("#term-merc").style.transform = `scaleY(${Math.max(.06, Math.min(1, (v - 20) / 20))})`; $("#term-merc").setAttribute("fill", c); $("#term-bulbo").setAttribute("fill", c); }
   marcarManual(); actualizar();
 }
+/* Barra de progreso de todas las cargas: avanza sola hasta ~92% en `ms` (más lento si el servidor tarda), cuando la tarea
+   termina sube suave hasta 100% y se queda llena un momento antes de cerrar. Se mueve con requestAnimationFrame y busca
+   la barra en cada cuadro, así no se reinicia si la página se redibuja. Devuelve el resultado de la tarea. */
+function progreso(barra, ms, tarea, alPintar){
+  const t0 = performance.now(); let listo = false, fin = null, wFin = 0, w = 0;
+  const p = Promise.all([tarea ? Promise.resolve(tarea).catch(() => null) : null, new Promise(r => setTimeout(r, ms))]).then(([x]) => { listo = true; return x; });
+  return new Promise(resolve => {
+    const paso = now => {
+      const t = now - t0;
+      if (!listo) w = t < ms ? 92 * (1 - Math.pow(1 - t / ms, 2)) : 92 + 6 * (1 - Math.exp(-(t - ms) / 2500));
+      else { if (fin === null) { fin = now; wFin = w; } w = wFin + (100 - wFin) * Math.min(1, (now - fin) / 280); }
+      const el = barra(); if (el) { el.style.transition = "none"; el.style.width = w.toFixed(1) + "%"; }
+      if (alPintar) alPintar(w);
+      if (listo && now - fin >= 480) return resolve(p);
+      requestAnimationFrame(paso);
+    };
+    requestAnimationFrame(paso);
+  });
+}
 const refrescarYa = () => { actualizar(true); return new Promise(r => setTimeout(r, 30)).then(() => S.pendiente); };
 async function cargando(texto, ms, tarea, pasos){
   const el = $("#cargador"), pr = $("#cargador-prog");
@@ -1660,9 +1680,9 @@ async function cargando(texto, ms, tarea, pasos){
   let sub = $("#cargador-sub"); if (!sub) { $("#cargador-txt").insertAdjacentHTML("afterend", `<p id="cargador-sub"></p>`); sub = $("#cargador-sub"); }
   sub.textContent = pasos ? pasos[0] : "";
   const giro = pasos ? setInterval(() => { const i = Math.min(pasos.length - 1, Math.floor((performance.now() - t0) / (ms / pasos.length))); sub.textContent = pasos[i]; }, 250) : null, t0 = performance.now();
-  pr.style.transition = "none"; pr.style.width = "4%"; void pr.offsetWidth; pr.style.transition = `width ${ms}ms linear`; pr.style.width = "100%";
+  pr.style.transition = "none"; pr.style.width = "0%";
   if (VOZ && S.sonido) speechSynthesis.cancel();
-  let res; await Promise.all([new Promise(r => setTimeout(r, sinMov() ? 400 : ms)), tarea ? Promise.resolve(tarea).then(x => res = x).catch(() => {}) : null]);
+  const res = await progreso(() => pr, sinMov() ? 400 : ms, tarea);
   if (giro) clearInterval(giro);
   el.hidden = true; return res;
 }
@@ -1679,13 +1699,14 @@ $("#v2").addEventListener("click", async e => {
   if (e.target.closest("[data-guardar]")) { guardarDatos(); return; }
   if (e.target.closest("[data-ext]")) {
     const t0 = Date.now(), pasos = PASOS_CONSULTA();
-    S.externos = {cargando:true, t0}; renderLote();
+    S.externos = {cargando:true, t0, w:0}; renderLote();
     const giro = setInterval(() => { const t = $("#consulta-txt"); if (t) t.textContent = pasos[Math.min(Math.floor((Date.now() - t0) / 650), pasos.length - 1)]; }, 200);
-    let res;
-    try { const [lat, lon] = lugar(); res = await post("/api/datos_lote", {lat, lon});
-      if (!res.variables) throw new Error(L("respuesta incompleta","incomplete answer")); }
-    catch (err) { res = {error:err.sinRed ? L("Sin señal: conéctate a internet para consultar tu punto.","No signal: connect to the internet to look up your point.") : L("No se pudo consultar: ","Could not look up: ") + err.message}; }
-    const falta = (sinMov() ? 300 : 3400) - (Date.now() - t0); if (falta > 0) await new Promise(r => setTimeout(r, falta));   // que la animación alcance a verse
+    const peticion = (async () => {
+      try { const [lat, lon] = lugar(), r = await post("/api/datos_lote", {lat, lon});
+        if (!r.variables) throw new Error(L("respuesta incompleta","incomplete answer")); return r; }
+      catch (err) { return {error:err.sinRed ? L("Sin señal: conéctate a internet para consultar tu punto.","No signal: connect to the internet to look up your point.") : L("No se pudo consultar: ","Could not look up: ") + err.message}; }
+    })();
+    const res = await progreso(() => $("#consulta-barra"), sinMov() ? 300 : 3400, peticion, w => { if (S.externos?.cargando) S.externos.w = w; });
     clearInterval(giro); S.externos = res;
     if (S.tab === 2) renderLote(); return;
   }
