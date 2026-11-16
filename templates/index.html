@@ -3013,13 +3013,20 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localho
 <style>
 #ev{position:fixed;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:850;width:min(310px,calc(100% - 24px));
   background:var(--card);color:var(--txt);border:1px solid var(--sep);border-radius:18px;box-shadow:0 8px 28px #0006;
-  font-family:var(--font);overflow:hidden}
+  font-family:var(--font);overflow:hidden;transition:bottom .2s ease}
+@media(max-width:899px){
+  /* El botón .fab mide 62px y está en bottom: 92px; subimos #ev a 164px para que no se pisen */
+  #ev{bottom:calc(164px + env(safe-area-inset-bottom))}
+}
 #ev[hidden]{display:none}
 #ev .ev-cab{display:flex;align-items:center;gap:8px;width:100%;padding:11px 14px;background:none;border:0;color:inherit;
   font:inherit;font-weight:700;font-size:14px;cursor:pointer;text-align:left}
 #ev .ev-punto{width:10px;height:10px;border-radius:50%;background:var(--rojo);flex:none}
 #ev.on .ev-punto{background:var(--verde)}
-#ev .ev-flecha{margin-left:auto;color:var(--sec);transition:transform .2s}
+#ev .ev-sync{margin-left:auto;padding:2px 8px;border-radius:999px;border:1px solid var(--sep);background:var(--card2);
+  color:var(--txt);font:inherit;font-size:11px;font-weight:600;cursor:pointer}
+#ev .ev-sync.off{opacity:.6;color:var(--sec)}
+#ev .ev-flecha{color:var(--sec);transition:transform .2s}
 #ev.cerrado .ev-flecha{transform:rotate(-90deg)}
 #ev .ev-cuerpo{padding:0 14px 12px}
 #ev.cerrado .ev-cuerpo{display:none}
@@ -3036,8 +3043,8 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localho
 
 <script>
 (function () {
-  const CADA_MS = 1000;                       // el ESP32 manda un dato por segundo
-  const CAMPOS = [                            // [clave del JSON, etiqueta es, etiqueta en, decimales]
+  const CADA_MS = 1000;
+  const CAMPOS = [
     ["ph", "pH", "pH", 2], ["humedad", "Humedad (%)", "Moisture (%)", 1], ["temp_suelo", "Temp. suelo (°C)", "Soil temp. (°C)", 1],
     ["n", "N (mg/kg)", "N (mg/kg)", 0], ["p", "P (mg/kg)", "P (mg/kg)", 0], ["k", "K (mg/kg)", "K (mg/kg)", 0]
   ];
@@ -3046,40 +3053,104 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localho
   const t = (es, ing) => (en() ? ing : es);
   const enApp = () => { try { return S.pantalla === "app"; } catch (e) { return true; } };
 
-  // Estructura (los datos se escriben siempre con textContent)
-  ev.innerHTML = '<button type="button" class="ev-cab"><span class="ev-punto"></span><span class="ev-tit"></span><span class="ev-flecha">▾</span></button>' +
+  ev.innerHTML = '<div class="ev-cab" role="button" tabindex="0"><span class="ev-punto"></span><span class="ev-tit"></span>' +
+    '<button type="button" class="ev-sync" title="Sincronizar con recomendaciones">Auto: ON</button><span class="ev-flecha">▾</span></div>' +
     '<div class="ev-cuerpo"><div class="ev-rejilla"></div><div class="ev-pie"><span class="ev-origen"></span><span class="ev-hora"></span></div><div class="ev-aviso" hidden></div></div>';
-  const tit = ev.querySelector(".ev-tit"), rej = ev.querySelector(".ev-rejilla"), org = ev.querySelector(".ev-origen"),
+
+  const cab = ev.querySelector(".ev-cab"), tit = ev.querySelector(".ev-tit"), btnSync = ev.querySelector(".ev-sync"),
+        rej = ev.querySelector(".ev-rejilla"), org = ev.querySelector(".ev-origen"),
         hor = ev.querySelector(".ev-hora"), avi = ev.querySelector(".ev-aviso");
+
   const valores = CAMPOS.map(() => {
     const d = document.createElement("div"); d.className = "ev-dato";
     d.innerHTML = "<b>–</b><span></span>"; rej.appendChild(d); return d;
   });
-  if (innerWidth >= 700) ev.classList.remove("cerrado");           // en pantallas grandes arranca abierto
-  ev.querySelector(".ev-cab").addEventListener("click", () => ev.classList.toggle("cerrado"));
+
+  if (innerWidth >= 700) ev.classList.remove("cerrado");
+
+  let autoSync = true;
+  let ultimaFirma = "";
+
+  btnSync.addEventListener("click", (e) => {
+    e.stopPropagation();
+    autoSync = !autoSync;
+    btnSync.textContent = autoSync ? "Auto: ON" : "Auto: OFF";
+    btnSync.classList.toggle("off", !autoSync);
+    if (autoSync) ultimaFirma = ""; // Fuerza recalcular en la siguiente lectura
+  });
+
+  cab.addEventListener("click", () => ev.classList.toggle("cerrado"));
+  cab.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ev.classList.toggle("cerrado"); }
+  });
+
+  // Fallback por si el backend aún no devolviera r.suelo preclasificado
+  const nivelNPK = (v, min, max) => (typeof v !== "number" ? null : v < min ? "bajo" : v <= max ? "medio" : "alto");
+  function normalizarSuelo(r, raw) {
+    if (r && r.suelo && typeof r.suelo === "object") return r.suelo;
+    if (!raw || typeof raw !== "object") return null;
+    const out = {
+      ph: typeof raw.ph === "number" ? raw.ph : null,
+      humedad_pct: typeof raw.humedad === "number" ? raw.humedad : null,
+      temp_suelo_c: typeof raw.temp_suelo === "number" ? raw.temp_suelo : null,
+      n: nivelNPK(raw.n, 20, 40),
+      p: nivelNPK(raw.p, 10, 30),
+      k: nivelNPK(raw.k, 100, 200),
+      salinidad: typeof raw.ce === "number" ? (raw.ce >= 4000 ? "alta" : "normal") : null
+    };
+    return Object.fromEntries(Object.entries(out).filter(([, v]) => v !== null));
+  }
 
   async function consultar() {
     ev.hidden = !enApp();
     if (ev.hidden || document.hidden) return;
     let r = null;
     try { const res = await fetch("/api/estaca/local", { cache: "no-store" }); r = await res.json(); } catch (e) {}
-    const suelo = r && r.grupos && r.grupos.suelo;
-    const hay = !!(r && !r.sin_datos && suelo);
+
+    const sueloRaw = r && r.grupos && r.grupos.suelo;
+    const hay = !!(r && !r.sin_datos && sueloRaw);
     ev.classList.toggle("on", hay);
     tit.textContent = hay ? t("Estaca en vivo", "Live stake") : t("Estaca sin datos", "Stake: no data");
+    btnSync.textContent = autoSync ? "Auto: ON" : "Auto: OFF";
+
     CAMPOS.forEach((c, i) => {
-      const v = suelo ? suelo[c[0]] : null;
+      const v = sueloRaw ? sueloRaw[c[0]] : null;
       valores[i].firstChild.textContent = typeof v === "number" ? v.toFixed(c[3]) : "–";
       valores[i].lastChild.textContent = en() ? c[2] : c[1];
     });
-    org.textContent = !suelo ? "" : suelo.origen === "sensor" ? t("Medido por sensor", "Sensor reading") : t("Datos estimados (simulación)", "Estimated data (simulation)");
-    hor.textContent = suelo && suelo.recibido ? new Date(suelo.recibido * 1000).toLocaleTimeString() : "";
+
+    org.textContent = !sueloRaw ? "" : sueloRaw.origen === "sensor"
+      ? t("Medido por sensor", "Sensor reading")
+      : t("Datos estimados (simulación)", "Estimated data (simulation)");
+    hor.textContent = sueloRaw && sueloRaw.recibido ? new Date(sueloRaw.recibido * 1000).toLocaleTimeString() : "";
+
     let aviso = "";
     if (!r) aviso = t("No se pudo consultar el servidor.", "Could not reach the server.");
     else if (r.error) aviso = r.error;
     else if (r.mqtt_conectado === false) aviso = t("El servidor aún no se conecta al broker.", "The server is not connected to the broker yet.");
     avi.textContent = aviso; avi.hidden = !aviso;
+
+    // Alimentar el motor de recomendaciones solo cuando llegan valores clasificados nuevos
+    if (hay && autoSync && typeof S !== "undefined" && typeof actualizar === "function") {
+      const sueloMotor = normalizarSuelo(r, sueloRaw);
+      if (sueloMotor && Object.keys(sueloMotor).length > 0) {
+        const firma = JSON.stringify(sueloMotor);
+        if (firma !== ultimaFirma) {
+          ultimaFirma = firma;
+          Object.assign(S.suelo, sueloMotor);
+          S.origenSuelo = "estaca";
+          S.fuente = {
+            nombre: t("Estaca en vivo (MQTT)", "Live stake (MQTT)"),
+            fecha: sueloRaw.recibido ? new Date(sueloRaw.recibido * 1000).toISOString() : new Date().toISOString()
+          };
+          actualizar();
+          if (S.tab === 2 && typeof renderLote === "function") renderLote();
+        }
+      }
+    }
   }
-  consultar(); setInterval(consultar, CADA_MS);
+
+  consultar();
+  setInterval(consultar, CADA_MS);
 })();
 </script>
