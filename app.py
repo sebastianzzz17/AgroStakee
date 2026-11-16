@@ -103,6 +103,7 @@ def _ip():
         xf = [x.strip() for x in (request.headers.get("X-Forwarded-For") or "").split(",") if x.strip()]
         if xf: return xf[-2] if len(xf) >= 2 else xf[-1]
     return request.remote_addr or "?"
+
 def _limite_ip():
     ahora, ip, tope = time.time(), _ip(), int(os.environ.get("AGROSTAKE_CODIGOS_POR_IP") or 20)
     marcas = [t for t in _envios_ip.get(ip, []) if ahora - t < 3600]
@@ -650,41 +651,93 @@ except ImportError:                      # falta paho-mqtt: el resto de la app s
 _remoto = {"iniciado": False, "cliente": None, "marcas": {}, "guardadas": 0, "ultimo_guardado": None, "error": None}
 _remoto_lock = threading.Lock()
 
+
 def _remoto_num(v):
-    if isinstance(v, bool) or not isinstance(v, (int, float)) or v != v: return None
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or v != v:
+        return None
     return float(v)
 
+
 def _remoto_tabla():
-    db.ejecutar("CREATE TABLE IF NOT EXISTS lecturas_remotas(id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT NOT NULL, "
-                "grupo TEXT NOT NULL, origen TEXT, ph REAL, humedad_pct REAL, temp_suelo_c REAL, n_mg_kg REAL, "
-                "p_mg_kg REAL, k_mg_kg REAL, datos TEXT)")
+    db.ejecutar(
+        "CREATE TABLE IF NOT EXISTS lecturas_remotas(id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT NOT NULL, "
+        "grupo TEXT NOT NULL, origen TEXT, ph REAL, humedad_pct REAL, temp_suelo_c REAL, n_mg_kg REAL, "
+        "p_mg_kg REAL, k_mg_kg REAL, datos TEXT)"
+    )
     db.ejecutar("CREATE INDEX IF NOT EXISTS ix_remotas_fecha ON lecturas_remotas(grupo, fecha)")
+
 
 def _remoto_guardar():
     """Guarda lo último que llegó de cada grupo (una vez por mensaje nuevo)."""
     ahora = datetime.now(timezone.utc)
     fecha = ahora.strftime("%Y-%m-%dT%H:%M:%SZ")
+
     for grupo, d in _receptor.obtener_datos()["grupos"].items():
-        if _remoto["marcas"].get(grupo) == d.get("recibido"): continue      # ya se guardó ese mensaje
+        if _remoto["marcas"].get(grupo) == d.get("recibido"):
+            continue  # ya se guardó ese mensaje
         _remoto["marcas"][grupo] = d.get("recibido")
-        v = {c: _remoto_num(d.get(k)) for c, k in (("ph", "ph"), ("humedad_pct", "humedad"), ("temp_suelo_c", "temp_suelo"),
-                                                    ("n_mg_kg", "n"), ("p_mg_kg", "p"), ("k_mg_kg", "k"))}
+
+        v = {
+            c: _remoto_num(d.get(k))
+            for c, k in (
+                ("ph", "ph"),
+                ("humedad_pct", "humedad"),
+                ("temp_suelo_c", "temp_suelo"),
+                ("ce_us_cm", "ce"),
+                ("n_mg_kg", "n"),
+                ("p_mg_kg", "p"),
+                ("k_mg_kg", "k"),
+                ("temp_aire_c", "temp_aire"),
+                ("humedad_aire_pct", "humedad_aire"),
+                ("bateria_v", "bateria"),
+                ("rssi_dbm", "rssi"),
+            )
+        }
         origen = str(d.get("origen") or "")[:20]
-        db.ejecutar("INSERT INTO lecturas_remotas(fecha, grupo, origen, ph, humedad_pct, temp_suelo_c, n_mg_kg, p_mg_kg, k_mg_kg, datos) "
-                    "VALUES(?,?,?,?,?,?,?,?,?,?)",
-                    (fecha, str(grupo)[:40], origen, v["ph"], v["humedad_pct"], v["temp_suelo_c"], v["n_mg_kg"], v["p_mg_kg"],
-                     v["k_mg_kg"], json.dumps(d, ensure_ascii=False)[:2000]))
+
+        # 1. Guardar en el log histórico remoto
+        db.ejecutar(
+            "INSERT INTO lecturas_remotas(fecha, grupo, origen, ph, humedad_pct, temp_suelo_c, n_mg_kg, p_mg_kg, k_mg_kg, datos) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (
+                fecha,
+                str(grupo)[:40],
+                origen,
+                v["ph"],
+                v["humedad_pct"],
+                v["temp_suelo_c"],
+                v["n_mg_kg"],
+                v["p_mg_kg"],
+                v["k_mg_kg"],
+                json.dumps(d, ensure_ascii=False)[:2000],
+            ),
+        )
         _remoto["guardadas"] += 1
         _remoto["ultimo_guardado"] = fecha
+
+        # 2. Delegar en estaca.guardar_lecturas() para validar rangos y actualizar estacas.ultima_vez
         eid = (os.environ.get("AGROSTAKE_ESTACA_ID") or "").strip()
-        if grupo == "suelo" and eid.isdigit() and (origen == "sensor" or os.environ.get("AGROSTAKE_GUARDAR_ESTIMADOS") == "1"):
-            if db.consultar("SELECT id FROM estacas WHERE id=?", (int(eid),)):
-                db.ejecutar("INSERT INTO lecturas(estaca_id, fecha, ph, humedad_pct, temp_suelo_c, n_mg_kg, p_mg_kg, k_mg_kg) "
-                            "VALUES(?,?,?,?,?,?,?,?)",
-                            (int(eid), fecha, v["ph"], v["humedad_pct"], v["temp_suelo_c"], v["n_mg_kg"], v["p_mg_kg"], v["k_mg_kg"]))
-                db.ejecutar("UPDATE estacas SET ultima_vez=? WHERE id=?", (fecha, int(eid)))
+        if (
+            grupo == "suelo"
+            and eid.isdigit()
+            and (origen == "sensor" or os.environ.get("AGROSTAKE_GUARDAR_ESTIMADOS") == "1")
+        ):
+            filas_estaca = db.consultar("SELECT * FROM estacas WHERE id=?", (int(eid),))
+            if filas_estaca:
+                lectura_limpia = {k: val for k, val in v.items() if val is not None}
+                if lectura_limpia:
+                    try:
+                        estacas.guardar_lecturas(filas_estaca[0], [lectura_limpia])
+                    except ValueError as ve:
+                        # Si el sensor envió un valor fuera de rango físico (ej. pH 99), se registra sin tumbar el hilo
+                        _remoto["error"] = f"Validación estaca #{eid}: {ve}"[:200]
+
     dias = int(os.environ.get("AGROSTAKE_MQTT_DIAS") or 30)
-    db.ejecutar("DELETE FROM lecturas_remotas WHERE fecha < ?", ((ahora - timedelta(days=dias)).strftime("%Y-%m-%dT%H:%M:%SZ"),))
+    db.ejecutar(
+        "DELETE FROM lecturas_remotas WHERE fecha < ?",
+        ((ahora - timedelta(days=dias)).strftime("%Y-%m-%dT%H:%M:%SZ"),),
+    )
+
 
 def _remoto_bucle():
     cada = max(5, int(os.environ.get("AGROSTAKE_MQTT_CADA_SEG") or 60))
@@ -693,15 +746,18 @@ def _remoto_bucle():
         try:
             _remoto_guardar()
             _remoto["error"] = None
-        except Exception as ex:                         # un fallo al guardar no debe tumbar el hilo
+        except Exception as ex:  # un fallo al guardar no debe tumbar el hilo
             _remoto["error"] = str(ex)[:200]
+
 
 @app.before_request
 def _remoto_iniciar():
     """Conecta al broker una sola vez, en el proceso que atiende (igual que la descarga de la NASA)."""
-    if _receptor is None or _remoto["iniciado"] or os.environ.get("AGROSTAKE_SIN_MQTT") == "1": return
+    if _receptor is None or _remoto["iniciado"] or os.environ.get("AGROSTAKE_SIN_MQTT") == "1":
+        return
     with _remoto_lock:
-        if _remoto["iniciado"]: return
+        if _remoto["iniciado"]:
+            return
         _remoto["iniciado"] = True
         try:
             _remoto_tabla()
@@ -710,16 +766,47 @@ def _remoto_iniciar():
         except Exception as ex:
             _remoto["error"] = str(ex)[:200]
 
+
 @app.get("/api/estaca/local")
 def estaca_local():
-    """Último dato que mandó el ESP32 remoto, por grupo. sin_datos=true si pasaron más de 5 s sin mensajes."""
+    """Último dato que mandó el ESP32 remoto, por grupo + clasificación agronómica via estaca.a_suelo()."""
     if _receptor is None:
         return jsonify(error="Falta instalar paho-mqtt (pip install paho-mqtt)", grupos={}, sin_datos=True), 503
+
+    datos_mqtt = dict(_receptor.obtener_datos())
+    suelo_raw = datos_mqtt.get("grupos", {}).get("suelo")
+
+    # Convertir los valores crudos del ESP32 (mg/kg, µS/cm) a categorías de suelo usando estaca.a_suelo()
+    suelo_clasificado = None
+    if isinstance(suelo_raw, dict):
+        lectura_para_motor = {
+            "ph": _remoto_num(suelo_raw.get("ph")),
+            "humedad_pct": _remoto_num(suelo_raw.get("humedad")),
+            "temp_suelo_c": _remoto_num(suelo_raw.get("temp_suelo")),
+            "ce_us_cm": _remoto_num(suelo_raw.get("ce")),
+            "n_mg_kg": _remoto_num(suelo_raw.get("n")),
+            "p_mg_kg": _remoto_num(suelo_raw.get("p")),
+            "k_mg_kg": _remoto_num(suelo_raw.get("k")),
+        }
+        suelo_clasificado = estacas.a_suelo(lectura_para_motor)
+
+    # Si hay una estaca vinculada por ID, también exponemos su última lectura oficial en BD
+    eid = (os.environ.get("AGROSTAKE_ESTACA_ID") or "").strip()
+    ultima_bd = estacas.ultima(int(eid)) if eid.isdigit() else None
+
     c = _remoto["cliente"]
-    r = jsonify(dict(_receptor.obtener_datos(), mqtt_conectado=bool(c and c.is_connected()), guardadas=_remoto["guardadas"],
-                     ultimo_guardado=_remoto["ultimo_guardado"], error=_remoto["error"]))
+    r = jsonify(
+        **datos_mqtt,
+        suelo=suelo_clasificado,
+        ultima_lectura_bd=ultima_bd,
+        mqtt_conectado=bool(c and c.is_connected()),
+        guardadas=_remoto["guardadas"],
+        ultimo_guardado=_remoto["ultimo_guardado"],
+        error=_remoto["error"],
+    )
     r.headers["Cache-Control"] = "no-store"
     return r
+
 
 @app.get("/api/estaca/local/historial")
 def estaca_local_historial():
@@ -727,13 +814,23 @@ def estaca_local_historial():
     try:
         minutos = max(1, min(60 * 24 * 30, int(request.args.get("minutos", 60))))
         limite = max(1, min(5000, int(request.args.get("limite", 500))))
-    except ValueError: return jsonify(error="minutos y limite deben ser números"), 400
+    except ValueError:
+        return jsonify(error="minutos y limite deben ser números"), 400
+
     desde = (datetime.now(timezone.utc) - timedelta(minutes=minutos)).strftime("%Y-%m-%dT%H:%M:%SZ")
     try:
-        filas = db.consultar("SELECT fecha, grupo, origen, ph, humedad_pct, temp_suelo_c, n_mg_kg, p_mg_kg, k_mg_kg FROM lecturas_remotas "
-                             "WHERE grupo=? AND fecha>=? ORDER BY fecha DESC LIMIT ?", (request.args.get("grupo", "suelo"), desde, limite))
-    except Exception: filas = []                        # la tabla aún no existe (todavía no ha llegado ningún dato)
-    r = jsonify(total=len(filas), lecturas=filas)
+        filas = db.consultar(
+            "SELECT fecha, grupo, origen, ph, humedad_pct, temp_suelo_c, n_mg_kg, p_mg_kg, k_mg_kg FROM lecturas_remotas "
+            "WHERE grupo=? AND fecha>=? ORDER BY fecha DESC LIMIT ?",
+            (request.args.get("grupo", "suelo"), desde, limite),
+        )
+    except Exception:
+        filas = []  # la tabla aún no existe (todavía no ha llegado ningún dato)
+
+    # Enriquecer cada fila con su interpretación agronómica (bajo/medio/alto) usando estaca.a_suelo()
+    lecturas_enriquecidas = [dict(fila, suelo=estacas.a_suelo(fila)) for fila in filas]
+
+    r = jsonify(total=len(lecturas_enriquecidas), lecturas=lecturas_enriquecidas)
     r.headers["Cache-Control"] = "no-store"
     return r
 
