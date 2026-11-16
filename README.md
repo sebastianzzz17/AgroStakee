@@ -1,148 +1,82 @@
-# AgroStake
+# 🌱 AgroStake
 
-Rotación de cultivos para el Caribe colombiano con datos de la NASA y de una estaca de sensores (ESP32-S3).
-NASA Space Apps Challenge 2026, Barranquilla.
+**Proyecto desarrollado para el 🚀 NASA International Space Apps Challenge**
 
-## Cómo correrla (para el jurado)
+**Sistema integral de agricultura de precisión IoT + datos satelitales de la NASA para el diagnóstico de suelos y planificación inteligente de rotación de cultivos.**
 
-```
-pip install -r requirements.txt
-python app.py
-```
+🔗 **Demo en vivo:** [AgroStake](https://agrostakee-1.onrender.com/)
 
-Abre http://127.0.0.1:5000 en el navegador. No hace falta ningún comando más ni ninguna cuenta:
-**al arrancar, la app descarga sola, en segundo plano, los datos reales de la NASA** de las 8 zonas del piloto
-(clima de 20 años, humedad y temperatura del suelo de NASA POWER, verdor MODIS y pendiente SRTM) y los últimos
-meses. Mientras descarga, la app muestra el avance; si no hay internet, sigue con los datos guardados y lo dice.
+## 📖 Resumen del Proyecto
 
-- Funciona en celular: abre la misma dirección desde el teléfono (con `HOST=0.0.0.0`) o instálala como app.
-- Sin señal: la app guarda las últimas respuestas y las muestra con un aviso. El modo sin señal completo
-  (la app abre aunque no haya conexión) necesita https o localhost, que es una regla de los navegadores.
+**AgroStake** es una solución creada para el **NASA Space Apps Challenge** que combina un sensor físico en forma de estaca inteligente con una plataforma web impulsada por datos aeroespaciales de observación terrestre de la NASA. Para abordar el desafío de la gestión sostenible de la tierra y la degradación de los suelos, nuestro sistema cruza las mediciones locales tomadas directamente en el terreno (humedad, temperatura, pH y nutrientes NPK) con variables climáticas históricas y actuales obtenidas vía satélite, además del historial de siembra y los objetivos productivos del agricultor.
 
-## Publicarla en Render
+Con esta información, la aplicación genera un plan de acción personalizado con recomendaciones de **rotación de 3 cultivos a lo largo de 3 temporadas consecutivas** y proyecta su impacto agronómico y productivo a futuro.
 
-- **Comando de inicio** (Settings → Start Command): `gunicorn -c gunicorn.conf.py app:app`
-  (un proceso con 8 hilos: una consulta lenta ya no frena a las demás). Con `render.yaml` se configura solo.
-- **Plan gratis** (según la documentación de Render): 0,1 de CPU y 512 MB; el servicio se duerme tras 15 minutos
-  sin visitas y tarda cerca de un minuto en despertar; y **cada vez que se duerme, reinicia o se vuelve a
-  desplegar, se borra el disco**: las cuentas creadas, las lecturas de estacas y los datos descargados.
-  La app vuelve a descargar los datos de la NASA sola, pero las cuentas no vuelven.
-- **Para que arranque con datos reales:** corre la app una vez en tu computador con internet; al terminar la
-  descarga se crea `data/clima_real.json`. Súbelo al repositorio junto con el código y Render arrancará ya con
-  los datos de la NASA de las 8 zonas (y solo bajará lo de los últimos meses).
-- `GET /salud` responde `ok`: sirve como chequeo de Render y para un "ping" que lo mantenga despierto.
+### ¿Por qué es importante?
 
-### Que las cuentas no se pierdan
+AgroStake democratiza el acceso a datos aeroespaciales y agronómicos de grado científico, permitiendo a pequeños y medianos agricultores tomar decisiones basadas en evidencia sin necesidad de ser especialistas, evitando el desgaste por monocultivo, optimizando el uso de agua e insumos y maximizando la productividad de sus cosechas.
 
-Crea una base Postgres y pon su dirección en la variable **`DATABASE_URL`** (Render → tu servicio → Environment).
-Con eso, las cuentas, las estacas y sus lecturas se guardan allá y sobreviven a los reinicios; el clima y el catálogo
-se siguen guardando en el disco del servidor porque la app los vuelve a crear sola. Sin `DATABASE_URL` todo funciona
-igual que antes, con SQLite.
+## ⚙️ ¿Cómo Funciona?
 
-- **Neon** (neon.tech) o **Supabase**: tienen plan gratis permanente. Copia la "connection string" que empieza por
-  `postgresql://` (con `sslmode=require` al final).
-- **Postgres de Render**: se conecta en dos clics ("Internal Database URL"), pero el gratis vence a los 30 días.
+El sistema opera en tres etapas conectadas de extremo a extremo:
 
-Para comprobarlo: `/api/estado_datos` debe decir `"cuentas": "postgres"`.
+1. **Captura en campo (Hardware IoT):**
+   La estaca se clava directamente en el lote para medir parámetros físico-químicos del suelo. Un microcontrolador **ESP32** procesa las lecturas provenientes de sensores industriales mediante protocolo **RS485**, respalda registros localmente y los transmite hacia la nube (vía MQTT en tiempo real o HTTP autenticado por token).
 
-### Cuentas con celular (versión 18)
+2. **Procesamiento y cruce de datos (Backend):**
+   Un servidor desarrollado en **Python** recibe y valida la telemetría de la estaca, clasifica los niveles agronómicos y los integra mediante APIs con información meteorológica e histórica de satélites de la **NASA** (como **NASA POWER**).
 
-- **Crear cuenta:** nombre, apellido, número de celular y contraseña (y la autorización de datos de la Ley 1581).
-  Si hay SMS configurado (Twilio, abajo), llega un código por mensaje de texto y la cuenta se crea al escribirlo;
-  si no, la cuenta se crea de una vez.
-- **Iniciar sesión:** celular y contraseña. Las cuentas viejas creadas con correo (versión 16) siguen entrando: se
-  escribe el correo en el mismo campo.
-- **¿Olvidaste tu contraseña?:** se escribe el celular, llega un código por SMS (en Android se pone solo), y luego
-  la contraseña nueva. Las cuentas viejas con correo tienen el enlace "Mi cuenta es con correo".
-- En la base, la columna `correo` es obligatoria y única, así que las cuentas de celular guardan ahí un relleno fijo
-  por número (`cel573001234567@agrostake.invalid`; el dominio `.invalid` está reservado y nunca recibe correo).
-  Eso también impide dos cuentas con el mismo celular. La app nunca muestra ese relleno.
-- Las cuentas "solo con el nombre" de la versión 17, si alguien alcanzó a crear alguna, siguen funcionando mientras
-  no se cierre la sesión en ese equipo; ya no se pueden crear nuevas. La sesión dura un año desde la última visita.
+3. **Análisis y visualización (Frontend):**
+   La plataforma web cruza los datos del suelo y del clima con el cultivo previo y el objetivo del productor (por ejemplo: *maximizar rentabilidad, regenerar nitrógeno o ahorrar agua*) para calcular la rotación óptima de 3 temporadas, ofreciendo paneles interactivos, métricas en vivo y proyecciones a mediano y largo plazo.
 
-### Rotaciones guardadas (versión 18)
+## ✨ Beneficios Clave
 
-En cada rotación hay un botón "Guardar". Las guardadas quedan en la cuenta (tabla `rotaciones`, en Postgres si
-está `DATABASE_URL`) y aparecen en Rotación, en "Mis rotaciones guardadas", cada vez que se inicia sesión. Se
-guarda el plan tal como estaba ese día (con su plan de acción) y se puede ver o borrar. Antes de generar rotaciones
-nuevas, la tarjeta "Mejor rotación" de Resumen muestra la última guardada. Máximo 30 por cuenta.
+* **Prevención de la degradación del suelo:** Evita el monocultivo intensivo alternando familias botánicas que fijan y consumen nutrientes de forma equilibrada.
 
-### Códigos por mensaje de texto y por correo (versiones 16 y 18)
+* **Decisiones claras sin complejidad técnica:** Traduce telemetría industrial y variables satelitales en un plan de siembra paso a paso, bilingüe (Español / Inglés) y fácil de ejecutar.
 
-Los códigos para crear la cuenta y para recuperar la contraseña van por mensaje de texto (SMS) al celular. El
-correo solo se usa para recuperar las cuentas viejas creadas con correo. **Mientras no pongas estas variables:** la
-cuenta se crea sin código y la pantalla dice que la recuperación no está activa.
+* **Conectividad diseñada para zonas rurales:** Incorpora arquitectura de comunicación de largo alcance por radiofrecuencia/antena de fibra de vidrio y respaldo en memoria microSD para operar en fincas donde la conectividad es limitada.
 
-Render gratis **bloquea el correo por SMTP** (puertos 25, 465 y 587), por eso el correo sale por una API web:
+* **Ahorro de costos e insumos:** Al conocer el estado real de humedad y nutrientes del suelo, se reduce el desperdicio de agua de riego y fertilizantes químicos.
 
-| Para | Variables (Render → tu servicio → Environment) | Notas |
-|---|---|---|
-| Correo con **Brevo** (recomendado) | `BREVO_API_KEY`, `CORREO_REMITENTE` | Plan gratis de 300 correos al día. En Brevo, verifica el correo remitente ("Senders") y crea la clave en "SMTP & API" → "API Keys". |
-| Correo con **Resend** | `RESEND_API_KEY`, `CORREO_REMITENTE` | Exige un dominio propio verificado. |
-| Correo por SMTP (solo en tu computador o en un plan pago) | `SMTP_HOST`, `SMTP_PUERTO`, `SMTP_USUARIO`, `SMTP_CLAVE`, `CORREO_REMITENTE` | |
-| SMS con **Twilio** | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y `TWILIO_FROM` (o `TWILIO_MESSAGING_SID`) | Cada SMS cuesta. Con la cuenta de prueba de Twilio solo llegan a números que verifiques en Twilio. |
-| Nombre que ve quien recibe | `CORREO_NOMBRE` | Por defecto "AgroStake". |
+## 🛠️ Arquitectura, Tecnologías y Componentes
 
-- **El código se pone solo:** el SMS termina en `@tu-dominio #123456`. Chrome en Android lo lee apenas llega y lo
-  escribe (WebOTP); en el iPhone el teclado lo ofrece encima. En los demás casos se copia del mensaje.
-- **Seguridad:** se guarda solo un HMAC del código (nunca el código), vence a los 10 minutos, admite 5 intentos,
-  hay que esperar 60 s para pedir otro, máximo 5 por hora a un mismo correo o celular y 20 por hora desde una
-  misma conexión (`AGROSTAKE_CODIGOS_POR_IP`; no es más bajo porque en una universidad mucha gente comparte la
-  misma IP). En Render la IP del visitante se toma de `CF-Connecting-IP`, que pone Cloudflare. "¿Olvidaste tu contraseña?" responde igual exista o no la cuenta.
-- Para probar sin enviar nada: `AGROSTAKE_MENSAJES_CONSOLA=1` escribe los mensajes en la consola del servidor.
+### Software, Lenguajes y Fuentes de Datos
 
-### Municipios de Colombia y la EVA (versiones 16 y 17)
+* **Backend & Motor Agronómico:** Python (API REST, gestión de estacas con autenticación por token SHA-256, integración MQTT en tiempo real y algoritmos de recomendación y proyección).
 
-El mapa muestra los 1.101 municipios de Colombia que tienen datos en la EVA, con un buscador y el botón "Usar mi
-ubicación". Para cada uno, la app sabe qué se siembra, en qué semestre y cuánto se cosecha por hectárea
-(Evaluaciones Agropecuarias Municipales, EVA 2019-2024). El archivo `data/municipios.json` pesa 434 KB (85 KB
-comprimido) y se carga una vez. Lo arma `herramientas/preparar_municipios.py` en tu computador (necesita `pandas`
-y `openpyxl`; el servidor no los usa):
+* **Frontend:** HTML5, CSS3 y JavaScript puro (interfaz responsiva tipo aplicación móvil/escritorio con visualización de telemetría en vivo).
 
-    python herramientas/preparar_municipios.py --eva 20250617_BaseAgricola20192024.xlsx --divipola DIVIPOLA.csv --sivel datos-geo-col.sql
+* **Datos Satelitales:** APIs de observación terrestre y climatología histórica de la **NASA (NASA POWER)**.
 
-- **En las rotaciones** la EVA hace estas cosas:
-  1. Un cultivo solo se recomienda si se siembra en el propio municipio con al menos 10 ha al año y el 1,5 % del
-     área del cultivo más sembrado allí: si no, es señal de que el clima, el suelo o el mercado no le sirven. Por eso
-     la app no recomienda ñame ni arroz en Tunja, ni guandul en Sahagún.
-  2. Donde hay datos de la EVA no se recomienda abono verde (casi no se siembra en las fincas). Si en una temporada
-     de lluvias no encaja ningún cultivo de la zona, la rotación deja el lote descansando con rastrojo, penalizado.
-  3. Indicador "Se siembra en tu zona" (pesa el triple que los demás): compara cada siembra con lo que se siembra
-     en el municipio en ese mismo semestre. Primeras lluvias ≈ semestre A; segundas lluvias ≈ semestre B.
-  4. La mitad del puntaje de mercado sale de cuánto se siembra cada cultivo en el municipio.
-  5. En Proyección, "Mejor cultivo a largo plazo" escoge el cultivo de la rotación que más se siembra en el
-     municipio (con un empujón a los que mejoran el suelo) y da su cosecha promedio por hectárea.
-- **Fuera del Caribe** la app avisa que es una guía en prueba: se armó para la tierra caliente del Caribe.
-  El caupí solo se recomienda donde hay fríjol registrado en el Caribe a menos de 100 km (en el resto del país, el
-  "Frijol" de la EVA puede ser fríjol común). La braquiaria no se recomienda con menos de 19 °C de temperatura
-  media (Tropical Forages: crece mejor por encima de 19 °C).
-- **Coordenadas:** las de esta versión son las de SIVeL (dominio público, armadas con DIVIPOLA 2013, Divipolador
-  y OpenStreetMap). Tienen errores: la de Mompox queda a 16,9 km. Las 8 zonas piloto conservan las suyas.
-  Cuando tengas el CSV oficial del DANE "DIVIPOLA - Códigos municipios" (datos.gov.co), pásalo con `--divipola`:
-  se usa ese y se imprime cuánto difiere de SIVeL. No pude abrir datos.gov.co desde aquí, así que el lector busca
-  las columnas por nombre (código, latitud, longitud) y avisa si no las encuentra.
+* **Despliegue:** Plataforma cloud accesible en [AgroStake](https://agrostakee-1.onrender.com/)
 
-## Fuentes de datos
+### Hardware y Electrónica (Estaca y Nodo)
 
-| Dato | Fuente | ¿Pide cuenta? |
-|---|---|---|
-| Clima, humedad y temperatura del suelo | NASA POWER | No |
-| Verdor de las plantas (NDVI) | NASA MODIS / VIIRS por la API de ORNL DAAC | No |
-| Pendiente | SRTM (Open-Elevation) o Copernicus DEM (Open-Meteo) | No |
-| Capas del mapa | NASA GIBS (VIIRS, SMAP, MODIS, GPM IMERG) | No |
-| Suelo del piloto | Estudios publicados (ver `docs/PILOTO.md`) | No |
-| Suelo de cualquier punto | ISRIC SoilGrids (su API está pausada por ISRIC; se intenta igual) | No |
-| Estaciones | Catálogo del IDEAM (datos.gov.co), con copia incluida | No |
-| Temperatura de superficie a 70 m y humedad SMAP L4 | NASA AppEEARS | Sí (Earthdata) |
-| Pendiente y NDVI de Landsat, SoilGrids en la nube | Google Earth Engine | Sí |
-| Humedad y temperatura del suelo ERA5-Land | Copernicus CDS | Sí |
-| Características de cultivos | USDA PLANTS | No |
-| Pasto (braquiaria) | Tropical Forages y ficha de semilla (ver `docs/PILOTO.md`) | No |
-| Qué se siembra y cuánto se cosecha en cada municipio | Evaluaciones Agropecuarias Municipales (EVA) 2019-2024, UPRA y MinAgricultura | No (archivo incluido) |
-| Ubicación de las cabeceras municipales | SIVeL (provisional); DIVIPOLA del DANE cuando se agregue | No |
-| Ubicación del lote con el GPS del equipo | El navegador (pide permiso; solo con https o en tu computador) | No |
+* **Microcontrolador:** ESP32.
 
-Las que piden cuenta se activan solas si están las variables de entorno (ver `app.py` y `services/orquestador.py`).
-Las credenciales nunca van en el código.
+* **Sensores y Bus Industrial:** Sensor multiparámetro de suelo (humedad, temperatura, pH, conductividad y NPK) + módulo convertidor **RS485 a UART TTL**.
 
-Más detalle: `CAMBIOS.md`, `docs/PILOTO.md` y `docs/ESTACA.md`.
+* **Telecomunicaciones:** Módulo de radiofrecuencia y antena de fibra de vidrio para enlaces de largo alcance en campo.
+
+* **Gestión de Energía:** Placa de carga y elevación a 5V, módulo elevador (*step-up*) a 12V para alimentación de sensores industriales y capacitores de filtrado de ruido eléctrico.
+
+* **Interfaz Física y Respaldo:** Pantalla local, ranura para tarjeta **microSD** (registro offline), amplificador de audio y parlante para alertas y retroalimentación sonora en terreno.
+
+## 🤖 Desarrollo Asistido por Inteligencia Artificial
+
+Durante la conceptualización, diseño y construcción de **AgroStake** para el **NASA Space Apps Challenge**, utilizamos herramientas de Inteligencia Artificial como un copiloto técnico y de diseño en cada fase del proyecto:
+
+1. **Suministro de ideas y contexto agronómico:**
+   Le planteamos a las IAs nuestra visión central: conectar una estaca física con sensores de suelo reales y datos satelitales de la NASA para resolver un problema concreto del campo (la pérdida de fertilidad por falta de rotación de cultivos). Suministramos las restricciones reales del hardware (protocolo RS485, alimentación de 12V, conectividad intermitente en zonas rurales) y los objetivos que busca un agricultor en campo.
+
+2. **Arquitectura de software e integración de datos:**
+   Con base en nuestras ideas y requerimientos, las IAs nos apoyaron estructurando la comunicación entre el microcontrolador ESP32, el servidor en Python (endpoints HTTP con tokens de seguridad y suscripción MQTT en vivo) y el cruce de variables con fuentes climáticas satelitales de la NASA.
+
+3. **Prototipado de interfaz y experiencia de usuario (UX/UI):**
+   Iteramos junto con la IA el diseño de la interfaz web para que fuera clara, responsiva y usable tanto en computadores como en teléfonos móviles directamente en el cultivo, integrando paneles visuales de telemetría en vivo y tarjetas de recomendación comprensibles.
+
+
+## 🎯 Visión a Futuro
+
+Buscamos empoderar a pequeños y medianos agricultores con tecnología accesible de grado científico para hacer su producción más resiliente y rentable. A mediano plazo, proyectamos validar los modelos de rotación con datos de cosechas locales reales para consolidar a **AgroStake** como un estándar de asistencia técnica digital que frene la erosión de tierras cultivables y promueva prácticas agrícolas regenerativas.
