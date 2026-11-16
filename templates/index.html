@@ -3044,6 +3044,7 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localho
 <script>
 (function () {
   const CADA_MS = 1000;
+  const EXPIRA_SEG = 10; // Si pasan más de 10 s sin datos nuevos, se marca como apagada
   const CAMPOS = [
     ["ph", "pH", "pH", 2], ["humedad", "Humedad (%)", "Moisture (%)", 1], ["temp_suelo", "Temp. suelo (°C)", "Soil temp. (°C)", 1],
     ["n", "N (mg/kg)", "N (mg/kg)", 0], ["p", "P (mg/kg)", "P (mg/kg)", 0], ["k", "K (mg/kg)", "K (mg/kg)", 0]
@@ -3108,7 +3109,11 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localho
     try { const res = await fetch("/api/estaca/local", { cache: "no-store" }); r = await res.json(); } catch (e) {}
 
     const sueloRaw = r && r.grupos && r.grupos.suelo;
-    const hay = !!(r && !r.sin_datos && sueloRaw);
+    const edadSeg = (sueloRaw && typeof sueloRaw.recibido === "number")
+      ? (Date.now() / 1000) - sueloRaw.recibido
+      : Infinity;
+    const hay = !!(r && !r.sin_datos && sueloRaw && edadSeg <= EXPIRA_SEG);
+
     ev.classList.toggle("on", hay);
     tit.textContent = hay ? t("Estaca en vivo", "Live stake") : t("Estaca sin datos", "Stake: no data");
     btnSync.textContent = autoSync ? "Auto: ON" : "Auto: OFF";
@@ -3128,10 +3133,17 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localho
     if (!r) aviso = t("No se pudo consultar el servidor.", "Could not reach the server.");
     else if (r.error) aviso = r.error;
     else if (r.mqtt_conectado === false) aviso = t("El servidor aún no se conecta al broker.", "The server is not connected to the broker yet.");
+    else if (sueloRaw && !hay) aviso = t(`Sin señal desde hace ${Math.round(edadSeg)} s.`, `No signal for ${Math.round(edadSeg)} s.`);
     avi.textContent = aviso; avi.hidden = !aviso;
 
+    // Si se perdió la señal, resetear la firma para que vuelva a sincronizar al reconectarse
+    if (!hay) {
+      ultimaFirma = "";
+      return;
+    }
+
     // Alimentar el motor de recomendaciones solo cuando llegan valores clasificados nuevos
-    if (hay && autoSync && typeof S !== "undefined" && typeof actualizar === "function") {
+    if (autoSync && typeof S !== "undefined" && typeof actualizar === "function") {
       const sueloMotor = normalizarSuelo(r, sueloRaw);
       if (sueloMotor && Object.keys(sueloMotor).length > 0) {
         const firma = JSON.stringify(sueloMotor);
